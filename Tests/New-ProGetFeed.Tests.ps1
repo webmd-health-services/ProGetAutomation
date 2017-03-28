@@ -1,0 +1,115 @@
+
+& (Join-Path -Path $PSScriptRoot -ChildPath 'Initialize-Tests.ps1' -Resolve)
+
+function Initialize-ProGetFeedTests
+{
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory=$true)]
+        [object]
+        $ProGetSession
+    )
+    
+    $Global:Error.Clear()
+    
+    # Remove all feeds from target ProGet instance
+    Invoke-PGNativeApiMethod -Session $ProGetSession -Name 'Feeds_GetFeeds' -Parameter @{IncludeInactive_Indicator = $true} |
+        ForEach-Object { 
+            Invoke-PGNativeApiMethod -Session $ProGetSession -Name 'Feeds_DeleteFeed' -Parameter @{Feed_Id = $PSItem.Feed_Id}
+        }
+
+
+}
+
+Describe 'New-ProGetFeed.create a new Universal package feed' {
+    
+    $session = New-ProGetTestSession
+    Initialize-ProGetFeedTests -ProGetSession $session
+
+    New-ProGetFeed -ProGetSession $session -FeedType 'ProGet' -FeedName 'Apps'
+    $feedExists = Get-ProGetFeed -ProGetSession $session -FeedType 'ProGet' -FeedName 'Apps'
+    
+    It 'should write no errors' {
+        $Global:Error | Should BeNullOrEmpty
+    }
+    
+    It 'should create a new ProGet universal feed' {
+        $feedExists | Should Be $true
+    }
+}
+
+Describe 'New-ProGetFeed.when attempting to create a duplicate package feed' {
+        
+    $session = New-ProGetTestSession
+    Initialize-ProGetFeedTests -ProGetSession $session
+
+    try
+    {
+        New-ProGetFeed -ProGetSession $session -FeedType 'ProGet' -FeedName 'Apps'
+        New-ProGetFeed -ProGetSession $session -FeedType 'ProGet' -FeedName 'Apps'
+    }
+    catch
+    {
+    }
+    
+    It 'should write an error that the duplicate feed already exists' {
+        $Global:Error | Should Match 'The feed name requested is in use and must be unique to this instance'
+    }
+}
+
+Describe 'New-ProGetFeed.if session object contains an invalid API key' {
+        
+    $session = New-ProGetTestSession
+    Initialize-ProGetFeedTests -ProGetSession $session
+    $session.ApiKey = '==InvalidAPIKey=='
+   
+    New-ProGetFeed -ProGetSession $session -FeedType 'ProGet' -FeedName 'Apps' -ErrorAction SilentlyContinue
+    
+    It 'should write an error if the specified API key is invalid' {
+        $Global:Error | Should Match 'Use of the native API is forbidden with the specified API key'
+    }
+}
+
+Describe 'New-ProGetFeed.if session object does not contain an API key' {
+        
+    $session = New-ProGetTestSession
+    Initialize-ProGetFeedTests -ProGetSession $session
+    $session.ApiKey = $null
+    
+    try
+    {
+        New-ProGetFeed -ProGetSession $session -FeedType 'ProGet' -FeedName 'Apps'
+    }
+    catch
+    {
+    }
+    
+    It 'should write an error if no API key is specified' {
+        $Global:Error | Should Match 'must contain a valid API key for this instance of ProGet'
+    }
+}
+
+Describe 'New-ProGetFeed.if specified feed type is invalid' {
+    
+    $session = New-ProGetTestSession
+    Initialize-ProGetFeedTests -ProGetSession $session
+
+    New-ProGetFeed -ProGetSession $session -FeedType 'InvalidFeedType' -FeedName 'Apps' -ErrorAction SilentlyContinue
+    
+    It 'should write an error if feed type parameter contains undefined value' {
+        $Global:Error | Should Match 'The INSERT statement conflicted with the CHECK constraint "CK__Feeds__FeedType_Name"'
+    }
+}
+
+Describe 'New-ProGetFeed.create a new Universal package feed' {
+    
+    $session = New-ProGetTestSession
+    Initialize-ProGetFeedTests -ProGetSession $session
+    $session.Uri = 'http://invalid.proget.uri'
+    
+    New-ProGetFeed -ProGetSession $session -FeedType 'ProGet' -FeedName 'Apps' -ErrorAction SilentlyContinue
+        
+    It 'should write an error if URI parameter contains invalid ProGet URI' {
+        $Global:Error | Should Match 'The remote name could not be resolved:'
+    }
+}
