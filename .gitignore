@@ -1,2 +1,4 @@
-Carbon
-Pester
+Carbon/**
+Pester/**
+.output/**
+*.log

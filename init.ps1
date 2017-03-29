@@ -33,25 +33,27 @@ if( -not (Test-Path -Path $installerPath -PathType Leaf) )
 $pgInstallInfo = Get-ProgramInstallInfo -Name 'ProGet'
 if( -not $pgInstallInfo )
 {
-    $pgConnectionString = '/ConnectionString="Data Source=localhost\ProGet; Initial Catalog=ProGet; Integrated Security=True;"'
-    $dbParam = '/InstallSqlExpress'
+    $installSqlParam = '/InstallSqlExpress'
+    $connString = '/S'
     $bmInstallInfo = Get-ProgramInstallInfo -Name 'BuildMaster'
-    if ($bmInstallInfo) {
+    if ($bmInstallInfo)
+    {
         Write-Verbose -Message 'BuildMaster is installed. ProGet will join existing SQL Server instance..'
         $bmConfigLocation = Join-Path -Path (Get-ItemProperty -Path 'HKLM:\Software\Inedo\BuildMaster').ServicePath -ChildPath 'app_appSettings.config'
     
         $xml = [xml](Get-Content -Path $bmConfigLocation) 
         $bmDbConfigSetting = $xml.SelectSingleNode("//add[@key = 'Core.DbConnectionString']")
         $bmConnectionString = $bmDbConfigSetting.Value.Substring(0,$bmDbConfigSetting.Value.IndexOf(';'))
-        $pgConnectionString = ('/ConnectionString="{0};Initial Catalog=ProGet; Integrated Security=True;"' -f $bmConnectionString)
-        $dbParam = '/InstallSqlExpress=False'
+        $connString = ('/ConnectionString="{0};Initial Catalog=ProGet; Integrated Security=True;"' -f $bmConnectionString)
+        $installSqlParam = '/InstallSqlExpress=False'
     }
 
     # Under AppVeyor, use the pre-installed database.
     # Otherwise, install a SQL Express ProGet instance.
     if( $runningUnderAppVeyor )
     {
-        $dbParam = '"/ConnectionString=Server=(local)\SQL2016;Database=ProGet;User ID=sa;Password=Password12!"'
+        $connString = '"/ConnectionString=Server=(local)\SQL2016;Database=ProGet;User ID=sa;Password=Password12!"'
+        $installSqlParam = '/InstallSqlExpress=False'
     }
 
     $outputRoot = Join-Path -Path $PSScriptRoot -ChildPath '.output'
@@ -66,7 +68,7 @@ if( -not $pgInstallInfo )
     $stdOutLogPath = Join-Path -Path $logRoot -ChildPath ('{0}.stdout.log' -f $installerFileName)
     $stdErrLogPath = Join-Path -Path $logRoot -ChildPath ('{0}.stderr.log' -f $installerFileName)
     $process = Start-Process -FilePath $installerPath `
-                             -ArgumentList '/S','/Edition=Express',$pgConnectionString,$dbParam,('"/LogFile={0}"' -f $logPath),'/Port=82' `
+                             -ArgumentList '/S','/Edition=Express',$installSqlParam,$connString,('"/LogFile={0}"' -f $logPath),'/Port=82' `
                              -Wait `
                              -PassThru `
                              -RedirectStandardError $stdErrLogPath `
