@@ -12,10 +12,10 @@ New-Item -Path $outputdir -ItemType 'Directory' -ErrorAction Ignore
 Get-ChildItem -Path $outputdir | Remove-Item -Recurse -Force
 
 $outputFile = Join-Path -Path $outputdir -ChildPath 'pester.xml'
-# $result = Invoke-Pester -Script (Join-Path -Path $PSScriptRoot -ChildPath 'Tests\*.Tests.ps1') `
-#                         -OutputFile $outputFile `
-#                         -OutputFormat NUnitXml `
-#                         -PassThru
+$result = Invoke-Pester -Script (Join-Path -Path $PSScriptRoot -ChildPath 'Tests\*.Tests.ps1') `
+                        -OutputFile $outputFile `
+                        -OutputFormat NUnitXml `
+                        -PassThru
 
 if( (Test-Path -Path 'env:APPVEYOR') -and (Test-Path -Path $outputFile) )
 {
