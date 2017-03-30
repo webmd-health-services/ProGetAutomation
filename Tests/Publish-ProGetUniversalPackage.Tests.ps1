@@ -127,7 +127,7 @@ Describe 'Publish-ProGetUniversalPackage.package does not exist at specified pac
 
     try
     {
-        Publish-ProGetUniversalPackage -ProGetSession $session -FeedName $feedName -PackagePath $packagePath
+        Publish-ProGetUniversalPackage -ProGetSession $session -FeedName $feedName -PackagePath $packagePath -ErrorAction SilentlyContinue
     }
     catch
     {
