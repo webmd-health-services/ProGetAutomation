@@ -1,20 +1,20 @@
 
-function Invoke-PGRestMethod
+function Invoke-ProGetRestMethod
 {
     <#
     .SYNOPSIS
     Invokes a ProGet REST method.
 
     .DESCRIPTION
-    The `Invoke-PGRestMethod` invokes a ProGet REST API method. You pass the path to the endpoint (everything after `/api/`) via the `Name` parameter, the HTTP method to use via the `Method` parameter, and the parameters to pass in the body of the request via the `Parameter` parameter.  This function converts the `Parameter` hashtable to JSON and sends it in the body of the request.
+    The `Invoke-ProGetRestMethod` invokes a ProGet REST API method. You pass the path to the endpoint (everything after `/api/`) via the `Name` parameter, the HTTP method to use via the `Method` parameter, and the parameters to pass in the body of the request via the `Parameter` parameter.  This function converts the `Parameter` hashtable to JSON and sends it in the body of the request.
 
-    You also need to pass an object that represents the ProGet instance and API key to use when connecting via the `Session` parameter. Use the `New-PGSession` function to create a session object.
+    You also need to pass an object that represents the ProGet instance and API key to use when connecting via the `Session` parameter. Use the `New-ProGetSession` function to create a session object.
     #>
     [CmdletBinding()]
     param(
         [Parameter(Mandatory=$true)]
         [object]
-        # A session object that represents the PG instance to use. Use the `New-PGSession` function to create session objects.
+        # A session object that represents the ProGet instance to use. Use the `New-ProGetSession` function to create session objects.
         $Session,
 
         [Parameter(Mandatory=$true)]

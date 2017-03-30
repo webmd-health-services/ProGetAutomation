@@ -37,7 +37,8 @@ function Publish-ProGetUniversalPackage
     $proGetPackageUri = [String]$ProGetSession.Uri + 'upack/' + $FeedName
     if (!$ProGetSession.Credential)
     {
-        throw ('Failed to upload ''{0}'' package to ProGet {1}. ''ProGetSession'' parameter must contain a PSCredential object with a user name and password.' -f ($PackagePath | Split-Path -Leaf), $proGetPackageUri)
+        Write-Error -Message ('Unable to upload ''{0}'' package to ProGet at {1}. Uploading a package requires ProGet credentials (i.e. a username and password), but the credential on the ProGet session is missing. Please use `New-ProGetSession` to create a session and pass a credential that can upload universal packages via the `Credential` parameter.' -f ($PackagePath | Split-Path -Leaf), $proGetPackageUri)
+        return
     }
     $proGetCredential = $ProGetSession.Credential
 

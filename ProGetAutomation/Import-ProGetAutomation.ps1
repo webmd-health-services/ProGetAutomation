@@ -14,5 +14,4 @@ if( (Get-Module -Name 'Carbon') )
     Remove-Module -Name 'Carbon' -Force
 }
 
-Import-Module ..\Carbon
-
+Import-Module (Join-Path -Path $PSScriptRoot -ChildPath '..\Carbon' -Resolve)

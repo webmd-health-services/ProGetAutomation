@@ -3,13 +3,13 @@ function New-ProGetFeed
 {
     <#
     .SYNOPSIS
-    Creates a new ProGet package feed in the specified Proget instance
+    Creates a new ProGet package feed
 
     .DESCRIPTION
-    The `New-ProGetFeed` function will create a new package feed of the specified type to the specified Proget instance. This function utilizes ProGet's native API and uses the API key of a `ProGetSession` instead of the preferred PSCredential authentication.
+    The `New-ProGetFeed` function creates a new ProGet feed. Use the `FeedType` parameter to specify the feed type (valid values are 'VSIX', 'RubyGems', 'Docker', 'ProGet', 'Maven', 'Bower', 'npm', 'Deployment', 'Chocolatey', 'NuGet', 'PowerShell'). The `ProGetSession` parameter controls the instance of ProGet to connect to. This function uses ProGet's Native API, so an API key is required. Use `New-ProGetSession` to create a session with your API key.
 
     .EXAMPLE
-    New-ProGetFeed -ProGetSession $ProGetSession -FeedName 'Apps' -FeedType 'ProGet' (valid feed types include Bower, Chocolatey, NuGet, Docker, PowerShell, npm, etc. - check here for a full list - https://inedo.com/support/documentation/proget/feed-types/universal)
+    New-ProGetFeed -ProGetSession $ProGetSession -FeedName 'Apps' -FeedType 'ProGet'
 
     Demonstrates how to call `New-ProGetFeed`. In this case, a new Universal package feed named 'Apps' will be created for the specified ProGet Uri
     #>
@@ -28,6 +28,7 @@ function New-ProGetFeed
         [Parameter(Mandatory=$true)]
         [string]
         # The feed type indicates the type of package feed to create.
+        # Valid feed types are ('VSIX', 'RubyGems', 'Docker', 'ProGet', 'Maven', 'Bower', 'npm', 'Deployment', 'Chocolatey', 'NuGet', 'PowerShell') - check here for a latest list - https://inedo.com/support/documentation/proget/feed-types/universal
         $FeedType
     )
 
@@ -36,7 +37,8 @@ function New-ProGetFeed
     $proGetPackageUri = [String]$ProGetSession.Uri
     if (!$ProGetSession.ApiKey)
     {
-        throw ('Failed to create new package feed ''{0}/{1}''. ''ProGetSession'' parameter must contain a valid API key for this instance of ProGet.' -f $FeedType, $FeedName)
+        Write-Error -Message ('We are unable to create new package feed ''{0}/{1}'' because your ProGet session is missing an API key. This function uses ProGet''s Native API, which requires an API key. Use `New-ProGetSession` to create a session object that uses an API key.' -f $FeedType, $FeedName)
+        return
     }
     $proGetApiKey = $ProGetSession.ApiKey
 
@@ -44,12 +46,13 @@ function New-ProGetFeed
     $Parameters['FeedType_Name'] = $FeedType
     $Parameters['Feed_Name'] = $FeedName
 
-    $feedExists = Get-ProGetFeed -ProGetSession $ProGetSession -FeedName $FeedName -FeedType $FeedType
+    $feedExists = Test-ProGetFeed -ProGetSession $ProGetSession -FeedName $FeedName -FeedType $FeedType
     if($feedExists)
     {
-        throw ('Failed to create new package feed ''{0}/{1}''. The feed name requested is in use and must be unique to this instance. Please try a different feed name.' -f $FeedType, $FeedName)
+        Write-Error -Message ('Unable to create feed ''{0}/{1}''. A feed with that name already exists.' -f $FeedType, $FeedName) -ErrorAction $ErrorActionPreference
+        return
     }
-    $null = Invoke-PGNativeApiMethod -Session $ProGetSession -Name 'Feeds_CreateFeed' -Parameter $Parameters
+    $null = Invoke-ProGetNativeApiMethod -Session $ProGetSession -Name 'Feeds_CreateFeed' -Parameter $Parameters
 
     Write-Verbose -Message ('Successfully created new package feed ''{0}/{1}'' in ProGet instance ''{2}' -f $FeedType, $FeedName, $proGetPackageUri)
 }
