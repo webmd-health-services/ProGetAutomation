@@ -46,9 +46,8 @@ function Test-ProGetFeed
     $Parameters['FeedType_Name'] = $FeedType
     $Parameters['Feed_Name'] = $FeedName
 
-    $feedExists = $null
     $feedExists = Invoke-ProGetNativeApiMethod -Session $ProGetSession -Name 'Feeds_GetFeed' -Parameter $Parameters
-    if($feedExists -match 'Feed_Id')
+    if($feedExists)
     {
         return $true
     }
