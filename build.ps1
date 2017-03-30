@@ -4,6 +4,9 @@ param(
 
 & (Join-Path -Path $PSScriptRoot -ChildPath 'init.ps1' -Resolve)
 
+# Allow ProGet web service to load prior to initiating test suite 
+Start-Sleep -Seconds 10
+
 Import-Module -Name (Join-Path -Path $PSScriptRoot -ChildPath 'Pester' -Resolve) -Force -Verbose:$false
 
 $outputdir = Join-Path -Path $PSScriptRoot -ChildPath '.output'
