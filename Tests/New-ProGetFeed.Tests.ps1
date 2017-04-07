@@ -13,12 +13,13 @@ function Initialize-ProGetFeedTests
     $Global:Error.Clear()
     
     # Remove all feeds from target ProGet instance
-    Invoke-ProGetNativeApiMethod -Session $ProGetSession -Name 'Feeds_GetFeeds' -Parameter @{IncludeInactive_Indicator = $true} |
-        ForEach-Object { 
+    $feeds = Invoke-ProGetNativeApiMethod -Session $ProGetSession -Name 'Feeds_GetFeeds' -Parameter @{IncludeInactive_Indicator = $true}
+    if($feeds -match 'Feed_Id')
+    {
+        $feeds | ForEach-Object {
             Invoke-ProGetNativeApiMethod -Session $ProGetSession -Name 'Feeds_DeleteFeed' -Parameter @{Feed_Id = $PSItem.Feed_Id}
         }
-
-
+    }
 }
 
 Describe 'New-ProGetFeed.create a new Universal package feed' {
