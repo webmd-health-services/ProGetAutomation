@@ -63,7 +63,7 @@ Describe 'Publish-ProGetUniversalPackage.invalid credentials are passed' {
     $packageExists = Invoke-ProGetNativeApiMethod -Session $session -Name 'ProGetPackages_GetPackages' -Parameter @{Feed_Id = $feedId; Package_Name = $packageName}
 
     It 'should write an error that the action cannot be performed' {
-        $Global:Error | Should Match 'The Feeds_AddPackage task is required to perform this action.'
+        $Global:Error | Should Match 'Anonymous is not permitted to perform the Feeds_AddPackage task for the current scope.'
     }
     
     It 'should not publish the package to the Apps universal package feed' {
@@ -111,7 +111,7 @@ Describe 'Publish-ProGetUniversalPackage.specified target feed does not exist' {
     $packageExists = Invoke-ProGetNativeApiMethod -Session $session -Name 'ProGetPackages_GetPackages' -Parameter @{Feed_Id = $feedId; Package_Name = $packageName}
 
     It 'should write an error that the defined feed is invalid' {
-        $Global:Error | Should Match ('Invalid feed: {0}' -f $feedName)
+        $Global:Error | Should Match ('The remote server returned an error:')
     }
     
     It 'should not publish the package to the Apps universal package feed' {
