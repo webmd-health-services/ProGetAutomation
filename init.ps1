@@ -68,7 +68,7 @@ if( -not $pgInstallInfo )
     $stdOutLogPath = Join-Path -Path $logRoot -ChildPath ('{0}.stdout.log' -f $installerFileName)
     $stdErrLogPath = Join-Path -Path $logRoot -ChildPath ('{0}.stderr.log' -f $installerFileName)
     $process = Start-Process -FilePath $installerPath `
-                             -ArgumentList '/S','/Edition=Express',$installSqlParam,$connString,('"/LogFile={0}"' -f $logPath),'/Port=82' `
+                             -ArgumentList '/S','/Edition=Trial',$installSqlParam,$connString,('"/LogFile={0}"' -f $logPath),'/Port=82' `
                              -Wait `
                              -PassThru `
                              -RedirectStandardError $stdErrLogPath `
