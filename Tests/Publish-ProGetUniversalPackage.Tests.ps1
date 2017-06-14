@@ -56,13 +56,7 @@ Describe 'Publish-ProGetUniversalPackage.invalid credentials are passed' {
     [String]$feedId = Initialize-PublishProGetPackageTests -ProGetSession $session
     $session.Credential = New-Credential -UserName 'Invalid' -Password 'Credentia'
 
-    try
-    {
-        Publish-ProGetUniversalPackage -ProGetSession $session -FeedName $feedName -PackagePath $packagePath
-    }
-    catch
-    {
-    }
+    Publish-ProGetUniversalPackage -ProGetSession $session -FeedName $feedName -PackagePath $packagePath -ErrorAction SilentlyContinue
     $packageExists = Invoke-ProGetNativeApiMethod -Session $session -Name 'ProGetPackages_GetPackages' -Parameter @{Feed_Id = $feedId; Package_Name = $packageName}
 
     It 'should write an error that the action cannot be performed' {
@@ -80,13 +74,7 @@ Describe 'Publish-ProGetUniversalPackage.no credentials are passed' {
     [String]$feedId = Initialize-PublishProGetPackageTests -ProGetSession $session
     $session.Credential = $null
 
-    try
-    {
-        Publish-ProGetUniversalPackage -ProGetSession $session -FeedName $feedName -PackagePath $packagePath -ErrorAction SilentlyContinue
-    }
-    catch
-    {
-    }
+    Publish-ProGetUniversalPackage -ProGetSession $session -FeedName $feedName -PackagePath $packagePath -ErrorAction SilentlyContinue
     $packageExists = Invoke-ProGetNativeApiMethod -Session $session -Name 'ProGetPackages_GetPackages' -Parameter @{Feed_Id = $feedId; Package_Name = $packageName}
     
     It 'should write an error that a PSCredential object must be provided' {
@@ -104,13 +92,7 @@ Describe 'Publish-ProGetUniversalPackage.specified target feed does not exist' {
     [String]$feedId = Initialize-PublishProGetPackageTests -ProGetSession $session
     $feedName = 'InvalidAppFeed'
 
-    try
-    {
-        Publish-ProGetUniversalPackage -ProGetSession $session -FeedName $feedName -PackagePath $packagePath
-    }
-    catch
-    {
-    }
+    Publish-ProGetUniversalPackage -ProGetSession $session -FeedName $feedName -PackagePath $packagePath -ErrorAction SilentlyContinue
     $packageExists = Invoke-ProGetNativeApiMethod -Session $session -Name 'ProGetPackages_GetPackages' -Parameter @{Feed_Id = $feedId; Package_Name = $packageName}
 
     It 'should write an error that the defined feed is invalid' {
@@ -128,45 +110,11 @@ Describe 'Publish-ProGetUniversalPackage.package does not exist at specified pac
     [String]$feedId = Initialize-PublishProGetPackageTests -ProGetSession $session
     $packagePath = '.\BadPackagePath'
 
-    try
-    {
-        Publish-ProGetUniversalPackage -ProGetSession $session -FeedName $feedName -PackagePath $packagePath -ErrorAction SilentlyContinue
-    }
-    catch
-    {
-    }
+    Publish-ProGetUniversalPackage -ProGetSession $session -FeedName $feedName -PackagePath $packagePath -ErrorAction SilentlyContinue
     $packageExists = Invoke-ProGetNativeApiMethod -Session $session -Name 'ProGetPackages_GetPackages' -Parameter @{Feed_Id = $feedId; Package_Name = $packageName}
 
     It 'should write an error that the package could not be found' {
         $Global:Error | Should Match 'Could not find file'
-    }
-    
-    It 'should not publish the package to the Apps universal package feed' {
-        $packageExists | Should Not Be $true
-    }
-}
-
-Describe 'Publish-ProGetUniversalPackage.package should write an error if package fails to publish' {
-    
-    $session = New-ProGetTestSession
-    [String]$feedId = Initialize-PublishProGetPackageTests -ProGetSession $session
-    $proGetPackageUri = [String]$session.Uri + 'upack/' + $FeedName
-
-    Mock -CommandName 'Invoke-RestMethod' -ModuleName 'ProGetAutomation' -MockWith { [pscustomobject]@{ StatusCode = 1 } }.GetNewClosure() -ParameterFilter {
-        $Uri -eq $proGetPackageUri
-    }
-
-    try
-    {
-        Publish-ProGetUniversalPackage -ProGetSession $session -FeedName $feedName -PackagePath $packagePath -ErrorAction SilentlyContinue
-    }
-    catch
-    {
-    }
-    $packageExists = Invoke-ProGetNativeApiMethod -Session $session -Name 'ProGetPackages_GetPackages' -Parameter @{Feed_Id = $feedId; Package_Name = $packageName}
-
-    It 'should write an error that the package failed to upload' {
-        $Global:Error | Should Match 'Failed to upload'
     }
     
     It 'should not publish the package to the Apps universal package feed' {
