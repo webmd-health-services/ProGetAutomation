@@ -9,7 +9,7 @@ foreach( $moduleName in @( 'Pester', 'Carbon' ) )
 {
     if( (Test-Path -Path (Join-Path -Path $PSScriptRoot -ChildPath $moduleName) -PathType Container) )
     {
-        break
+        continue
     }
 
     Save-Module -Name $moduleName -Path '.' 
@@ -46,6 +46,14 @@ if( -not $pgInstallInfo )
         $bmConnectionString = $bmDbConfigSetting.Value.Substring(0,$bmDbConfigSetting.Value.IndexOf(';'))
         $connString = ('/ConnectionString="{0};Initial Catalog=ProGet; Integrated Security=True;"' -f $bmConnectionString)
         $installSqlParam = '/InstallSqlExpress=False'
+    }
+    else
+    {
+        if( (Get-Service -Name 'MSSQL$PROGET' -ErrorAction Ignore) )
+        {
+            $installSqlParam = '/InstallSqlExpress=False'
+            $connString = ('/ConnectionString="Server=.\PROGET;Integrated Security=True;"')
+        }
     }
 
     # Under AppVeyor, use the pre-installed database.
