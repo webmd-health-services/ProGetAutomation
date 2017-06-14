@@ -20,7 +20,7 @@ Import-Module -Name (Join-Path -Path $PSScriptRoot -ChildPath 'Carbon') -Force -
 
 $runningUnderAppVeyor = (Test-Path -Path 'env:APPVEYOR')
 
-$version = '4.7.9'
+$version = '4.7.6'
 
 $installerPath = Join-Path -Path $env:TEMP -ChildPath ('ProGetInstaller-SQL-{0}.exe' -f $version)
 if( -not (Test-Path -Path $installerPath -PathType Leaf) )
@@ -46,14 +46,6 @@ if( -not $pgInstallInfo )
         $bmConnectionString = $bmDbConfigSetting.Value.Substring(0,$bmDbConfigSetting.Value.IndexOf(';'))
         $connString = ('/ConnectionString="{0};Initial Catalog=ProGet; Integrated Security=True;"' -f $bmConnectionString)
         $installSqlParam = '/InstallSqlExpress=False'
-    }
-    else
-    {
-        if( (Get-Service -Name 'MSSQL$PROGET' -ErrorAction Ignore) )
-        {
-            $installSqlParam = '/InstallSqlExpress=False'
-            $connString = ('/ConnectionString="Server=.\PROGET;Integrated Security=True;"')
-        }
     }
 
     # Under AppVeyor, use the pre-installed database.
