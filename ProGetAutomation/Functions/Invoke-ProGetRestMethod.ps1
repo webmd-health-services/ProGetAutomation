@@ -17,6 +17,9 @@ function Invoke-ProGetRestMethod
         # A session object that represents the ProGet instance to use. Use the `New-ProGetSession` function to create session objects.
         $Session,
 
+        [string]
+        $ApiRoot = 'api',
+
         [Parameter(Mandatory=$true)]
         [string]
         # The name of the API to use. The should be everything after `/api/` in the method's URI.
@@ -26,7 +29,6 @@ function Invoke-ProGetRestMethod
         # The HTTP/web method to use. The default is `POST`.
         $Method = [Microsoft.PowerShell.Commands.WebRequestMethod]::Post,
 
-        [Parameter(Mandatory=$true)]
         [hashtable]
         # That parameters to pass to the method. These are converted to JSON and sent to the API in the body of the request.
         $Parameter,
@@ -38,26 +40,32 @@ function Invoke-ProGetRestMethod
 
     Set-StrictMode -Version 'Latest'
 
-    $uri = '{0}api/{1}' -f $Session.Uri,$Name
+    $uri = '{0}{1}/{2}' -f $Session.Uri,$ApiRoot,$Name
     
-    if( $AsJson )
+    $contentType = 'application/json; charset=utf-8'
+    $bodyParam = @{ }
+    $body = ''
+    $debugBody = ''
+    if( $Parameter )
     {
-        $body = $Parameter | ConvertTo-Json -Depth ([int32]::MaxValue)
-        $contentType = 'application/json; charset=utf-8'
-        $debugBody = $body -replace '("API_Key": +")[^"]+','$1********'
-    }
-    else
-    {
-        $body = $Parameter.Keys | ForEach-Object { '{0}={1}' -f [Web.HttpUtility]::UrlEncode($_),[Web.HttpUtility]::UrlEncode($Parameter[$_]) }
-        $body = $body -join '&'
-        $contentType = 'application/x-www-form-urlencoded; charset=utf-8'
-        $debugBody = $Parameter.Keys | ForEach-Object {
-            $value = $Parameter[$_]
-            if( $_ -eq 'API_Key' )
-            {
-                $value = '********'
-            }
-            '{0}={1}' -f $_,$value }
+        if( $AsJson )
+        {
+            $body = $Parameter | ConvertTo-Json -Depth ([int32]::MaxValue)
+            $debugBody = $body -replace '("API_Key": +")[^"]+','$1********'
+        }
+        else
+        {
+            $body = $Parameter.Keys | ForEach-Object { '{0}={1}' -f [Web.HttpUtility]::UrlEncode($_),[Web.HttpUtility]::UrlEncode($Parameter[$_]) }
+            $body = $body -join '&'
+            $contentType = 'application/x-www-form-urlencoded; charset=utf-8'
+            $debugBody = $Parameter.Keys | ForEach-Object {
+                $value = $Parameter[$_]
+                if( $_ -eq 'API_Key' )
+                {
+                    $value = '********'
+                }
+                '{0}={1}' -f $_,$value }
+        }
     }
 
     $headers = @{
@@ -78,11 +86,19 @@ function Invoke-ProGetRestMethod
         Write-Debug -Message ('{0}: {1}' -f $headerName,$value)
     }
     
-    $debugBody | Write-Debug
+    if( $debugBody )
+    {
+        $debugBody | Write-Debug
+    }
 
     try
     {
-        Invoke-RestMethod -Method $Method -Uri $uri -Body $body -ContentType $contentType -Headers $headers | 
+        $bodyParam = @{ }
+        if( $body )
+        {
+            $bodyParam['Body'] = $body
+        }
+        Invoke-RestMethod -Method $Method -Uri $uri @bodyParam -ContentType $contentType -Headers $headers | 
             ForEach-Object { $_ } 
     }
     catch [Net.WebException]

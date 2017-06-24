@@ -86,8 +86,9 @@ do
 {
     Write-Verbose -Message ('Making attempt {0,3} to see if ProGet is activated.' -f $numAttempts) -Verbose
 
-    $wakeUpProget = Invoke-ProGetNativeApiMethod -Session $ProGetSession -Name 'Feeds_GetFeeds' -Parameter @{IncludeInactive_Indicator = $true}
-    $readyToGo = $wakeUpProget -match '<!DOCTYPE html>'
+    $feeds = Invoke-ProGetNativeApiMethod -Session $ProGetSession -Name 'Feeds_GetFeeds' -Parameter @{IncludeInactive_Indicator = $true}
+    $feeds | Out-String | Write-Verbose -Verbose
+    $readyToGo = $feeds -notmatch '<!DOCTYPE html>'
     if( $readyToGo )
     {
         break
