@@ -8,7 +8,7 @@ $session = New-ProGetTestSession
 
 Describe 'Invoke-ProGetNativeApiMethod.when making a GET request' {
     
-    New-ProGetFeed -ProGetSession $session -FeedName 'Fubar' -FeedType 'ProGet' -ErrorAction Ignore
+    New-ProGetFeed -Session $session -FeedName 'Fubar' -FeedType 'ProGet' -ErrorAction Ignore
 
     # This failed in early versions of the module.
     $Global:Error.Clear()

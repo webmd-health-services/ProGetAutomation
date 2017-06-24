@@ -27,8 +27,8 @@ Describe 'New-ProGetFeed.create a new Universal package feed' {
     $session = New-ProGetTestSession
     Initialize-ProGetFeedTests -ProGetSession $session
 
-    New-ProGetFeed -ProGetSession $session -FeedType 'ProGet' -FeedName 'FeedTest'
-    $feedExists = Test-ProGetFeed -ProGetSession $session -FeedType 'ProGet' -FeedName 'FeedTest'
+    New-ProGetFeed -Session $session -FeedType 'ProGet' -FeedName 'FeedTest'
+    $feedExists = Test-ProGetFeed -Session $session -FeedType 'ProGet' -FeedName 'FeedTest'
     
     It 'should write no errors' {
         $Global:Error | Should BeNullOrEmpty
@@ -44,8 +44,8 @@ Describe 'New-ProGetFeed.when attempting to create a duplicate package feed' {
     $session = New-ProGetTestSession
     Initialize-ProGetFeedTests -ProGetSession $session
 
-    New-ProGetFeed -ProGetSession $session -FeedType 'ProGet' -FeedName 'FeedTest'
-    New-ProGetFeed -ProGetSession $session -FeedType 'ProGet' -FeedName 'FeedTest' -ErrorAction SilentlyContinue
+    New-ProGetFeed -Session $session -FeedType 'ProGet' -FeedName 'FeedTest'
+    New-ProGetFeed -Session $session -FeedType 'ProGet' -FeedName 'FeedTest' -ErrorAction SilentlyContinue
     
     It 'should write an error that the duplicate feed already exists' {
         $Global:Error | Should Match 'A feed with that name already exists'
@@ -57,8 +57,8 @@ Describe 'New-ProGetFeed.when creating a duplicate package feed while ignoring e
     $session = New-ProGetTestSession
     Initialize-ProGetFeedTests -ProGetSession $session
     
-    New-ProGetFeed -ProGetSession $session -FeedType 'ProGet' -FeedName 'FeedTest'
-    New-ProGetFeed -ProGetSession $session -FeedType 'ProGet' -FeedName 'FeedTest' -ErrorAction Ignore
+    New-ProGetFeed -Session $session -FeedType 'ProGet' -FeedName 'FeedTest'
+    New-ProGetFeed -Session $session -FeedType 'ProGet' -FeedName 'FeedTest' -ErrorAction Ignore
     
     It 'should write no errors' {
         $Global:Error | Should BeNullOrEmpty
@@ -71,7 +71,7 @@ Describe 'New-ProGetFeed.if session object contains an invalid API key' {
     Initialize-ProGetFeedTests -ProGetSession $session
     $session.ApiKey = '==InvalidAPIKey=='
    
-    New-ProGetFeed -ProGetSession $session -FeedType 'ProGet' -FeedName 'FeedTest' -ErrorAction SilentlyContinue
+    New-ProGetFeed -Session $session -FeedType 'ProGet' -FeedName 'FeedTest' -ErrorAction SilentlyContinue
     
     It 'should write an error if the specified API key is invalid' {
         $Global:Error | Should Match 'Use of the native API is forbidden with the specified API key'
@@ -84,7 +84,7 @@ Describe 'New-ProGetFeed.if session object does not contain an API key' {
     Initialize-ProGetFeedTests -ProGetSession $session
     $session.ApiKey = $null
     
-    New-ProGetFeed -ProGetSession $session -FeedType 'ProGet' -FeedName 'FeedTest' -ErrorAction SilentlyContinue
+    New-ProGetFeed -Session $session -FeedType 'ProGet' -FeedName 'FeedTest' -ErrorAction SilentlyContinue
     
     It 'should write an error if no API key is specified' {
         $Global:Error | Should Match 'This function uses ProGet''s Native API, which requires an API key.'
@@ -96,7 +96,7 @@ Describe 'New-ProGetFeed.if specified feed type is invalid' {
     $session = New-ProGetTestSession
     Initialize-ProGetFeedTests -ProGetSession $session
 
-    New-ProGetFeed -ProGetSession $session -FeedType 'InvalidFeedType' -FeedName 'FeedTest' -ErrorAction SilentlyContinue
+    New-ProGetFeed -Session $session -FeedType 'InvalidFeedType' -FeedName 'FeedTest' -ErrorAction SilentlyContinue
     
     It 'should write an error if feed type parameter contains undefined value' {
         $Global:Error | Should Match 'The INSERT statement conflicted with the CHECK constraint "CK__Feeds__FeedType_Name"'

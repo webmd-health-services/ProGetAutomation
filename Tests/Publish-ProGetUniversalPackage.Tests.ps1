@@ -26,7 +26,7 @@ function Initialize-PublishProGetPackageTests
         }
     }
     
-    New-ProGetFeed -ProGetSession $ProGetSession -FeedType 'ProGet' -FeedName $feedName
+    New-ProGetFeed -Session $ProGetSession -FeedType 'ProGet' -FeedName $feedName
     $feedId = (Invoke-ProGetNativeApiMethod -Session $ProGetSession -Name 'Feeds_GetFeed' -Parameter @{Feed_Name = $feedName}).Feed_Id
     
     return $feedId
@@ -38,7 +38,7 @@ Describe 'Publish-ProGetUniversalPackage.publish a new Universal package' {
     $session = New-ProGetTestSession
     [String]$feedId = Initialize-PublishProGetPackageTests -ProGetSession $session
     
-    Publish-ProGetUniversalPackage -ProGetSession $session -FeedName $feedName -PackagePath $packagePath
+    Publish-ProGetUniversalPackage -Session $session -FeedName $feedName -PackagePath $packagePath
     $packageExists = Invoke-ProGetNativeApiMethod -Session $session -Name 'ProGetPackages_GetPackages' -Parameter @{Feed_Id = $feedId; Package_Name = $packageName}
 
     It 'should write no errors' {
@@ -46,7 +46,7 @@ Describe 'Publish-ProGetUniversalPackage.publish a new Universal package' {
     }
     
     It 'should publish the package to the Apps universal package feed' {
-        $packageExists | Should Be $true
+        $packageExists | Should -Not -BeNullOrEmpty
     }
 }
 
@@ -56,7 +56,7 @@ Describe 'Publish-ProGetUniversalPackage.invalid credentials are passed' {
     [String]$feedId = Initialize-PublishProGetPackageTests -ProGetSession $session
     $session.Credential = New-Credential -UserName 'Invalid' -Password 'Credentia'
 
-    Publish-ProGetUniversalPackage -ProGetSession $session -FeedName $feedName -PackagePath $packagePath -ErrorAction SilentlyContinue
+    Publish-ProGetUniversalPackage -Session $session -FeedName $feedName -PackagePath $packagePath -ErrorAction SilentlyContinue
     $packageExists = Invoke-ProGetNativeApiMethod -Session $session -Name 'ProGetPackages_GetPackages' -Parameter @{Feed_Id = $feedId; Package_Name = $packageName}
 
     It 'should write an error that the action cannot be performed' {
@@ -74,7 +74,7 @@ Describe 'Publish-ProGetUniversalPackage.no credentials are passed' {
     [String]$feedId = Initialize-PublishProGetPackageTests -ProGetSession $session
     $session.Credential = $null
 
-    Publish-ProGetUniversalPackage -ProGetSession $session -FeedName $feedName -PackagePath $packagePath -ErrorAction SilentlyContinue
+    Publish-ProGetUniversalPackage -Session $session -FeedName $feedName -PackagePath $packagePath -ErrorAction SilentlyContinue
     $packageExists = Invoke-ProGetNativeApiMethod -Session $session -Name 'ProGetPackages_GetPackages' -Parameter @{Feed_Id = $feedId; Package_Name = $packageName}
     
     It 'should write an error that a PSCredential object must be provided' {
@@ -92,7 +92,7 @@ Describe 'Publish-ProGetUniversalPackage.specified target feed does not exist' {
     [String]$feedId = Initialize-PublishProGetPackageTests -ProGetSession $session
     $feedName = 'InvalidAppFeed'
 
-    Publish-ProGetUniversalPackage -ProGetSession $session -FeedName $feedName -PackagePath $packagePath -ErrorAction SilentlyContinue
+    Publish-ProGetUniversalPackage -Session $session -FeedName $feedName -PackagePath $packagePath -ErrorAction SilentlyContinue
     $packageExists = Invoke-ProGetNativeApiMethod -Session $session -Name 'ProGetPackages_GetPackages' -Parameter @{Feed_Id = $feedId; Package_Name = $packageName}
 
     It 'should write an error that the defined feed is invalid' {
@@ -110,7 +110,7 @@ Describe 'Publish-ProGetUniversalPackage.package does not exist at specified pac
     [String]$feedId = Initialize-PublishProGetPackageTests -ProGetSession $session
     $packagePath = '.\BadPackagePath'
 
-    Publish-ProGetUniversalPackage -ProGetSession $session -FeedName $feedName -PackagePath $packagePath -ErrorAction SilentlyContinue
+    Publish-ProGetUniversalPackage -Session $session -FeedName $feedName -PackagePath $packagePath -ErrorAction SilentlyContinue
     $packageExists = Invoke-ProGetNativeApiMethod -Session $session -Name 'ProGetPackages_GetPackages' -Parameter @{Feed_Id = $feedId; Package_Name = $packageName}
 
     It 'should write an error that the package could not be found' {

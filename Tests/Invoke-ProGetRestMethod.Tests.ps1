@@ -7,7 +7,7 @@ Set-StrictMode -Version 'Latest'
 $session = New-ProGetTestSession
 Describe 'Invoke-ProGetRestMethod.when making a GET request' {
     
-    New-ProGetFeed -ProGetSession $session -FeedName 'Fubar' -FeedType 'ProGet' -ErrorAction Ignore
+    New-ProGetFeed -Session $session -FeedName 'Fubar' -FeedType 'ProGet' -ErrorAction Ignore
 
     $Global:Error.Clear()
 
