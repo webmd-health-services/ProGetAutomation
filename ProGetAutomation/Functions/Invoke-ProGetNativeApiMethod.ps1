@@ -40,6 +40,6 @@ function Invoke-ProGetNativeApiMethod
 
     Set-StrictMode -Version 'Latest'
 
-    Invoke-ProGetRestMethod -Session $Session -Path ('/api/json/{0}' -f $Name) -Method $Method -Parameter $Parameter -AsJson
+    Invoke-ProGetRestMethod -Session $Session -Name ('json/{0}' -f $Name) -Method $Method -Parameter $Parameter -AsJson
 
 }
