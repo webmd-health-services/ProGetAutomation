@@ -75,7 +75,7 @@ function Invoke-ProGetRestMethod
     foreach( $headerName in $headers.Keys )
     {
         $value = $headers[$headerName]
-        if( $headerName -eq 'X-ApiKey' )
+        if( @( 'X-ApiKey' ) -contains $headerName )
         {
             $value = '*' * 8
         }
@@ -95,7 +95,14 @@ function Invoke-ProGetRestMethod
         {
             $bodyParam['Body'] = $body
         }
-        Invoke-RestMethod -Method $Method -Uri $uri @bodyParam -ContentType $contentType -Headers $headers | 
+
+        $credentialParam = @{ }
+        if( $Session.Credential )
+        {
+            $credentialParam['Credential'] = $Session.Credential
+        }
+
+        Invoke-RestMethod -Method $Method -Uri $uri @bodyParam -ContentType $contentType -Headers $headers @credentialParam | 
             ForEach-Object { $_ } 
     }
     catch [Net.WebException]

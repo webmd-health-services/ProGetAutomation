@@ -84,7 +84,7 @@ $pauseDuration = 1
 $readyToGo = $false
 do
 {
-    Write-Verbose -Message ('Making attempt {0,3} to see if ProGet is activated.' -f $numAttempts) -Verbose
+    Write-Verbose -Message ('Making attempt {0,3} to see if ProGet is activated.' -f $numAttempts)
 
     New-ProGetFeed -Session $ProGetSession -FeedName 'ProGetAutomationTest' -FeedType 'ProGet' -ErrorAction Ignore
     $feed = Invoke-ProGetNativeApiMethod -Session $ProGetSession -Name 'Feeds_GetFeeds' -Parameter @{ IncludeInactive_Indicator = $true }
