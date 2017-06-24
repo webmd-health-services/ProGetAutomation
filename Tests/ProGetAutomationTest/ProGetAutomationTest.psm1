@@ -77,31 +77,31 @@ function New-ProGetTestSession
 
 # ProGet does not respond correctly to Native API calls upon installation. Initial calls are instead returned the complete HTML of the ProGet login screen.
 # This code ensures that ProGet is awake and functioning correctly for unit testing during the build process and future API calls
-$ProGetSession = New-ProGetTestSession
-$maxWakeAttempts = 600
-$numAttempts = 0
-$pauseDuration = 1
-$readyToGo = $false
-do
-{
-    Write-Verbose -Message ('Making attempt {0,3} to see if ProGet is activated.' -f $numAttempts) -Verbose
-
-    $feeds = Invoke-ProGetNativeApiMethod -Session $ProGetSession -Name 'Feeds_GetFeeds' -Parameter @{IncludeInactive_Indicator = $true}
-    $feeds | Out-String | Write-Verbose -Verbose
-    $readyToGo = $feeds -notmatch '<!DOCTYPE html>'
-    if( $readyToGo )
-    {
-        break
-    }
-
-    Start-Sleep -Seconds $pauseDuration
-    $numAttempts++
-}
-while(($numAttempts++ -lt $maxWakeAttempts))
-
-if( -not $readyToGo )
-{
-    throw 'The ProGet Native API is not responding. Testing cannot begin until ProGet is accepting API calls'
-}
+#$ProGetSession = New-ProGetTestSession
+#$maxWakeAttempts = 600
+#$numAttempts = 0
+#$pauseDuration = 1
+#$readyToGo = $false
+#do
+#{
+#    Write-Verbose -Message ('Making attempt {0,3} to see if ProGet is activated.' -f $numAttempts) -Verbose
+#
+#    $feeds = Invoke-ProGetNativeApiMethod -Session $ProGetSession -Name 'Feeds_GetFeeds' -Parameter @{IncludeInactive_Indicator = $true}
+#    $feeds | Out-String | Write-Verbose -Verbose
+#    $readyToGo = $feeds -notmatch '<!DOCTYPE html>'
+#    if( $readyToGo )
+#    {
+#        break
+#    }
+#
+#    Start-Sleep -Seconds $pauseDuration
+#    $numAttempts++
+#}
+#while(($numAttempts++ -lt $maxWakeAttempts))
+#
+#if( -not $readyToGo )
+#{
+#    throw 'The ProGet Native API is not responding. Testing cannot begin until ProGet is accepting API calls'
+#}
 
 Export-ModuleMember -Function '*'
