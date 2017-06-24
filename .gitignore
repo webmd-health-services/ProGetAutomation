@@ -2,3 +2,5 @@ Carbon/**
 Pester/**
 .output/**
 *.log
+*.orig
+.psgallerykey
