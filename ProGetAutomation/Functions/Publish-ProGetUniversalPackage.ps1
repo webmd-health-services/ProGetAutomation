@@ -72,7 +72,7 @@ function Publish-ProGetUniversalPackage
         & $upackPath 'push' $PackagePath $proGetPackageUri $userArg
         if( $LASTEXITCODE )
         {
-            Write-Error -Message ('Failed to upload ''{0}'' to ''{1}'' as ''{2}'': ''{3}'' returned with exit code ''{4}''.' -f $PackagePath,$proGetPackageUri,$proGetCredential.UserName,$upackPath,$LASTEXITCODE)
+            Write-Error -Message ('Failed to upload ''{0}'' to ''{1}''{2}: ''{3}'' returned with exit code ''{4}''.' -f $PackagePath,$proGetPackageUri,$userMsg,$upackPath,$LASTEXITCODE)
             return
         }
     }
