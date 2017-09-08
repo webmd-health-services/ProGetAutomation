@@ -20,7 +20,7 @@ Import-Module -Name (Join-Path -Path $PSScriptRoot -ChildPath 'Carbon') -Force -
 
 $runningUnderAppVeyor = (Test-Path -Path 'env:APPVEYOR')
 
-$version = '4.7.13'
+$version = '4.7.14'
 
 $installerPath = Join-Path -Path $env:TEMP -ChildPath ('ProGetInstaller-SQL-{0}.exe' -f $version)
 if( -not (Test-Path -Path $installerPath -PathType Leaf) )
@@ -38,7 +38,7 @@ if( -not $pgInstallInfo )
     $bmInstallInfo = Get-ProgramInstallInfo -Name 'BuildMaster'
     if ($bmInstallInfo)
     {
-        Write-Verbose -Message 'BuildMaster is installed. ProGet will join existing SQL Server instance..'
+        Write-Verbose -Message 'BuildMaster is installed. ProGet will join existing SQL Server instance.'
         $bmConfigLocation = Join-Path -Path (Get-ItemProperty -Path 'HKLM:\Software\Inedo\BuildMaster').ServicePath -ChildPath 'app_appSettings.config'
     
         $xml = [xml](Get-Content -Path $bmConfigLocation) 
