@@ -1,6 +1,8 @@
 
-& (Join-Path -Path $PSScriptRoot -ChildPath 'Initialize-Tests.ps1' -Resolve)
+#Requires -Version 4
+Set-StrictMode -Version 'Latest'
 
+& (Join-Path -Path $PSScriptRoot -ChildPath 'Initialize-Tests.ps1' -Resolve)
 
 $packagePath = Join-Path -Path $PSScriptRoot -ChildPath '.\UniversalPackageTest-0.1.1.upack'
 $packageName = 'UniversalPackageTest'
@@ -60,7 +62,7 @@ Describe 'Publish-ProGetUniversalPackage.invalid credentials are passed' {
     $packageExists = Invoke-ProGetNativeApiMethod -Session $session -Name 'ProGetPackages_GetPackages' -Parameter @{Feed_Id = $feedId; Package_Name = $packageName}
 
     It 'should write an error that the action cannot be performed' {
-        $Global:Error | Should Match 'Anonymous is not permitted to perform the Feeds_AddPackage task for the current scope.'
+        $Global:Error | Where-Object { $_ -match 'Failed to upload' } | Should -Not -BeNullOrEmpty
     }
     
     It 'should not publish the package to the Apps universal package feed' {
@@ -72,13 +74,17 @@ Describe 'Publish-ProGetUniversalPackage.no credentials are passed' {
     
     $session = New-ProGetTestSession
     [String]$feedId = Initialize-PublishProGetPackageTests -ProGetSession $session
+    $credential = $session.Credential
     $session.Credential = $null
 
-    Publish-ProGetUniversalPackage -Session $session -FeedName $feedName -PackagePath $packagePath -ErrorAction SilentlyContinue
+    Publish-ProGetUniversalPackage -Session $session -FeedName $feedName -PackagePath $packagePath #-ErrorAction SilentlyContinue
+
+    $session.Credential = $credential
     $packageExists = Invoke-ProGetNativeApiMethod -Session $session -Name 'ProGetPackages_GetPackages' -Parameter @{Feed_Id = $feedId; Package_Name = $packageName}
     
     It 'should write an error that a PSCredential object must be provided' {
-        $Global:Error | Should Match 'Unable to upload'
+        $Global:Error | Where-Object { $_ -match 'Failed to upload' } | Should -Not -BeNullOrEmpty
+        $Global:Error | Where-Object { $_ -match '401\ \(Unauthorized\)' } | Should -Not -BeNullOrEmpty
     } 
     
     It 'should not publish the package to the Apps universal package feed' {
@@ -96,7 +102,8 @@ Describe 'Publish-ProGetUniversalPackage.specified target feed does not exist' {
     $packageExists = Invoke-ProGetNativeApiMethod -Session $session -Name 'ProGetPackages_GetPackages' -Parameter @{Feed_Id = $feedId; Package_Name = $packageName}
 
     It 'should write an error that the defined feed is invalid' {
-        $Global:Error | Should Match ('The remote server returned an error:')
+        $Global:Error | Where-Object { $_ -match 'Failed to upload' } | Should -Not -BeNullOrEmpty
+        $Global:Error | Where-Object { $_ -match '404\ \(Not Found\)' } | Should -Not -BeNullOrEmpty
     }
     
     It 'should not publish the package to the Apps universal package feed' {
@@ -114,7 +121,7 @@ Describe 'Publish-ProGetUniversalPackage.package does not exist at specified pac
     $packageExists = Invoke-ProGetNativeApiMethod -Session $session -Name 'ProGetPackages_GetPackages' -Parameter @{Feed_Id = $feedId; Package_Name = $packageName}
 
     It 'should write an error that the package could not be found' {
-        $Global:Error | Should Match 'Could not find file'
+        $Global:Error | Should Match 'does not exist'
     }
     
     It 'should not publish the package to the Apps universal package feed' {
