@@ -84,18 +84,17 @@ $pauseDuration = 1
 $readyToGo = $false
 do
 {
-    Write-Verbose -Message ('Making attempt {0,3} to see if ProGet is activated.' -f $numAttempts)
+    Write-Verbose -Message ('Making attempt {0,3} to see if ProGet is activated.' -f $numAttempts) -Verbose
 
     New-ProGetFeed -Session $ProGetSession -FeedName 'ProGetAutomationTest' -FeedType 'ProGet' -ErrorAction Ignore
     $feed = Invoke-ProGetNativeApiMethod -Session $ProGetSession -Name 'Feeds_GetFeeds' -Parameter @{ IncludeInactive_Indicator = $true }
-    if( $feed )
+    if( $feed -and ($feed | Select-Object -First 1 | Get-Member -Name 'Feed_Id') )
     {
         $readyToGo = $true
         break
     }
 
     Start-Sleep -Seconds $pauseDuration
-    $numAttempts++
 }
 while(($numAttempts++ -lt $maxWakeAttempts))
 
