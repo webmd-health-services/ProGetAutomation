@@ -52,6 +52,34 @@ Describe 'Publish-ProGetUniversalPackage.publish a new Universal package' {
     }
 }
 
+Describe 'Publish-ProGetUniversalPackage.publish an existing package' {
+    
+    $session = New-ProGetTestSession
+    [String]$feedId = Initialize-PublishProGetPackageTests -ProGetSession $session
+
+    Publish-ProGetUniversalPackage -Session $session -FeedName $feedName -PackagePath $packagePath
+    Publish-ProGetUniversalPackage -Session $session -FeedName $feedName -PackagePath $packagePath -ErrorAction SilentlyContinue
+    $packageExists = Invoke-ProGetNativeApiMethod -Session $session -Name 'ProGetPackages_GetPackages' -Parameter @{Feed_Id = $feedId; Package_Name = $packageName}
+
+    It 'should write an error that package exists' {
+        $Global:Error | Should -Match 'already exists'
+    }
+}
+
+Describe 'Publish-ProGetUniversalPackage.when replacing an existing package' {
+    
+    $session = New-ProGetTestSession
+    [String]$feedId = Initialize-PublishProGetPackageTests -ProGetSession $session
+
+    Publish-ProGetUniversalPackage -Session $session -FeedName $feedName -PackagePath $packagePath
+    Publish-ProGetUniversalPackage -Session $session -FeedName $feedName -PackagePath $packagePath -Force
+    $packageExists = Invoke-ProGetNativeApiMethod -Session $session -Name 'ProGetPackages_GetPackages' -Parameter @{Feed_Id = $feedId; Package_Name = $packageName}
+
+    It 'should replace the package' {
+        $Global:Error | Should -BeNullOrEmpty
+    }
+}
+
 Describe 'Publish-ProGetUniversalPackage.invalid credentials are passed' {
     
     $session = New-ProGetTestSession
@@ -77,7 +105,7 @@ Describe 'Publish-ProGetUniversalPackage.no credentials are passed' {
     $credential = $session.Credential
     $session.Credential = $null
 
-    Publish-ProGetUniversalPackage -Session $session -FeedName $feedName -PackagePath $packagePath #-ErrorAction SilentlyContinue
+    Publish-ProGetUniversalPackage -Session $session -FeedName $feedName -PackagePath $packagePath -ErrorAction SilentlyContinue
 
     $session.Credential = $credential
     $packageExists = Invoke-ProGetNativeApiMethod -Session $session -Name 'ProGetPackages_GetPackages' -Parameter @{Feed_Id = $feedId; Package_Name = $packageName}
@@ -126,5 +154,65 @@ Describe 'Publish-ProGetUniversalPackage.package does not exist at specified pac
     
     It 'should not publish the package to the Apps universal package feed' {
         $packageExists | Should Not Be $true
+    }
+}
+
+Describe 'Publish-ProGetUniversalPackage.when package isn''t a ZIP file' {
+    $session = New-ProGetTestSession
+    [String]$feedId = Initialize-PublishProGetPackageTests -ProGetSession $session
+    Publish-ProGetUniversalPackage -Session $session -FeedName $feedName -PackagePath $PSCommandPath -ErrorAction SilentlyContinue
+    $packageExists = Invoke-ProGetNativeApiMethod -Session $session -Name 'ProGetPackages_GetPackages' -Parameter @{Feed_Id = $feedId; }
+
+    It ('should fail') {
+        $Global:Error | Should -Not -BeNullOrEmpty
+    }
+
+    It ('should not publish the package') {
+        $packageExists | Should -BeNullOrEmpty
+    }
+}
+
+Describe 'Publish-ProGetUniversalPackage.when package contains invalid upack.json' {
+    $session = New-ProGetTestSession
+    [String]$feedId = Initialize-PublishProGetPackageTests -ProGetSession $session
+    Publish-ProGetUniversalPackage -Session $session -FeedName $feedName -PackagePath (Join-Path -Path $PSScriptRoot -ChildPath 'UniversalInvalidUpackJson.upack') -ErrorAction SilentlyContinue
+    $packages = Invoke-ProGetNativeApiMethod -Session $session -Name 'ProGetPackages_GetPackages' -Parameter @{Feed_Id = $feedId; }
+
+    It ('should fail') {
+        $Global:Error | Where-Object { $_ -match 'must be a valid JSON file' } | Should -Not -BeNullOrEmpty
+    }
+
+    It ('should not publish any packages') {
+        $packages | Should -BeNullOrEmpty
+    }
+}
+
+Describe 'Publish-ProGetUniversalPackage.when package contains no upack.json' {
+    $session = New-ProGetTestSession
+    [String]$feedId = Initialize-PublishProGetPackageTests -ProGetSession $session
+    Publish-ProGetUniversalPackage -Session $session -FeedName $feedName -PackagePath (Join-Path -Path $PSScriptRoot -ChildPath 'UniversalNoUpackJson.upack') -ErrorAction SilentlyContinue
+    $packages = Invoke-ProGetNativeApiMethod -Session $session -Name 'ProGetPackages_GetPackages' -Parameter @{Feed_Id = $feedId; }
+
+    It ('should fail') {
+        $Global:Error | Where-Object { $_ -match 'must contain a upack\.json' } | Should -Not -BeNullOrEmpty
+    }
+
+    It ('should not publish any packages') {
+        $packages | Should -BeNullOrEmpty
+    }
+}
+
+Describe 'Publish-ProGetUniversalPackage.when upack.json missing name and version properties' {
+    $session = New-ProGetTestSession
+    [String]$feedId = Initialize-PublishProGetPackageTests -ProGetSession $session
+    Publish-ProGetUniversalPackage -Session $session -FeedName $feedName -PackagePath (Join-Path -Path $PSScriptRoot -ChildPath 'UniversalUpackJsonMissingNameAndVersion.upack') -ErrorAction SilentlyContinue
+    $packages = Invoke-ProGetNativeApiMethod -Session $session -Name 'ProGetPackages_GetPackages' -Parameter @{Feed_Id = $feedId; }
+
+    It ('should fail') {
+        $Global:Error | Where-Object { $_ -match '''name'' and ''version''' } | Should -Not -BeNullOrEmpty
+    }
+
+    It ('should not publish any packages') {
+        $packages | Should -BeNullOrEmpty
     }
 }
