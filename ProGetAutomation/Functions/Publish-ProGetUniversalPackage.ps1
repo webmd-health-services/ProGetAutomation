@@ -183,10 +183,36 @@ See http://inedo.com/support/documentation/various/universal-packages/universal-
         {
             $networkCred = $proGetCredential.GetNetworkCredential()
         }
+
         $maxDuration = New-Object 'TimeSpan' 0,0,$Timeout
+
+        [Net.Http.HttpClientHandler]$httpClientHandler = $null
+        [Net.Http.HttpClient]$httpClient = $null
+        [IO.FileStream]$packageStream = $null
+        [Net.Http.StreamContent]$streamContent = $null
+        [Threading.Tasks.Task[Net.Http.HttpResponseMessage]]$httpResponseMessage = $null
+        [Net.Http.HttpResponseMessage]$response = $null
         try
         {
-            $response = [ProGetAutomation.WebClient]::UploadFile($PackagePath,$proGetPackageUri,$networkCred,$maxDuration)
+            $httpClientHandler = New-Object 'Net.Http.HttpClientHandler'
+            if( $proGetCredential )
+            {
+                $httpClientHandler.UseDefaultCredentials = $false
+                $httpClientHandler.Credentials = $networkCred
+            }
+
+            $httpClientHandler.PreAuthenticate = $true;
+
+            $httpClient = New-Object 'Net.Http.HttpClient' ([Net.Http.HttpMessageHandler]$httpClientHandler)
+            $httpClient.Timeout = $maxDuration
+
+            $packageStream = New-Object 'IO.FileStream' ($PackagePath, 'Open', 'Read')
+            $streamContent = New-Object 'Net.Http.StreamContent' ([IO.Stream]$packageStream)
+            $streamContent.Headers.ContentType = New-Object 'Net.Http.Headers.MediaTypeHeaderValue' ('application/octet-stream')
+            $httpResponseMessage = $httpClient.PutAsync($proGetPackageUri, [Net.Http.HttpContent]$streamContent)
+            $httpResponseMessage.Wait($maxDuration)
+                        
+            $response = $httpResponseMessage.Result
             if( -not $response.IsSuccessStatusCode )
             {
                 Write-Error -Message ('Failed to upload ''{0}'' to ''{1}''. We received the following ''{2} {3}'' response:{4} {4}{5}{4} {4}' -f $PackagePath,$proGetPackageUri,[int]$response.StatusCode,$response.StatusCode,[Environment]::NewLine,$response.Content.ReadAsStringAsync().Result)
@@ -210,52 +236,14 @@ See http://inedo.com/support/documentation/various/universal-packages/universal-
             Write-Error -Message ('An unknown error occurred uploading ''{0}'' to ''{1}'': {2}' -f $PackagePath,$proGetPackageUri,$_)
             return
         }
-    }
-}
-
-Add-Type -ReferencedAssemblies 'System.Net.Http' -TypeDefinition @'
-using System;
-using System.ComponentModel;
-using System.IO;
-using System.IO.Compression;
-using System.Net;
-using System.Net.Http;
-using System.Net.Http.Headers;
-using System.Threading.Tasks;
-
-namespace ProGetAutomation
-{
-    public static class WebClient
-    {
-        public static HttpResponseMessage UploadFile(string path, Uri uri, NetworkCredential authentication, TimeSpan timeout)
+        finally
         {
-            using( HttpClientHandler httpClientHandler = new HttpClientHandler() )
-            {
-                int num1 = authentication == null ? 1 : 0;
-                httpClientHandler.UseDefaultCredentials = num1 != 0;
-                NetworkCredential networkCredential = authentication;
-                httpClientHandler.Credentials = (ICredentials) networkCredential;
-
-                int num2 = 1;
-                httpClientHandler.PreAuthenticate = num2 != 0;
-
-                using( HttpClient httpClient = new HttpClient((HttpMessageHandler) httpClientHandler) )
-                {
-                    httpClient.Timeout = timeout;
-
-                    using( FileStream packageStream = new FileStream(path, FileMode.Open, FileAccess.Read) )
-                    using( StreamContent streamContent = new StreamContent((Stream) packageStream) )
-                    {
-                        streamContent.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
-                        using (Task<HttpResponseMessage> httpResponseMessage = httpClient.PutAsync(uri, (HttpContent) streamContent))
-                        {
-                            httpResponseMessage.Wait(timeout);
-                            return httpResponseMessage.Result;
-                        }
-                    }
-                }
-            }
+            $disposables = @( 'httpClientHandler', 'httpClient', 'packageStream', 'streamContent', 'httpResponseMessage', 'response' ) 
+            $disposables |
+                ForEach-Object { Get-Variable -Name $_ -ValueOnly -ErrorAction Ignore } |
+                Where-Object { $_ -ne $null } |
+                ForEach-Object { $_.Dispose() }
+            $disposables | ForEach-Object { Remove-Variable -Name $_ -Force -ErrorAction Ignore }
         }
     }
 }
-'@
