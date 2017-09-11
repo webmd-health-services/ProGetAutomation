@@ -112,7 +112,7 @@ Describe 'Publish-ProGetUniversalPackage.no credentials are passed' {
     
     It 'should write an error that a PSCredential object must be provided' {
         $Global:Error | Where-Object { $_ -match 'Failed to upload' } | Should -Not -BeNullOrEmpty
-        $Global:Error | Where-Object { $_ -match '401\ \(Unauthorized\)' } | Should -Not -BeNullOrEmpty
+        $Global:Error | Where-Object { $_ -match '401\ Unauthorized' } | Should -Not -BeNullOrEmpty
     } 
     
     It 'should not publish the package to the Apps universal package feed' {
@@ -131,7 +131,7 @@ Describe 'Publish-ProGetUniversalPackage.specified target feed does not exist' {
 
     It 'should write an error that the defined feed is invalid' {
         $Global:Error | Where-Object { $_ -match 'Failed to upload' } | Should -Not -BeNullOrEmpty
-        $Global:Error | Where-Object { $_ -match '404\ \(Not Found\)' } | Should -Not -BeNullOrEmpty
+        $Global:Error | Where-Object { $_ -match '404\ NotFound' } | Should -Not -BeNullOrEmpty
     }
     
     It 'should not publish the package to the Apps universal package feed' {

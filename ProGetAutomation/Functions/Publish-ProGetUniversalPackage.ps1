@@ -178,42 +178,84 @@ See http://inedo.com/support/documentation/various/universal-packages/universal-
     {
         Write-Verbose -Message $operationDescription
 
+        $networkCred = $null
+        if( $proGetCredential )
+        {
+            $networkCred = $proGetCredential.GetNetworkCredential()
+        }
+        $maxDuration = New-Object 'TimeSpan' 0,0,$Timeout
         try
         {
-            $httpClientHandler = New-Object 'Net.Http.HttpClientHandler'
-            if( $proGetCredential )
+            $response = [ProGetAutomation.WebClient]::UploadFile($PackagePath,$proGetPackageUri,$networkCred,$maxDuration)
+            if( -not $response.IsSuccessStatusCode )
             {
-                $httpClientHandler.Credentials = $proGetCredential.GetNetworkCredential()
+                Write-Error -Message ('Failed to upload ''{0}'' to ''{1}''. We received the following ''{2} {3}'' response:{4} {4}{5}{4} {4}' -f $PackagePath,$proGetPackageUri,[int]$response.StatusCode,$response.StatusCode,[Environment]::NewLine,$response.Content.ReadAsStringAsync().Result)
+                return
+            }
+        }
+        catch
+        {
+            $ex = $_.Exception
+            while( $ex.InnerException )
+            {
+                $ex = $ex.InnerException
             }
 
-            $client = New-Object 'Net.Http.HttpClient' $httpClientHandler
-            $client.Timeout = $Timeout
-        
-            $packageStream = New-Object 'IO.FileStream' $PackagePath,([IO.FileMode]::Open),([IO.FileAccess]::Read)
+            if( $ex -is [Threading.Tasks.TaskCanceledException] )
+            {
+                Write-Error -Message ('Uploading file ''{0}'' to ''{1}'' was cancelled. This is usually because the upload took longer than the timeout, which was {2} second(s). Use the Timeout parameter to increase the upload timeout.' -f $PackagePath,$proGetPackageUri,$Timeout) 
+                return
+            }
 
-            $contentDispositionHeaderValue = New-Object 'Net.Http.Headers.ContentDispositionHeaderValue' 'form-data'
-	        $contentDispositionHeaderValue.Name = "fileData"
-		    $contentDispositionHeaderValue.FileName = (Split-Path -Path $PackagePath -Leaf)
-
-            $streamContent = New-Object 'Net.Http.StreamContent' $packageStream
-            $streamContent.Headers.ContentDisposition = $contentDispositionHeaderValue
-            $streamContent.Headers.ContentType = New-Object 'Net.Http.Headers.MediaTypeHeaderValue' 'application/octet-stream'
-            
-            $content = New-Object 'Net.Http.MultipartFormDataContent'
-            $content.Add($streamContent)
-
-            $responseTask = $client.PutAsync($proGetPackageUri, $content)
-            #if( -not $response.EnsureSuccessStatusCode() )
-            #{
-            #    Write-Error -Message ('Upload of package ''{0}'' to ''{1}'' failed: {2}' -f $PackagePath,$proGetPackageUri,$Timeout,$response.Content.ReadAsStringAsync())
-            #    return
-            #}
-        }
-        finally
-        {
-            @( 'httpClientHandler', 'client', 'packageStream', 'streamContent', 'responseTask' ) | 
-                ForEach-Object { Get-Variable -Name $_ -ValueOnly -ErrorAction Ignore } |
-                ForEach-Object { $_.Dispose() }
+            Write-Error -Message ('An unknown error occurred uploading ''{0}'' to ''{1}'': {2}' -f $PackagePath,$proGetPackageUri,$_)
+            return
         }
     }
 }
+
+Add-Type -ReferencedAssemblies 'System.Net.Http' -TypeDefinition @'
+using System;
+using System.ComponentModel;
+using System.IO;
+using System.IO.Compression;
+using System.Net;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Threading.Tasks;
+
+namespace ProGetAutomation
+{
+    public static class WebClient
+    {
+        public static HttpResponseMessage UploadFile(string path, Uri uri, NetworkCredential authentication, TimeSpan timeout)
+        {
+            using( HttpClientHandler httpClientHandler = new HttpClientHandler() )
+            {
+                int num1 = authentication == null ? 1 : 0;
+                httpClientHandler.UseDefaultCredentials = num1 != 0;
+                NetworkCredential networkCredential = authentication;
+                httpClientHandler.Credentials = (ICredentials) networkCredential;
+
+                int num2 = 1;
+                httpClientHandler.PreAuthenticate = num2 != 0;
+
+                using( HttpClient httpClient = new HttpClient((HttpMessageHandler) httpClientHandler) )
+                {
+                    httpClient.Timeout = timeout;
+
+                    using( FileStream packageStream = new FileStream(path, FileMode.Open, FileAccess.Read) )
+                    using( StreamContent streamContent = new StreamContent((Stream) packageStream) )
+                    {
+                        streamContent.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
+                        using (Task<HttpResponseMessage> httpResponseMessage = httpClient.PutAsync(uri, (HttpContent) streamContent))
+                        {
+                            httpResponseMessage.Wait(timeout);
+                            return httpResponseMessage.Result;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+'@
