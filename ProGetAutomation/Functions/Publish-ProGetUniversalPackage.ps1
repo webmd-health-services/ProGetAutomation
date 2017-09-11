@@ -30,6 +30,10 @@ function Publish-ProGetUniversalPackage
         # The path to the package that will be published to ProGet.
         $PackagePath,
 
+        [int]
+        # The timeout (in seconds) for the upload. The default is 100 seconds.
+        $Timeout = 100,
+
         [Switch]
         # Replace the package if it already exists in ProGet.
         $Force
@@ -39,7 +43,7 @@ function Publish-ProGetUniversalPackage
     Use-CallerPreference -Cmdlet $PSCmdlet -SessionState $ExecutionContext.SessionState
     
     $shouldProcessCaption = ('creating {0} package' -f $PackagePath)
-    $proGetPackageUri = [String]$Session.Uri + 'upack/' + $FeedName
+    $proGetPackageUri = New-Object 'Uri' $Session.Uri,('/upack/{0}' -f $FeedName)
     $proGetCredential = $Session.Credential
 
     $PackagePath = Resolve-Path -Path $PackagePath | Select-Object -ExpandProperty 'ProviderPath'
@@ -174,17 +178,42 @@ See http://inedo.com/support/documentation/various/universal-packages/universal-
     {
         Write-Verbose -Message $operationDescription
 
-        $userArg = ''
-        if( $proGetCredential )
+        try
         {
-            $userArg = '--user={0}:{1}' -f $proGetCredential.UserName,$proGetCredential.GetNetworkCredential().Password
-        }
+            $httpClientHandler = New-Object 'Net.Http.HttpClientHandler'
+            if( $proGetCredential )
+            {
+                $httpClientHandler.Credentials = $proGetCredential.GetNetworkCredential()
+            }
+
+            $client = New-Object 'Net.Http.HttpClient' $httpClientHandler
+            $client.Timeout = $Timeout
         
-        & $upackPath 'push' $PackagePath $proGetPackageUri $userArg
-        if( $LASTEXITCODE )
+            $packageStream = New-Object 'IO.FileStream' $PackagePath,([IO.FileMode]::Open),([IO.FileAccess]::Read)
+
+            $contentDispositionHeaderValue = New-Object 'Net.Http.Headers.ContentDispositionHeaderValue' 'form-data'
+	        $contentDispositionHeaderValue.Name = "fileData"
+		    $contentDispositionHeaderValue.FileName = (Split-Path -Path $PackagePath -Leaf)
+
+            $streamContent = New-Object 'Net.Http.StreamContent' $packageStream
+            $streamContent.Headers.ContentDisposition = $contentDispositionHeaderValue
+            $streamContent.Headers.ContentType = New-Object 'Net.Http.Headers.MediaTypeHeaderValue' 'application/octet-stream'
+            
+            $content = New-Object 'Net.Http.MultipartFormDataContent'
+            $content.Add($streamContent)
+
+            $responseTask = $client.PutAsync($proGetPackageUri, $content)
+            #if( -not $response.EnsureSuccessStatusCode() )
+            #{
+            #    Write-Error -Message ('Upload of package ''{0}'' to ''{1}'' failed: {2}' -f $PackagePath,$proGetPackageUri,$Timeout,$response.Content.ReadAsStringAsync())
+            #    return
+            #}
+        }
+        finally
         {
-            Write-Error -Message ('Failed to upload ''{0}'' to ''{1}''{2}: ''{3}'' returned with exit code ''{4}''.' -f $PackagePath,$proGetPackageUri,$userMsg,$upackPath,$LASTEXITCODE)
-            return
+            @( 'httpClientHandler', 'client', 'packageStream', 'streamContent', 'responseTask' ) | 
+                ForEach-Object { Get-Variable -Name $_ -ValueOnly -ErrorAction Ignore } |
+                ForEach-Object { $_.Dispose() }
         }
     }
 }
