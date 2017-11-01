@@ -32,7 +32,11 @@ function Invoke-ProGetRestMethod
 
         [Switch]
         # Send the request as JSON. Otherwise, the data is sent as name/value pairs.
-        $AsJson
+        $AsJson,
+        
+        # Send File as InFile parameter
+        [String]
+        $InFile
     )
 
     Set-StrictMode -Version 'Latest'
@@ -97,7 +101,6 @@ function Invoke-ProGetRestMethod
     {
         $debugBody | Write-Debug
     }
-
     $errorsAtStart = $Global:Error.Count
     try
     {
@@ -106,13 +109,16 @@ function Invoke-ProGetRestMethod
         {
             $bodyParam['Body'] = $body
         }
-
+        elseif( $Infile )
+        {
+            $body = @{ }
+            $bodyParam['Infile'] = $Infile
+        }
         $credentialParam = @{ }
         if( $Session.Credential )
         {
             $credentialParam['Credential'] = $Session.Credential
         }
-
         Invoke-RestMethod -Method $Method -Uri $uri @bodyParam -ContentType $contentType -Headers $headers @credentialParam | 
             ForEach-Object { $_ } 
     }
