@@ -1,14 +1,11 @@
 & (Join-Path -Path $PSScriptRoot -ChildPath 'Initialize-Tests.ps1' -Resolve)
 
-function GivenSession {
-    $uri = 'http://localhost:82/'
-    $uName = 'Admin'
-    $PWord = 'Admin'
-    $credential = New-Credential -UserName $uName -Password $PWord
-    $script:session = New-ProGetSession -Uri $uri -Credential $credential
-    #$script:session = New-ProGetTestSession
+function GivenSession
+{
+    $script:session = New-ProGetTestSession
 }
-function GivenAsset {
+function GivenAsset
+{
     param(
         [string]
         $Name,
@@ -22,7 +19,8 @@ function GivenAsset {
     $script:progetAssetDirectory = $directory
     $script:filePath = $FilePath
 }
-function GivenSubDirectory {
+function GivenSubDirectory
+{
     param(
         [string]
         $Name
@@ -53,7 +51,7 @@ function ThenAssetShouldExist
         $Name
     )
     it ('should contain the file {0}' -f $Name) {
-    Get-ProGetAsset -session $session -AssetDirectory $progetAssetDirectory | Where-Object { $_.name -match $name } | should -not -BeNullOrEmpty
+        Get-ProGetAsset -session $session -AssetDirectory $progetAssetDirectory | Where-Object { $_.name -match $name } | should -not -BeNullOrEmpty
     }
 }
 
@@ -63,7 +61,7 @@ function ThenAssetShouldNotExist
         [string]
         $Name
     )
-    it ('should not contain the file {0}' -f $Name){
+    it ('should not contain the file {0}' -f $Name) {
         Get-ProGetAsset -session $session -AssetDirectory $progetAssetDirectory | Where-Object { $_.name -match $name } | should -BeNullOrEmpty
     }
 }
@@ -88,17 +86,23 @@ function ThenNoErrorShouldBeThrown
 
 function cleanup
 {
-    if( $filePath ){
+    if( $filePath )
+    {
         Remove-Item -Path $filePath -Force
     }
-    if( $directory ){
+    if( $directory )
+    {
         Remove-Item -Path $directory -Recurse -force
     }
-    Remove-ProGetAsset -Session $session -AssetDirectory $script:progetAssetDirectory -AssetName $script:progetAssetName
+    $assets = Get-ProGetAsset -Session $session -AssetDirectory $progetAssetDirectory
+    foreach($asset in $assets)
+    {
+        Remove-ProGetAsset -Session $session -AssetDirectory $progetAssetDirectory -AssetName $asset.name
+    }
     $script:fileName = $Null
     $script:progetAssetName = $Null
-    $script:progetAssetDirectory = $Null
-    $script:directory = $null
+    $script:progetAssetDirectory = 'versions'
+    $script:directory = $Null
     $script:filePath = $Null
 }
 

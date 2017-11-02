@@ -113,6 +113,7 @@ function Invoke-ProGetRestMethod
         {
             $body = @{ }
             $bodyParam['Infile'] = $Infile
+            $contentType = 'multipart/form-data'
         }
         $credentialParam = @{ }
         if( $Session.Credential )

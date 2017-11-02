@@ -8,7 +8,7 @@ function Remove-ProGetAsset
         This function removes assets from the proget asset manager. A session, assetName and assetDirectory is required. 
 
         .EXAMPLE
-        # removes assetName if file is found, otherwise returns 404
+        # Removes assetName if file is found.
         Remove-ProGetAsset -Session $session -AssetName $progetAssetName -AssetDirectory 'Versions'
 
     #>
@@ -26,10 +26,12 @@ function Remove-ProGetAsset
         $AssetName
     )
     $path = '/endpoints/{0}/content/{1}' -f $AssetDirectory, $AssetName
-    try{
+    try
+    {
         Invoke-ProGetRestMethod -Session $Session -Path $path -Method Delete
     }
-    catch{
+    catch
+    {
         Write-Error ("ERROR: {0}" -f $Global:Error)
     }
 }
