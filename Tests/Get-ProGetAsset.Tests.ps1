@@ -47,11 +47,12 @@ function ThenListShouldBeReturned
     foreach($file in $Name)
     {
         it ('should return a file name that matches ''{0}''' -f $file){
-            $asset | Where-Object {$_.name -match $file } 
+            $asset | Where-Object {$_.name -match $file } | Should -not -BeNullOrEmpty
         }
     }
 
 }
+
 function ThenListShouldBeEmpty
 {
     it 'should return a list that is empty' {
@@ -70,6 +71,14 @@ Describe 'Get-ProGetAsset.when list of assets is returned'{
     GivenAssets -name 'foo','bar'
     WhenAssetIsRequested
     ThenListShouldBeReturned -name 'foo','bar'
+    ThenNoErrorShouldBeThrown
+}
+
+Describe 'Get-ProGetAsset.when using wildcard'{
+    GivenSession
+    GivenAssets -name 'foo','foobar'
+    WhenAssetIsRequested -name 'foo*'
+    ThenListShouldBeReturned -name 'foo','foobar'
     ThenNoErrorShouldBeThrown
 }
 
