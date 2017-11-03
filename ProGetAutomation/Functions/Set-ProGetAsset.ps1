@@ -6,20 +6,21 @@ function Set-ProGetAsset
 
         .DESCRIPTION
         The `Set-ProGetAsset` adds assets to ProGet A session, assetName, assetDirectory and Path is required. 
+        A root directory needs to be created in ProGet using the `New-ProGetFeed` function with Type `Asset`.
         
-        The assetName parameter is the name you wish the asset to be named in ProGet. 
-        The assetDirectory parameter is the directory you wish the asset to be located in.
+        The Name parameter is the name you wish the asset to be named in ProGet. 
+        The Directory parameter is the directory you wish the asset to be located in.
         The Path parameter is the path to the file located on your machine. 
 
         .EXAMPLE
-        Set-ProGetAsset -Session $session -AssetName 'exampleAsset' -AssetDirectory 'versions' -Path 'path/to/file.txt'
+        Set-ProGetAsset -Session $session -Name 'exampleAsset' -Directory 'versions' -Path 'path/to/file.txt'
 
-        Example of adding an asset to ProGet Asset Manager if versions is not created it will create the directory.
+        Example of adding an asset to ProGet if versions is not created it will throw an error.
         
         .EXAMPLE
-        Set-ProGetAsset -Session $session -AssetName 'exampleAsset' -AssetDirectory 'versions/subfolder' -Path 'path/to/file.txt'
+        Set-ProGetAsset -Session $session -Name 'exampleAsset' -Directory 'versions/subfolder' -Path 'path/to/file.txt'
 
-        Example of adding an asset to ProGet Asset Manager if versions or subfolder are not created it will create both directories.
+        Example of adding an asset to ProGet if subfolder are not created it will create the directory, but not the versions directory.
     #>
     param(
         [Parameter(Mandatory = $true)]
