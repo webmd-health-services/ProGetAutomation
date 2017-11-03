@@ -78,7 +78,7 @@ function New-ProGetTestSession
 # ProGet does not respond correctly to Native API calls upon installation. Initial calls are instead returned the complete HTML of the ProGet login screen.
 # This code ensures that ProGet is awake and functioning correctly for unit testing during the build process and future API calls
 $ProGetSession = New-ProGetTestSession
-$maxWakeAttempts = 600
+$maxWakeAttempts = 1800
 $numAttempts = 0
 $pauseDuration = 1
 $readyToGo = $false
