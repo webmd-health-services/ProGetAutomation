@@ -25,6 +25,22 @@ function GivenAsset
     $script:progetAssetDirectory = $directory
     $script:filePath = $FilePath
 }
+
+function GivenAssetWithoutFile
+{
+    param(
+        [string]
+        $Name,
+        [string]
+        $directory,
+        [string]
+        $FilePath
+    )
+    $script:progetAssetName = $Name
+    $script:progetAssetDirectory = $directory
+    $script:filePath = $FilePath
+
+}
 function GivenSubDirectory
 {
     param(
@@ -48,6 +64,17 @@ function WhenAssetIsUploaded
 {
     $Global:Error.Clear()
     Add-ProGetAsset -Session $session -AssetName $progetAssetName -AssetDirectory $progetAssetDirectory -fileName $filePath -ErrorAction SilentlyContinue
+}
+
+function ThenDirectoryShouldBeCreated
+{
+    param(
+        [string]
+        $name
+    )
+    it ('should have created a asset directory named ''{0}''' -f $name) {
+        Test-ProGetFeed -Session $session -FeedName $name -FeedType 'Asset' | should -be $true
+    }
 }
 
 function ThenAssetShouldExist
@@ -92,7 +119,7 @@ function ThenNoErrorShouldBeThrown
 
 function cleanup
 {
-    if( $filePath )
+    if( Test-Path -path $filePath )
     {
         Remove-Item -Path $filePath -Force
     }
@@ -133,10 +160,20 @@ Describe 'Add-ProGetAsset.when exact path is given'{
 
 Describe 'Add-ProGetAsset.when Asset exists but proget directory does not exist'{
     GivenSession
-    GivenAsset -Name 'foo.txt' -directory 'baddir' -FilePath 'foo.txt'
+    GivenAsset -Name 'foo.txt' -directory 'newdir' -FilePath 'foo.txt'
     WhenAssetIsUploaded
-    ThenAssetShouldNotExist -Name 'foo.txt' -directory 'baddir'
-    ThenErrorShouldBeThrown -ExpectedError 'The remote server returned an error'
+    ThenDirectoryShouldBeCreated -name 'newdir'
+    ThenAssetShouldExist -Name 'foo.txt'
+    ThenNoErrorShouldBeThrown
+    cleanup
+}
+
+Describe 'Add-ProGetAsset.when file does not exist'{
+    GivenSession
+    GivenAssetWithoutFile -Name 'foo.txt' -directory 'versions' -FilePath 'foo.txt'
+    WhenAssetIsUploaded
+    ThenAssetShouldNotExist -Name 'foo.txt' -directory 'versions'
+    ThenErrorShouldBeThrown -ExpectedError 'Could Not find file named ''foo.txt''. please pass in the correct path value'
     cleanup
 }
 

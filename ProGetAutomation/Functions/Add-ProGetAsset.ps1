@@ -32,6 +32,12 @@ function Add-ProGetAsset
     Set-StrictMode -Version 'Latest'
     Use-CallerPreference -Cmdlet $PSCmdlet -SessionState $ExecutionContext.SessionState
 
+    $feedExists = Test-ProGetFeed -Session $session -FeedName $AssetDirectory -FeedType 'Asset'
+    if( !$feedExists )
+    {
+        New-ProGetFeed -Session $session -FeedName $AssetDirectory -FeedType 'Asset'
+    }
+    
     if( -not (Test-path -Path $FileName) )
     {
         Write-error ('Could Not find file named ''{0}''. please pass in the correct path value' -f $FileName)
