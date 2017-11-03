@@ -101,6 +101,7 @@ function Invoke-ProGetRestMethod
     {
         $debugBody | Write-Debug
     }
+
     $errorsAtStart = $Global:Error.Count
     try
     {
@@ -120,6 +121,7 @@ function Invoke-ProGetRestMethod
         {
             $credentialParam['Credential'] = $Session.Credential
         }
+        
         Invoke-RestMethod -Method $Method -Uri $uri @bodyParam -ContentType $contentType -Headers $headers @credentialParam | 
             ForEach-Object { $_ } 
     }

@@ -2,20 +2,20 @@ function Get-ProGetAsset
 {
     <#
         .SYNOPSIS
-        Used to Get assets to the proget asset manager. 
+        Used to get assets to the ProGet asset manager. 
 
         .DESCRIPTION
         This function gets assets to the proget asset manager. A session and assetDirectory is required. 
-        An optional assetname may be added to get the content of the file. 
+        An optional asset name may be added to get the content of the file. 
         If no asset name is added the function will return a list of all files in the asset directory
 
         .EXAMPLE
-        # returns contents of assetName if file is found, otherwise returns 404
-        Get-ProGetAsset -Session $session -AssetName $progetAssetName -AssetDirectory 'Versions'
+        # returns contents of 'myAsset' if asset is found, otherwise returns 404
+        Get-ProGetAsset -Session $session -AssetName 'myAsset' -AssetDirectory 'versions'
         
         .Example
-        # returns list of files in the assetDirectory
-        Get-ProGetAsset -Session $session -AssetDirectory 'Versions'
+        # returns list of files in the versions asset directory. If no files found an empty list is returned.
+        Get-ProGetAsset -Session $session -AssetDirectory 'versions'
 
     #>
     param(
@@ -33,7 +33,7 @@ function Get-ProGetAsset
 
     Set-StrictMode -Version 'Latest'
     Use-CallerPreference -Cmdlet $PSCmdlet -SessionState $ExecutionContext.SessionState
-    
+
     if( $AssetName ){
         $path = '/endpoints/{0}/content/{1}' -f $AssetDirectory, $AssetName
     }
