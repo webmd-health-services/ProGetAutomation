@@ -22,8 +22,8 @@ function GivenAssets
     )
     foreach($file in $Name)
     {
-        New-Item -Path $file -Type 'file' -value $WithContent 
-        Add-ProGetAsset -Session $session -AssetDirectory $progetAssetDirectory -AssetName $file -fileName $file
+        New-Item -Path $file -Type 'file' -value $WithContent  -Force
+        Set-ProGetAsset -Session $session -Directory $progetAssetDirectory -Name $file -Path $file
         Remove-Item -Path $file -Force
     }
 }
@@ -43,7 +43,7 @@ function WhenAssetIsRemoved
         $name
     )
     $Global:Error.Clear()
-    Remove-ProGetAsset -Session $session -AssetName $name -AssetDirectory $progetAssetDirectory -ErrorAction SilentlyContinue
+    Remove-ProGetAsset -Session $session -Name $name -Directory $progetAssetDirectory -ErrorAction SilentlyContinue
 }
 
 function ThenAssetShouldNotExist
@@ -53,7 +53,7 @@ function ThenAssetShouldNotExist
         $Name
     )
     it ('should not contain the file {0}' -f $Name){
-        Get-ProGetAsset -session $session -AssetDirectory $progetAssetDirectory | Where-Object { $_.name -match $name } | should -BeNullOrEmpty
+        Get-ProGetAsset -session $session -Directory $progetAssetDirectory | Where-Object { $_.name -match $name } | should -BeNullOrEmpty
     }
 }
 Describe 'Remove-ProGetAsset.When Asset is removed successfully'{
@@ -80,3 +80,4 @@ Describe 'Remove-ProGetAsset.When Asset is removed removed twice'{
     ThenAssetShouldNotExist -Name 'foo'
     ThenNoErrorShouldBeThrown
 }
+

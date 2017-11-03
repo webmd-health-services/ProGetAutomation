@@ -2,15 +2,15 @@ function Remove-ProGetAsset
 {
     <#
         .SYNOPSIS
-        Used to remove assets from the proget asset manager. 
+        Removes assets from ProGet. 
 
         .DESCRIPTION
-        This function removes assets from the proget asset manager. A session, assetName and assetDirectory is required. 
+        The `Remove-ProGetAsset` function removes assets from ProGet. A session, assetName and assetDirectory is required. 
 
         .EXAMPLE
-        # Removes assetName if file is found.
-        Remove-ProGetAsset -Session $session -AssetName $progetAssetName -AssetDirectory 'Versions'
+        Remove-ProGetAsset -Session $session -AssetName $ProGetAssetName -AssetDirectory 'Versions'
 
+        Removes assetName if file is found.
     #>
     param(
         [Parameter(Mandatory = $true)]
@@ -19,17 +19,17 @@ function Remove-ProGetAsset
 
         [Parameter(Mandatory = $true)]
         [string]
-        $AssetDirectory,        
+        $Directory,        
 
         [Parameter(Mandatory = $true)]
         [string]
-        $AssetName
+        $Name
     )
 
     Set-StrictMode -Version 'Latest'
     Use-CallerPreference -Cmdlet $PSCmdlet -SessionState $ExecutionContext.SessionState
 
-    $path = '/endpoints/{0}/content/{1}' -f $AssetDirectory, $AssetName
+    $path = '/endpoints/{0}/content/{1}' -f $Directory, $Name
     try
     {
         Invoke-ProGetRestMethod -Session $Session -Path $path -Method Delete

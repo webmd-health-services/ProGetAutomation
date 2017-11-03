@@ -23,7 +23,7 @@ function GivenAssets
     foreach($file in $Name)
     {
         New-Item -Path $file -Type 'file' -value $WithContent 
-        Add-ProGetAsset -Session $session -AssetDirectory $progetAssetDirectory -AssetName $file -fileName $file
+        Set-ProGetAsset -Session $session -Directory $progetAssetDirectory -Name $file -Path $file
         Remove-Item -Path $file -Force
     }
 }
@@ -35,7 +35,7 @@ function WhenAssetIsRequested
         $Name
     )
     $Global:Error.Clear()
-    $script:asset = Get-ProGetAsset -Session $session -AssetDirectory $progetAssetDirectory -AssetName $name -ErrorAction SilentlyContinue
+    $script:asset = Get-ProGetAsset -Session $session -Directory $progetAssetDirectory -Name $name -ErrorAction SilentlyContinue
 }
 
 function ThenListShouldBeReturned
@@ -52,18 +52,12 @@ function ThenListShouldBeReturned
     }
 
 }
-
-function ThenContentShouldBeReturned
+function ThenListShouldBeEmpty
 {
-    param(
-        [string]
-        $WithContent
-    )
-    it ('should return content that matches ''{0}''' -f $WithContent){
-        $asset | Should -Match $WithContent 
+    it 'should return a list that is empty' {
+        $asset | Should -BeNullOrEmpty
     }
 }
-
 function ThenNoErrorShouldBeThrown
 {
     It 'should not throw an error' {
@@ -71,48 +65,32 @@ function ThenNoErrorShouldBeThrown
     }
 }
 
-function ThenErrorShouldBeThrown
-{
-    param(
-        [string]
-        $ExpectedError
-    )
-    It ('should write an error that matches ''{0}''' -f $ExpectedError) {
-        $Global:Error | Where-Object { $_ -match $ExpectedError } | Should -not -BeNullOrEmpty
-    }
-}
-
-function cleanup
-{
-    $script:asset = Get-ProGetAsset -Session $session -AssetDirectory $progetAssetDirectory
-    foreach($file in $asset)
-    {
-        Remove-ProGetAsset -Session $session -AssetDirectory $progetAssetDirectory -AssetName $file.name
-    }
-    $script:asset = $null
-}
 Describe 'Get-ProGetAsset.when list of assets is returned'{
     GivenSession
     GivenAssets -name 'foo','bar'
     WhenAssetIsRequested
     ThenListShouldBeReturned -name 'foo','bar'
     ThenNoErrorShouldBeThrown
-    cleanup
 }
 
 Describe 'Get-ProGetAsset.when single asset is returned'{
     GivenSession
-    GivenAssets -name 'foo.txt' -withContent 'test content'
+    GivenAssets -name 'foo.txt' -WithContent 'test'
     WhenAssetIsRequested -name 'foo.txt'
-    ThenContentShouldBeReturned -withContent 'test content'
+    ThenListShouldBeReturned -name 'foo.txt'
     ThenNoErrorShouldBeThrown
-    cleanup
 }
 
 Describe 'Get-ProGetAsset.when asset is requested but does not exist'{
     GivenSession
     GivenAssets -name 'foo' -withContent 'test content'
-    WhenAssetIsRequested -Name 'bar'
-    ThenErrorShouldBeThrown -ExpectedError 'The specified asset was not found.'
-    cleanup
+    WhenAssetIsRequested -Name 'fubu'
+    ThenNoErrorShouldBeThrown
+    ThenListShouldBeEmpty
+}
+
+$script:asset = Get-ProGetAsset -Session $session -Directory $progetAssetDirectory
+foreach($file in $asset)
+{
+    Remove-ProGetAsset -Session $session -Directory $progetAssetDirectory -Name $file.name
 }

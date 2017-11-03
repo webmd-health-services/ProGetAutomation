@@ -2,20 +2,22 @@ function Get-ProGetAsset
 {
     <#
         .SYNOPSIS
-        Used to get assets to the ProGet asset manager. 
+        Gets assets from ProGet. 
 
         .DESCRIPTION
-        This function gets assets to the proget asset manager. A session and assetDirectory is required. 
+        Get-ProGetAsset gets assets from ProGet. A session and Directory is required. 
         An optional asset name may be added to get the content of the file. 
-        If no asset name is added the function will return a list of all files in the asset directory
+        If no asset name is added the function will return a list of all files in the asset directory.
 
         .EXAMPLE
-        # returns contents of 'myAsset' if asset is found, otherwise returns 404
-        Get-ProGetAsset -Session $session -AssetName 'myAsset' -AssetDirectory 'versions'
+        Get-ProGetAsset -Session $session -Name 'myAsset' -Directory 'versions'
         
+        Returns contents of 'myAsset' if asset is found, otherwise returns 404.
+
         .Example
-        # returns list of files in the versions asset directory. If no files found an empty list is returned.
-        Get-ProGetAsset -Session $session -AssetDirectory 'versions'
+        Get-ProGetAsset -Session $session -Directory 'versions'
+        
+        Returns list of files in the versions asset directory. If no files found an empty list is returned.
 
     #>
     param(
@@ -25,25 +27,23 @@ function Get-ProGetAsset
 
         [Parameter(Mandatory = $true)]
         [string]
-        $AssetDirectory,        
+        $Directory,        
 
         [string]
-        $AssetName
+        $Name
     )
 
     Set-StrictMode -Version 'Latest'
     Use-CallerPreference -Cmdlet $PSCmdlet -SessionState $ExecutionContext.SessionState
 
-    if( $AssetName ){
-        $path = '/endpoints/{0}/content/{1}' -f $AssetDirectory, $AssetName
+    $path = '/endpoints/{0}/dir' -f $Directory
+
+    try
+    {
+        return Invoke-ProGetRestMethod -Session $Session -Path $path -Method Get | Where-Object { $_ -match $Name}
     }
-    else{
-        $path = '/endpoints/{0}/dir' -f $AssetDirectory
-    }
-    try{
-        return Invoke-ProGetRestMethod -Session $Session -Path $path -Method Get
-    }
-    catch{
+    catch
+    {
         Write-Error ("ERROR: {0}" -f $Global:Error)
     }
 }

@@ -1,5 +1,15 @@
 & (Join-Path -Path $PSScriptRoot -ChildPath 'Initialize-Tests.ps1' -Resolve)
 
+
+function Init
+{
+    $script:fileName = $Null
+    $script:progetAssetName = $Null
+    $script:proGetAssetDirectory = 'versions'
+    $script:directory = $Null
+    $script:filePath = $Null
+}
+
 function GivenSession 
 {
     $script:session = New-ProGetTestSession
@@ -20,10 +30,10 @@ function GivenAsset
         [string]
         $FilePath
     )
-    $script:progetAssetName = $Name
-    new-item $FilePath -type 'file' -value 'test' -Force
-    $script:progetAssetDirectory = $directory
-    $script:filePath = $FilePath
+    $script:proGetAssetName = $Name
+    New-Item -Path (Join-Path -Path $TestDrive.FullName -ChildPath $FilePath) -ItemType 'File' -Force
+    $script:proGetAssetDirectory = $directory
+    $script:filePath = (Join-Path -Path $TestDrive.FullName -ChildPath $FilePath)
 }
 
 function GivenAssetWithoutFile
@@ -36,8 +46,8 @@ function GivenAssetWithoutFile
         [string]
         $FilePath
     )
-    $script:progetAssetName = $Name
-    $script:progetAssetDirectory = $directory
+    $script:proGetAssetName = $Name
+    $script:proGetAssetDirectory = $directory
     $script:filePath = $FilePath
 
 }
@@ -48,7 +58,7 @@ function GivenSubDirectory
         $Name
     )
     $script:directory = $Name
-    New-item -Path $name -type 'directory' -Force
+    New-Item -Path (Join-Path -Path $TestDrive.FullName -ChildPath $Name) -ItemType 'Directory' -Force
 }
 function GivenAssetThatDoesntExist
 {
@@ -56,14 +66,14 @@ function GivenAssetThatDoesntExist
         [string]
         $Name
     )
-    $script:progetAssetName = $Name
-    $script:progetAssetDirectory = $null
+    $script:proGetAssetName = $Name
+    $script:proGetAssetDirectory = $null
 }
 
 function WhenAssetIsUploaded
 {
     $Global:Error.Clear()
-    Add-ProGetAsset -Session $session -AssetName $progetAssetName -AssetDirectory $progetAssetDirectory -fileName $filePath -ErrorAction SilentlyContinue
+    Set-ProGetAsset -Session $session -Name $proGetAssetName -Directory $proGetAssetDirectory -Path $filePath -ErrorAction SilentlyContinue
 }
 
 function ThenDirectoryShouldBeCreated
@@ -84,7 +94,7 @@ function ThenAssetShouldExist
         $Name
     )
     it ('should contain the file {0}' -f $Name) {
-        Get-ProGetAsset -session $session -AssetDirectory $progetAssetDirectory | Where-Object { $_.name -match $name } | should -not -BeNullOrEmpty
+        Get-ProGetAsset -session $session -Directory $proGetAssetDirectory | Where-Object { $_.name -match $name } | should -not -BeNullOrEmpty
     }
 }
 
@@ -95,7 +105,7 @@ function ThenAssetShouldNotExist
         $Name
     )
     it ('should not contain the file {0}' -f $Name) {
-        Get-ProGetAsset -session $session -AssetDirectory $progetAssetDirectory | Where-Object { $_.name -match $name } | should -BeNullOrEmpty
+        Get-ProGetAsset -session $session -Directory $proGetAssetDirectory | Where-Object { $_.name -match $name } | Should -BeNullOrEmpty
     }
 }
 
@@ -117,72 +127,54 @@ function ThenNoErrorShouldBeThrown
     }
 }
 
-function cleanup
-{
-    if( Test-Path -path $filePath )
-    {
-        Remove-Item -Path $filePath -Force
-    }
-    if( $directory )
-    {
-        Remove-Item -Path $directory -Recurse -force
-    }
-    $assets = Get-ProGetAsset -Session $session -AssetDirectory $progetAssetDirectory
-    foreach($asset in $assets)
-    {
-        Remove-ProGetAsset -Session $session -AssetDirectory $progetAssetDirectory -AssetName $asset.name
-    }
-    $script:fileName = $Null
-    $script:progetAssetName = $Null
-    $script:progetAssetDirectory = 'versions'
-    $script:directory = $Null
-    $script:filePath = $Null
-}
-
-Describe 'Add-ProGetAsset.when Asset is uploaded correctly'{
+Describe 'Set-ProGetAsset.when Asset is uploaded correctly'{
+    Init
     GivenSession
     GivenAsset -Name 'foo.txt' -directory 'versions' -FilePath 'foo.txt'
     WhenAssetIsUploaded
     ThenAssetShouldExist -Name 'foo.txt'
     ThenNoErrorShouldBeThrown
-    cleanup
 }
 
-Describe 'Add-ProGetAsset.when exact path is given'{
+Describe 'Set-ProGetAsset.when exact path is given'{
+    Init
     GivenSession
     GivenSubDirectory -Name 'dir'
     GivenAsset -Name 'foo.txt' -directory 'versions' -FilePath 'dir/foo.txt'
     WhenAssetIsUploaded
     ThenAssetShouldExist -Name 'foo.txt'
     ThenNoErrorShouldBeThrown
-    cleanup
 }
 
-Describe 'Add-ProGetAsset.when Asset exists but proget directory does not exist'{
+Describe 'Set-ProGetAsset.when Asset exists but proget directory does not exist'{
+    Init
     GivenSession
     GivenAsset -Name 'foo.txt' -directory 'newdir' -FilePath 'foo.txt'
     WhenAssetIsUploaded
-    ThenDirectoryShouldBeCreated -name 'newdir'
-    ThenAssetShouldExist -Name 'foo.txt'
-    ThenNoErrorShouldBeThrown
-    cleanup
+    ThenErrorShouldBeThrown -ExpectedError 'Asset Directory ''newDir'' does not exist, please create one using New-ProGetFeed with Name'
 }
 
-Describe 'Add-ProGetAsset.when file does not exist'{
+Describe 'Set-ProGetAsset.when file does not exist'{
+    Init
     GivenSession
-    GivenAssetWithoutFile -Name 'foo.txt' -directory 'versions' -FilePath 'foo.txt'
+    GivenAssetWithoutFile -Name 'fubu.txt' -directory 'versions' -FilePath 'fubu.txt'
     WhenAssetIsUploaded
-    ThenAssetShouldNotExist -Name 'foo.txt' -directory 'versions'
-    ThenErrorShouldBeThrown -ExpectedError 'Could Not find file named ''foo.txt''. please pass in the correct path value'
-    cleanup
+    ThenAssetShouldNotExist -Name 'fubu.txt' -directory 'versions'
+    ThenErrorShouldBeThrown -ExpectedError 'Could Not find file named ''fubu.txt''. please pass in the correct path value'
 }
 
-Describe 'Add-ProGetAsset.when Asset already exists'{
+Describe 'Set-ProGetAsset.when Asset already exists'{
+    Init
     GivenSession
     GivenAsset -Name 'foo.txt' -directory 'versions' -FilePath 'foo.txt'
     WhenAssetIsUploaded
     WhenAssetIsUploaded
     ThenAssetShouldExist -Name 'foo.txt'
     ThenNoErrorShouldBeThrown
-    cleanup
+}
+
+$assets = Get-ProGetAsset -Session $session -Directory $proGetAssetDirectory
+foreach($asset in $assets)
+{
+    Remove-ProGetAsset -Session $session -Directory $proGetAssetDirectory -Name $asset.name
 }
