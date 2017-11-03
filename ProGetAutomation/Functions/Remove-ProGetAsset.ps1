@@ -25,6 +25,10 @@ function Remove-ProGetAsset
         [string]
         $AssetName
     )
+
+    Set-StrictMode -Version 'Latest'
+    Use-CallerPreference -Cmdlet $PSCmdlet -SessionState $ExecutionContext.SessionState
+
     $path = '/endpoints/{0}/content/{1}' -f $AssetDirectory, $AssetName
     try
     {

@@ -28,6 +28,10 @@ function Add-ProGetAsset
         [string]
         $fileName
     )
+
+    Set-StrictMode -Version 'Latest'
+    Use-CallerPreference -Cmdlet $PSCmdlet -SessionState $ExecutionContext.SessionState
+
     if( -not (Test-path -Path $FileName) )
     {
         Write-error ('Could Not find file named ''{0}''. please pass in the correct path value' -f $FileName)

@@ -5,6 +5,11 @@ $script:progetAssetDirectory = 'versions'
 function GivenSession 
 {
     $script:session = New-ProGetTestSession
+    $feed = Test-ProGetFeed -Session $session -FeedName 'versions' -FeedType 'Asset'
+    if( !$feed )
+    {
+        New-ProGetFeed -Session $session -FeedName 'versions' -FeedType 'Asset'
+    }
 }
 
 function GivenAssets

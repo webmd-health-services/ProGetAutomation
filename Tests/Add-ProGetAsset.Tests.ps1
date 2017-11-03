@@ -1,9 +1,15 @@
 & (Join-Path -Path $PSScriptRoot -ChildPath 'Initialize-Tests.ps1' -Resolve)
 
-function GivenSession
+function GivenSession 
 {
     $script:session = New-ProGetTestSession
+    $feed = Test-ProGetFeed -Session $session -FeedName 'versions' -FeedType 'Asset'
+    if( !$feed )
+    {
+        New-ProGetFeed -Session $session -FeedName 'versions' -FeedType 'Asset'
+    }
 }
+
 function GivenAsset
 {
     param(
