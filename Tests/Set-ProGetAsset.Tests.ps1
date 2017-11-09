@@ -5,7 +5,8 @@ function Init
 {
     $script:fileName = $Null
     $script:progetAssetName = $Null
-    $script:proGetAssetDirectory = 'versions'
+    $script:proGetAssetDirectory = $null
+    $script:baseDirectory = (split-path -Path $TestDrive.FullName -leaf)
     $script:directory = $Null
     $script:filePath = $Null
 }
@@ -13,10 +14,10 @@ function Init
 function GivenSession 
 {
     $script:session = New-ProGetTestSession
-    $feed = Test-ProGetFeed -Session $session -FeedName 'versions' -FeedType 'Asset'
+    $feed = Test-ProGetFeed -Session $session -FeedName $baseDirectory -FeedType 'Asset'
     if( !$feed )
     {
-        New-ProGetFeed -Session $session -FeedName 'versions' -FeedType 'Asset'
+        New-ProGetFeed -Session $session -FeedName $baseDirectory -FeedType 'Asset'
     }
 }
 
@@ -26,13 +27,19 @@ function GivenAsset
         [string]
         $Name,
         [string]
-        $directory,
+        $Directory,
+        [string]
+        $RootDirectory,
         [string]
         $FilePath
     )
     $script:proGetAssetName = $Name
     New-Item -Path (Join-Path -Path $TestDrive.FullName -ChildPath $FilePath) -ItemType 'File' -Force
-    $script:proGetAssetDirectory = $directory
+    $script:proGetAssetDirectory = (join-path -Path $script:baseDirectory -childPath $Directory)
+    if($RootDirectory)
+    {
+        $script:proGetAssetDirectory = $RootDirectory
+    }
     $script:filePath = (Join-Path -Path $TestDrive.FullName -ChildPath $FilePath)
 }
 
@@ -47,19 +54,11 @@ function GivenAssetWithoutFile
         $FilePath
     )
     $script:proGetAssetName = $Name
-    $script:proGetAssetDirectory = $directory
+    $script:proGetAssetDirectory = (join-path -Path $script:baseDirectory -childPath $Directory)
     $script:filePath = $FilePath
 
 }
-function GivenSubDirectory
-{
-    param(
-        [string]
-        $Name
-    )
-    $script:directory = $Name
-    New-Item -Path (Join-Path -Path $TestDrive.FullName -ChildPath $Name) -ItemType 'Directory' -Force
-}
+
 function GivenAssetThatDoesntExist
 {
     param(
@@ -74,17 +73,6 @@ function WhenAssetIsUploaded
 {
     $Global:Error.Clear()
     Set-ProGetAsset -Session $session -Name $proGetAssetName -Directory $proGetAssetDirectory -Path $filePath -ErrorAction SilentlyContinue
-}
-
-function ThenDirectoryShouldBeCreated
-{
-    param(
-        [string]
-        $name
-    )
-    it ('should have created a asset directory named ''{0}''' -f $name) {
-        Test-ProGetFeed -Session $session -FeedName $name -FeedType 'Asset' | should -be $true
-    }
 }
 
 function ThenAssetShouldExist
@@ -136,10 +124,28 @@ Describe 'Set-ProGetAsset.when Asset is uploaded correctly'{
     ThenNoErrorShouldBeThrown
 }
 
+Describe 'Set-ProGetAsset.when Asset is uploaded correctly in subfolder'{
+    Init
+    GivenSession
+    GivenAsset -Name 'foo.txt' -directory 'versions/subdir' -FilePath 'foo.txt'
+    WhenAssetIsUploaded
+    ThenAssetShouldExist -Name 'foo.txt'
+    ThenNoErrorShouldBeThrown
+}
+
+Describe 'Set-ProGetAsset.when Asset is uploaded correctly in subfolder with backslashes'{
+    Init
+    GivenSession
+    GivenAsset -Name 'foo.txt' -directory 'versions\subdir\' -FilePath 'foo.txt'
+    WhenAssetIsUploaded
+    ThenAssetShouldExist -Name 'foo.txt'
+    ThenNoErrorShouldBeThrown
+}
+
+
 Describe 'Set-ProGetAsset.when exact path is given'{
     Init
     GivenSession
-    GivenSubDirectory -Name 'dir'
     GivenAsset -Name 'foo.txt' -directory 'versions' -FilePath 'dir/foo.txt'
     WhenAssetIsUploaded
     ThenAssetShouldExist -Name 'foo.txt'
@@ -149,9 +155,9 @@ Describe 'Set-ProGetAsset.when exact path is given'{
 Describe 'Set-ProGetAsset.when Asset exists but proget directory does not exist'{
     Init
     GivenSession
-    GivenAsset -Name 'foo.txt' -directory 'newdir' -FilePath 'foo.txt'
+    GivenAsset -Name 'foo.txt' -RootDirectory 'badDir' -FilePath 'foo.txt'
     WhenAssetIsUploaded
-    ThenErrorShouldBeThrown -ExpectedError 'Asset Directory ''newDir'' does not exist, please create one using New-ProGetFeed with Name'
+    ThenErrorShouldBeThrown -ExpectedError 'Asset Directory ''badDir'' does not exist, please create one using New-ProGetFeed with Name'
 }
 
 Describe 'Set-ProGetAsset.when file does not exist'{
@@ -171,10 +177,4 @@ Describe 'Set-ProGetAsset.when Asset already exists'{
     WhenAssetIsUploaded
     ThenAssetShouldExist -Name 'foo.txt'
     ThenNoErrorShouldBeThrown
-}
-
-$assets = Get-ProGetAsset -Session $session -Directory $proGetAssetDirectory
-foreach($asset in $assets)
-{
-    Remove-ProGetAsset -Session $session -Directory $proGetAssetDirectory -Name $asset.name
 }

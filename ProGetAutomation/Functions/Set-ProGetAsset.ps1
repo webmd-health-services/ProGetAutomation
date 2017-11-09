@@ -2,7 +2,7 @@ function Set-ProGetAsset
 {
     <#
         .SYNOPSIS
-        Adds and Updates assets to the ProGet asset manager. 
+        Adds and updates assets to the ProGet asset manager. 
 
         .DESCRIPTION
         The `Set-ProGetAsset` adds assets to ProGet A session, assetName, assetDirectory and Path is required. 
@@ -25,25 +25,33 @@ function Set-ProGetAsset
     param(
         [Parameter(Mandatory = $true)]
         [Object]
+        # A session object that represents the ProGet instance to use. Use the `New-ProGetSession` function to create session objects.
         $Session,
         
         [Parameter(Mandatory = $true)]
         [string]
+        # The name of a valid path to the directory to upload the desired asset in ProGet. If no root directories exist, use the `New-ProGetFeed` with parameter `-Type 'Asset'` to create a new directory in the ProGet assets page. Any subdirectories will be created automatically.
         $Directory,        
         
         [Parameter(Mandatory = $true)]
         [string]
+        # Desired name of the asset that will be uploaded.
         $Name,
 
         [Parameter(Mandatory = $true)]
         [string]
+        # The Relative Path of the file to be uploaded. 
         $Path
     )
 
     Set-StrictMode -Version 'Latest'
     Use-CallerPreference -Cmdlet $PSCmdlet -SessionState $ExecutionContext.SessionState
-
-    $feedExists = Test-ProGetFeed -Session $session -FeedName $Directory -FeedType 'Asset'
+    $topDirectory = (($Directory -split '\\') -split '/')[0] 
+    if($topDirectory.Length -ne $Directory.Length)
+    {
+        $Name = Join-Path -Path $Directory.Substring($topDirectory.Length+1) -ChildPath $Name
+    }
+    $feedExists = Test-ProGetFeed -Session $session -FeedName $topDirectory -FeedType 'Asset'
     if( !$feedExists )
     {
         Write-Error('Asset Directory ''{0}'' does not exist, please create one using New-ProGetFeed with Name ''{0}'' and Type ''Asset''' -f $Directory)
@@ -55,7 +63,7 @@ function Set-ProGetAsset
     }
     try
     {
-        Invoke-ProGetRestMethod -Session $Session -Path ('/endpoints/{0}/content/{1}' -f $Directory, $Name) -Method Post -Infile $Path
+        Invoke-ProGetRestMethod -Session $Session -Path ('/endpoints/{0}/content/{1}' -f $topDirectory, $Name) -Method Post -Infile $Path
     }
     catch
     {
