@@ -1,14 +1,13 @@
 & (Join-Path -Path $PSScriptRoot -ChildPath 'Initialize-Tests.ps1' -Resolve)
 
-$Script:progetAssetDirectory = 'versions'
-
 function GivenSession 
 {
     $script:session = New-ProGetTestSession
-    $feed = Test-ProGetFeed -Session $session -FeedName $progetAssetDirectory -FeedType 'Asset'
+    $script:baseDirectory = (split-path -Path $TestDrive.FullName -leaf)
+    $feed = Test-ProGetFeed -Session $session -FeedName $baseDirectory -FeedType 'Asset'
     if( !$feed )
     {
-        New-ProGetFeed -Session $session -FeedName $progetAssetDirectory -FeedType 'Asset'
+        New-ProGetFeed -Session $session -FeedName $baseDirectory -FeedType 'Asset'
     }
 }
 
@@ -22,12 +21,22 @@ function GivenAssets
     )
     foreach($file in $Name)
     {
-        New-Item -Path $file -Type 'file' -value $WithContent  -Force
-        Set-ProGetAsset -Session $session -Directory $progetAssetDirectory -Name $file -Path $file
-        Remove-Item -Path $file -Force
+        New-Item -Path (Join-Path -Path $TestDrive.FullName -ChildPath $file) -Type 'file' -value $WithContent -Force 
+        Set-ProGetAsset -Session $session -DirectoryName $baseDirectory -Path $file -FilePath (Join-Path -Path $TestDrive.FullName -ChildPath $file)
     }
 }
 
+function WhenAssetIsRemoved
+{
+    param(
+        [string]
+        $Filter,
+        [string]
+        $Subdirectory
+    )
+    $Global:Error.Clear()
+    Remove-ProGetAsset -Session $session -DirectoryName $baseDirectory -Path $Subdirectory -Filter $Filter -ErrorAction SilentlyContinue
+}
 
 function ThenNoErrorShouldBeThrown
 {
@@ -36,47 +45,85 @@ function ThenNoErrorShouldBeThrown
     }
 }
 
-function WhenAssetIsRemoved
+function ThenAssetShouldExist
 {
     param(
+        [string[]]
+        $Name,
         [string]
-        $name
+        $directory
     )
-    $Global:Error.Clear()
-    Remove-ProGetAsset -Session $session -Name $name -Directory $progetAssetDirectory -ErrorAction SilentlyContinue
+    foreach($file in $Name)
+    {
+        it ('should contain the file {0}' -f $file) {
+            Get-ProGetAsset -session $session -DirectoryName $baseDirectory -Path $directory | Where-Object { $_.name -match $file } | should -not -BeNullOrEmpty
+        }
+    }
 }
 
 function ThenAssetShouldNotExist
 {
     param(
+        [string[]]
+        $Name,
         [string]
-        $Name
+        $directory
     )
-    it ('should not contain the file {0}' -f $Name){
-        Get-ProGetAsset -session $session -Directory $progetAssetDirectory | Where-Object { $_.name -match $name } | should -BeNullOrEmpty
+    foreach($file in $Name)
+    {
+        it ('should not contain the file {0}' -f $file) {
+            Get-ProGetAsset -session $session -DirectoryName $baseDirectory -Path $directory | Where-Object { $_.name -match $file } | should -BeNullOrEmpty
+        }
     }
 }
 Describe 'Remove-ProGetAsset.When Asset is removed successfully'{
     GivenSession
-    GivenAssets -Name 'foo'
-    WhenAssetIsRemoved -name 'foo'
+    GivenAssets -Name 'foo','bar'
+    WhenAssetIsRemoved -filter 'foo'
     ThenAssetShouldNotExist -Name 'foo'
+    ThenAssetShouldExist -Name 'bar'
+    ThenNoErrorShouldBeThrown
+}
+
+Describe 'Remove-ProGetAsset.When Asset is removed from a subdirectory successfully'{
+    GivenSession
+    GivenAssets -Name 'bar/foo'
+    WhenAssetIsRemoved -filter 'foo' -Subdirectory 'bar'
+    ThenAssetShouldNotExist -Name 'foo' -directory 'bar'
+    ThenNoErrorShouldBeThrown
+}
+
+Describe 'Remove-ProGetAsset.When multiple Assets are removed successfully'{
+    GivenSession
+    GivenAssets -Name 'foo','bar'
+    WhenAssetIsRemoved
+    ThenAssetShouldNotExist -Name 'foo','bar'
+    ThenNoErrorShouldBeThrown
+}
+
+Describe 'Remove-ProGetAsset.When filtered assets are removed successfully'{
+    GivenSession
+    GivenAssets -Name 'foo','bar','foobar'
+    WhenAssetIsRemoved -Filter 'foo*'
+    ThenAssetShouldNotExist -Name 'foo','foobar'
+    ThenAssetShouldExist -Name 'bar'
     ThenNoErrorShouldBeThrown
 }
 
 Describe 'Remove-ProGetAsset.When Asset does not exist' {
     GivenSession
     GivenAssets -Name 'foo'
-    WhenAssetIsRemoved -Name 'foo'
-    ThenAssetShouldNotExist -Name 'foo'
+    WhenAssetIsRemoved -Filter 'bar'
+    ThenAssetShouldNotExist -Name 'bar'
+    ThenAssetShouldExist -Name 'foo'
     ThenNoErrorShouldBeThrown
 }
 
 Describe 'Remove-ProGetAsset.When Asset is removed removed twice'{
     GivenSession
     GivenAssets -Name 'foo'
-    WhenAssetIsRemoved -Name 'foo'
-    WhenAssetIsRemoved -Name 'foo'
+    WhenAssetIsRemoved -Filter 'foo'
+    WhenAssetIsRemoved -Filter 'foo'
     ThenAssetShouldNotExist -Name 'foo'
     ThenNoErrorShouldBeThrown
 }

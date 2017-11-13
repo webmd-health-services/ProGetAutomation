@@ -5,7 +5,6 @@ function Init
 {
     $script:fileName = $Null
     $script:progetAssetName = $Null
-    $script:proGetAssetDirectory = $null
     $script:baseDirectory = (split-path -Path $TestDrive.FullName -leaf)
     $script:directory = $Null
     $script:filePath = $Null
@@ -27,18 +26,15 @@ function GivenAsset
         [string]
         $Name,
         [string]
-        $Directory,
-        [string]
         $RootDirectory,
         [string]
         $FilePath
     )
     $script:proGetAssetName = $Name
     New-Item -Path (Join-Path -Path $TestDrive.FullName -ChildPath $FilePath) -ItemType 'File' -Force
-    $script:proGetAssetDirectory = (join-path -Path $script:baseDirectory -childPath $Directory)
     if($RootDirectory)
     {
-        $script:proGetAssetDirectory = $RootDirectory
+        $script:baseDirectory = $RootDirectory
     }
     $script:filePath = (Join-Path -Path $TestDrive.FullName -ChildPath $FilePath)
 }
@@ -49,12 +45,9 @@ function GivenAssetWithoutFile
         [string]
         $Name,
         [string]
-        $directory,
-        [string]
         $FilePath
     )
     $script:proGetAssetName = $Name
-    $script:proGetAssetDirectory = (join-path -Path $script:baseDirectory -childPath $Directory)
     $script:filePath = $FilePath
 
 }
@@ -72,17 +65,19 @@ function GivenAssetThatDoesntExist
 function WhenAssetIsUploaded
 {
     $Global:Error.Clear()
-    Set-ProGetAsset -Session $session -Name $proGetAssetName -Directory $proGetAssetDirectory -Path $filePath -ErrorAction SilentlyContinue
+    Set-ProGetAsset -Session $session -Path $proGetAssetName -DirectoryName $baseDirectory -FilePath $filePath -ErrorAction SilentlyContinue
 }
 
 function ThenAssetShouldExist
 {
     param(
         [string]
-        $Name
+        $Name,
+        [string]
+        $directory
     )
     it ('should contain the file {0}' -f $Name) {
-        Get-ProGetAsset -session $session -Directory $proGetAssetDirectory | Where-Object { $_.name -match $name } | should -not -BeNullOrEmpty
+        Get-ProGetAsset -session $session -DirectoryName $baseDirectory -Path $directory | Where-Object { $_.name -match $name } | should -not -BeNullOrEmpty
     }
 }
 
@@ -90,10 +85,12 @@ function ThenAssetShouldNotExist
 {
     param(
         [string]
-        $Name
+        $Name,
+        [string]
+        $directory
     )
-    it ('should not contain the file {0}' -f $Name) {
-        Get-ProGetAsset -session $session -Directory $proGetAssetDirectory | Where-Object { $_.name -match $name } | Should -BeNullOrEmpty
+    it ('should contain the file {0}' -f $Name) {
+        Get-ProGetAsset -session $session -DirectoryName $baseDirectory -Path $directory | Where-Object { $_.name -match $name } | should -BeNullOrEmpty
     }
 }
 
@@ -118,27 +115,27 @@ function ThenNoErrorShouldBeThrown
 Describe 'Set-ProGetAsset.when Asset is uploaded correctly'{
     Init
     GivenSession
-    GivenAsset -Name 'foo.txt' -directory 'versions' -FilePath 'foo.txt'
+    GivenAsset -Name 'foo.txt' -FilePath 'foo.txt'
     WhenAssetIsUploaded
-    ThenAssetShouldExist -Name 'foo.txt'
+    ThenAssetShouldExist -Name 'foo.txt' -directory ''
     ThenNoErrorShouldBeThrown
 }
 
 Describe 'Set-ProGetAsset.when Asset is uploaded correctly in subfolder'{
     Init
     GivenSession
-    GivenAsset -Name 'foo.txt' -directory 'versions/subdir' -FilePath 'foo.txt'
+    GivenAsset -Name 'subdir/foo.txt' -FilePath 'foo.txt'
     WhenAssetIsUploaded
-    ThenAssetShouldExist -Name 'foo.txt'
+    ThenAssetShouldExist -Name 'foo.txt' -directory 'subdir'
     ThenNoErrorShouldBeThrown
 }
 
 Describe 'Set-ProGetAsset.when Asset is uploaded correctly in subfolder with backslashes'{
     Init
     GivenSession
-    GivenAsset -Name 'foo.txt' -directory 'versions\subdir\' -FilePath 'foo.txt'
+    GivenAsset -Name '\subdir\foo.txt' -FilePath 'foo.txt'
     WhenAssetIsUploaded
-    ThenAssetShouldExist -Name 'foo.txt'
+    ThenAssetShouldExist -Name 'foo.txt' -directory 'subdir'
     ThenNoErrorShouldBeThrown
 }
 
@@ -146,7 +143,7 @@ Describe 'Set-ProGetAsset.when Asset is uploaded correctly in subfolder with bac
 Describe 'Set-ProGetAsset.when exact path is given'{
     Init
     GivenSession
-    GivenAsset -Name 'foo.txt' -directory 'versions' -FilePath 'dir/foo.txt'
+    GivenAsset -Name 'foo.txt' -FilePath 'dir/foo.txt'
     WhenAssetIsUploaded
     ThenAssetShouldExist -Name 'foo.txt'
     ThenNoErrorShouldBeThrown
@@ -163,7 +160,7 @@ Describe 'Set-ProGetAsset.when Asset exists but proget directory does not exist'
 Describe 'Set-ProGetAsset.when file does not exist'{
     Init
     GivenSession
-    GivenAssetWithoutFile -Name 'fubu.txt' -directory 'versions' -FilePath 'fubu.txt'
+    GivenAssetWithoutFile -Name 'fubu.txt' -FilePath 'fubu.txt'
     WhenAssetIsUploaded
     ThenAssetShouldNotExist -Name 'fubu.txt' -directory 'versions'
     ThenErrorShouldBeThrown -ExpectedError 'Could Not find file named ''fubu.txt''. please pass in the correct path value'
@@ -172,7 +169,7 @@ Describe 'Set-ProGetAsset.when file does not exist'{
 Describe 'Set-ProGetAsset.when Asset already exists'{
     Init
     GivenSession
-    GivenAsset -Name 'foo.txt' -directory 'versions' -FilePath 'foo.txt'
+    GivenAsset -Name 'foo.txt' -FilePath 'foo.txt'
     WhenAssetIsUploaded
     WhenAssetIsUploaded
     ThenAssetShouldExist -Name 'foo.txt'

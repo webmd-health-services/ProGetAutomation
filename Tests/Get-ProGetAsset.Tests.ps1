@@ -2,7 +2,6 @@
 
 function GivenSession 
 {
-    $script:progetAssetDirectory = ''
     $script:session = New-ProGetTestSession
     $script:baseDirectory = (split-path -Path $TestDrive.FullName -leaf)
     $feed = Test-ProGetFeed -Session $session -FeedName $baseDirectory -FeedType 'Asset'
@@ -18,19 +17,12 @@ function GivenAssets
         [string[]]
         $Name,
         [string]
-        $WithContent = 'test',
-        [string]
-        $InDirectory
+        $WithContent = 'test'
     )
-    $script:progetAssetDirectory = $script:baseDirectory
-    if($InDirectory)
-    {
-        $script:progetAssetDirectory = (join-path -Path $script:baseDirectory -childPath $InDirectory)
-    }
     foreach($file in $Name)
     {
         New-Item -Path (Join-Path -Path $TestDrive.FullName -ChildPath $file) -Type 'file' -value $WithContent -Force 
-        Set-ProGetAsset -Session $session -Directory $progetAssetDirectory -Name $file -Path (Join-Path -Path $TestDrive.FullName -ChildPath $file)
+        Set-ProGetAsset -Session $session -DirectoryName $baseDirectory -Path $file -FilePath (Join-Path -Path $TestDrive.FullName -ChildPath $file)
     }
 }
 
@@ -38,10 +30,13 @@ function WhenAssetIsRequested
 {
     param(
         [string]
-        $Name
+        $Filter,
+        [string]
+        $Subdirectory
     )
     $Global:Error.Clear()
-    $script:assets = Get-ProGetAsset -Session $session -Directory $progetAssetDirectory -Name $name -ErrorAction SilentlyContinue
+    $script:assets = Get-ProGetAsset -Session $session -DirectoryName $baseDirectory -Path $Subdirectory -Filter $Filter -ErrorAction SilentlyContinue
+    write-host $assets
 }
 
 function ThenListShouldBeReturned
@@ -80,7 +75,7 @@ Describe 'Get-ProGetAsset.when list of assets is returned'{
 Describe 'Get-ProGetAsset.when using wildcard'{
     GivenSession
     GivenAssets -name 'foo','foobar','notfbar'
-    WhenAssetIsRequested -name '*foo*'
+    WhenAssetIsRequested -filter '*foo*'
     ThenListShouldBeReturned -name 'foo','foobar'
     ThenNoErrorShouldBeThrown
 }
@@ -88,7 +83,7 @@ Describe 'Get-ProGetAsset.when using wildcard'{
 Describe 'Get-ProGetAsset.when single asset is returned'{
     GivenSession
     GivenAssets -name 'foo.txt' -WithContent 'test'
-    WhenAssetIsRequested -name 'foo.txt'
+    WhenAssetIsRequested -filter 'foo.txt'
     ThenListShouldBeReturned -name 'foo.txt'
     ThenNoErrorShouldBeThrown
 }
@@ -96,23 +91,23 @@ Describe 'Get-ProGetAsset.when single asset is returned'{
 Describe 'Get-ProGetAsset.when asset is requested but does not exist'{
     GivenSession
     GivenAssets -name 'foo' -withContent 'test content'
-    WhenAssetIsRequested -Name 'fubu'
+    WhenAssetIsRequested -filter 'fubu'
     ThenNoErrorShouldBeThrown
     ThenListShouldBeEmpty
 }
 
 Describe 'Get-ProGetAsset.when list of assets is returned from a subdirectory'{
     GivenSession
-    GivenAssets -name 'world.txt','hello.txt' -Directory 'hello/world/'
-    WhenAssetIsRequested
+    GivenAssets -name 'world/world.txt','world/hello.txt' -Directory 'hello'
+    WhenAssetIsRequested -subdirectory 'world'
     ThenListShouldBeReturned -name 'world.txt','hello.txt'
     ThenNoErrorShouldBeThrown
 }
 
 Describe 'Get-ProGetAsset.when list of assets is returned from a subdirectory with backslashes'{
     GivenSession
-    GivenAssets -name 'world.txt','hello.txt' -Directory '\hello\world\'
-    WhenAssetIsRequested
+    GivenAssets -name '\world\world.txt','\world\hello.txt' -Directory '\hello\'
+    WhenAssetIsRequested -subdirectory 'world'
     ThenListShouldBeReturned -name 'world.txt','hello.txt'
     ThenNoErrorShouldBeThrown
 }

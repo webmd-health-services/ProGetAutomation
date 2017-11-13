@@ -5,17 +5,22 @@ function Remove-ProGetAsset
         Removes assets from ProGet. 
 
         .DESCRIPTION
-        The `Remove-ProGetAsset` function removes assets from ProGet. The Directory parameter is the relative path from the root directory in ProGet to the asset. The `Name` parameter is the name of the asset located in the directory. If the file does not exist no error will be thrown 
+        The `Remove-ProGetAsset` function removes assets from ProGet. Pass the name of the root asset directory to the `DirectoryName` parameter. If the URL to an asset directory in ProGet is `https://proget.example.com/assets/versions/subdirectory/file`, the directory parameter is the first directory after `assets/` in this example `versions`, The path parameter is the rest of the url, in this case `subdirectory/file`. If the file does not exist no error will be thrown. All the files in the asset directory that match `$filter` parameter will be deleted.
 
         .EXAMPLE
-        Remove-ProGetAsset -Session $session -Name 'myAssetName' -Directory 'versions'
+        Remove-ProGetAsset -Session $session -Path 'myAssetName' -DirectoryName 'versions'
 
-        Removes asset if file is found in the 'versions' directory.
+        Removes asset or assets that match `myAssetName`. if `myAssetName` is a directory it will delete the files in the directory but not the directory itself.
 
         .Example
-        Remove-ProGetAsset -Session $session -Name 'myAssetName' -Directory 'versions/example/subexample'
+        Remove-ProGetAsset -Session $session -Path 'versions/myAssetName' -DirectoryName 'example'
 
-        Removes asset if file is found in the directory path 'versions/example/subexample'.
+        Removes asset or assets that match `example/versions/myAssetName` in ProGet
+
+        .Example
+        Remove-ProGetAsset -Session $session -Path 'versions/example' -DirectoryName 'subexample' -filter '*a*'
+
+        Removes all assets that match the wildcard `subexample/versions/example/*a*`
     #>
     param(
         [Parameter(Mandatory = $true)]
@@ -25,27 +30,36 @@ function Remove-ProGetAsset
 
         [Parameter(Mandatory = $true)]
         [string]
-        # The name of a valid path to the directory to Remove the desired asset in ProGet. 
-        $Directory, 
+        # The name of the root asset directory to Remove the desired asset in ProGet. 
+        $DirectoryName, 
 
-        [Parameter(Mandatory = $true)]
         [string]
-        # Name of the asset in the ProGet assets directory that will be removed. If the file is does not exist no error will be thrown.
-        $Name
+        # the asset path in the ProGet assets directory that will be removed. If the file does not exist no error will be thrown.
+        $Path,
+
+        [string]
+        # Name of the assets in the ProGet assets directory that will be deleted. only files that match `$filter` in the directory will be deleted. Wildcards are supported.
+        $Filter
     )
 
     Set-StrictMode -Version 'Latest'
     Use-CallerPreference -Cmdlet $PSCmdlet -SessionState $ExecutionContext.SessionState
-    $topDirectory = (($Directory -split '\\') -split '/')[0] 
-    if($topDirectory.Length -ne $Directory.Length)
-    {
-        $Name = Join-Path -Path $Directory.Substring($topDirectory.Length+1) -ChildPath $Name
-    }
-    $path = '/endpoints/{0}/content/{1}' -f $topDirectory,$Name
 
     try
     {
-        Invoke-ProGetRestMethod -Session $Session -Path $path -Method Delete
+        $uri = '/endpoints/{0}/content/{1}' -f $DirectoryName,$Path
+        $assetList = Get-ProGetAsset -Session $Session -Path $Path -DirectoryName $DirectoryName -Filter $filter
+
+        foreach($asset in $assetList)
+        {
+            $asset = $asset.Name
+            if($Path)
+            {
+                $asset = (join-Path -Path $Path -ChildPath $asset)
+            }
+            $uri = '/endpoints/{0}/content/{1}' -f $DirectoryName, $asset
+            Invoke-ProGetRestMethod -Session $Session -Path $uri -Method Delete
+        }
     }
     catch
     {
