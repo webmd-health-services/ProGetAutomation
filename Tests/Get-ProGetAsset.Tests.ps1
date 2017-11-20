@@ -36,7 +36,6 @@ function WhenAssetIsRequested
     )
     $Global:Error.Clear()
     $script:assets = Get-ProGetAsset -Session $session -DirectoryName $baseDirectory -Path $Subdirectory -Filter $Filter -ErrorAction SilentlyContinue
-    write-host $assets
 }
 
 function ThenListShouldBeReturned

@@ -154,7 +154,7 @@ Describe 'Set-ProGetAsset.when Asset exists but proget directory does not exist'
     GivenSession
     GivenAsset -Name 'foo.txt' -RootDirectory 'badDir' -FilePath 'foo.txt'
     WhenAssetIsUploaded
-    ThenErrorShouldBeThrown -ExpectedError 'Asset Directory ''badDir'' does not exist, please create one using New-ProGetFeed with Name'
+    ThenErrorShouldBeThrown -ExpectedError 'The remote server returned an error:'
 }
 
 Describe 'Set-ProGetAsset.when file does not exist'{
