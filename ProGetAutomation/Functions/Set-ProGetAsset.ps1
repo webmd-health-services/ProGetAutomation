@@ -5,52 +5,69 @@ function Set-ProGetAsset
         Adds and updates assets to the ProGet asset manager. 
 
         .DESCRIPTION
-        The `Set-ProGetAsset` adds assets to ProGet A session, FilePath, DirectoryName and Path is required. 
+        The `Set-ProGetAsset` adds assets to a ProGet session. A DirectoryName and Path are required. Either a FilePath or Body must be provided.
+
         A root directory needs to be created in ProGet using the `New-ProGetFeed` function with Type `Asset`.
         
-        The FilePath parameter is relative path to the file you wish to upload.
-        The DirectoryName parameter is the root asset directory you wish the asset to be located in.
-        The Path parameter is the path to the file you wish to place the asset.
+        * DirectoryName - the root asset directory where the asset is currently located or will be created.
+        * Path - the filepath, relative to the root asset directory, where the asset is currently located or will be created.
+        * FilePath - the filepath, relative to the current working directory, of the file that will be published as an asset.
+        * Body - the content that will be published as an asset.
 
         .EXAMPLE
-        Set-ProGetAsset -Session $session -Path 'subdir/exampleAsset.txt' -DirectoryName 'assetDirectory' -FilePath 'path/to/file.txt'
+        Set-ProGetAsset -Session $session -DirectoryName 'assetDirectory'-Path 'subdir/exampleAsset.txt' -FilePath 'path/to/file.txt'
 
-        Example of adding an asset located on the machine at `path/to/file.txt` to ProGet in the `assetDirectory/subdir` folder. If `assetDirectory` is not created it will throw an error. If subdir is not created it will create the folder.
+        Example of publishing a file located at `path/to/file.txt` to ProGet in the `assetDirectory/subdir` folder. If `assetDirectory` is not created it will throw an error. If subdir is not created it will create the folder.
         
         .EXAMPLE
-        Set-ProGetAsset -Session $session -Path 'exampleAsset.txt' -Directory 'assetDirectory' -Path 'path/to/file.txt'
+        Set-ProGetAsset -Session $session -Directory 'assetDirectory' -Path 'exampleAsset.txt' -Body $bodyContent
 
-        Example of adding an asset located on the machine at `path/to/file.txt` to ProGet in the `assetDirectory` folder. If `assetDirectory` is not created it will throw an error. If subdir is not created it will create the folder.
+        Example of publishing content contained in the $bodyContent variable to ProGet in the `assetDirectory` folder.
     #>
+    [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)]
         [Object]
         # A session object that represents the ProGet instance to use. Use the `New-ProGetSession` function to create session objects.
         $Session,
-        
-        [Parameter(Mandatory = $true)]
-        [string]
-        # The name of a valid directory to upload the desired asset in ProGet. If no root directories exist, use the `New-ProGetFeed` with parameter `-Type 'Asset'` to create a new directory in the ProGet assets page.
-        $DirectoryName,        
-        
-        [Parameter(Mandatory = $true)]
-        [string]
-        # Desired path of the asset that will be uploaded. Any directories that do not exist will be created automatically.
-        $Path,
 
         [Parameter(Mandatory = $true)]
         [string]
-        # The Relative Path of the file to be uploaded. 
-        $FilePath
+        # The name of a valid root asset directory in ProGet. If no root directories exist, use the `New-ProGetFeed` with parameter `-Type 'Asset'` to create a new asset directory.
+        $DirectoryName,
+
+        [Parameter(Mandatory = $true)]
+        [string]
+        # The path where the asset will be published. Any directories that do not exist will be created automatically.
+        $Path,
+
+        [Parameter(Mandatory = $true, ParameterSetName = 'ByFile')]
+        [string]
+        # The relative path of a file to be published as an asset.
+        $FilePath,
+
+        [Parameter(Mandatory = $true, ParameterSetName = 'ByContent')]
+        [string]
+        # The content to be published as an asset.
+        $Body
     )
 
     Set-StrictMode -Version 'Latest'
     Use-CallerPreference -Cmdlet $PSCmdlet -SessionState $ExecutionContext.SessionState
-    if( -not (Test-path -Path $FilePath) )
-    {
-        Write-error ('Could Not find file named ''{0}''. please pass in the correct path value' -f $FilePath)
-        return
-    }
 
-    return Invoke-ProGetRestMethod -Session $Session -Path ('/endpoints/{0}/content/{1}' -f $DirectoryName, $Path) -Method Post -Infile $FilePath
+    switch( $PSCmdlet.ParameterSetName )
+    {
+        'ByFile' {
+            if( !(Test-Path -Path $FilePath) )
+            {
+                Write-Error ('Could not find file named ''{0}''. Please pass in a valid file path.' -f $FilePath)
+                return
+            }
+
+            Invoke-ProGetRestMethod -Session $Session -Path ('/endpoints/{0}/content/{1}' -f $DirectoryName, $Path) -Method Post -Infile $FilePath
+        }
+        'ByContent' {
+            Invoke-ProGetRestMethod -Session $Session -Path ('/endpoints/{0}/content/{1}' -f $DirectoryName, $Path) -Method Post -BodyContent $Body
+        }
+    }
 }

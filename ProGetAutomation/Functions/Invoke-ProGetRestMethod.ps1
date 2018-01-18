@@ -33,10 +33,14 @@ function Invoke-ProGetRestMethod
         [Switch]
         # Send the request as JSON. Otherwise, the data is sent as name/value pairs.
         $AsJson,
-        
-        # Sends the contents of the file at this path as the body of the web request.
+
         [String]
-        $InFile
+        # Send the contents of the file at this path as the body of the web request.
+        $InFile,
+
+        [String]
+        # Send the content of this string as the body of the web request.
+        $BodyContent
     )
 
     Set-StrictMode -Version 'Latest'
@@ -115,6 +119,10 @@ function Invoke-ProGetRestMethod
             $body = @{ }
             $bodyParam['Infile'] = $Infile
             $contentType = 'multipart/form-data'
+        }
+        elseif( $BodyContent )
+        {
+            $bodyParam['Body'] = $BodyContent
         }
         $credentialParam = @{ }
         if( $Session.Credential )
