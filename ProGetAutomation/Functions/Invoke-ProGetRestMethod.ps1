@@ -10,7 +10,7 @@ function Invoke-ProGetRestMethod
 
     You also need to pass an object that represents the ProGet instance and API key to use when connecting via the `Session` parameter. Use the `New-ProGetSession` function to create a session object.
     #>
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName='None')]
     param(
         [Parameter(Mandatory=$true)]
         [object]
@@ -18,7 +18,7 @@ function Invoke-ProGetRestMethod
         $Session,
 
         [Parameter(Mandatory=$true)]
-        [string]
+        [String]
         # The path to the API endpoint.
         $Path,
 
@@ -26,21 +26,25 @@ function Invoke-ProGetRestMethod
         # The HTTP/web method to use. The default is `POST`.
         $Method = [Microsoft.PowerShell.Commands.WebRequestMethod]::Post,
 
+        [Parameter(ParameterSetName = 'ByParameter')]
         [hashtable]
         # That parameters to pass to the method. These are converted to JSON and sent to the API in the body of the request.
         $Parameter,
 
-        [Switch]
+        [Parameter(ParameterSetName = 'ByParameter')]
+        [switch]
         # Send the request as JSON. Otherwise, the data is sent as name/value pairs.
         $AsJson,
 
+        [Parameter(ParameterSetName = 'ByFile')]
         [String]
         # Send the contents of the file at this path as the body of the web request.
         $InFile,
 
+        [Parameter(ParameterSetName = 'ByContent')]
         [String]
         # Send the content of this string as the body of the web request.
-        $BodyContent
+        $Body
     )
 
     Set-StrictMode -Version 'Latest'
@@ -48,20 +52,19 @@ function Invoke-ProGetRestMethod
     $uri = New-Object 'Uri' -ArgumentList $Session.Uri,$Path
     
     $contentType = 'application/json; charset=utf-8'
-    $bodyParam = @{ }
-    $body = ''
-    $debugBody = ''
-    if( $Parameter )
+    $debugBody = $null
+
+    if( $PSCmdlet.ParameterSetName -eq 'ByParameter' )
     {
         if( $AsJson )
         {
-            $body = $Parameter | ConvertTo-Json -Depth 100
-            $debugBody = $body -replace '("API_Key": +")[^"]+','$1********'
+            $Body = $Parameter | ConvertTo-Json -Depth 100
+            $debugBody = $Body -replace '("API_Key": +")[^"]+','$1********'
         }
         else
         {
-            $body = $Parameter.Keys | ForEach-Object { '{0}={1}' -f [Web.HttpUtility]::UrlEncode($_),[Web.HttpUtility]::UrlEncode($Parameter[$_]) }
-            $body = $body -join '&'
+            $Body = $Parameter.Keys | ForEach-Object { '{0}={1}' -f [Web.HttpUtility]::UrlEncode($_),[Web.HttpUtility]::UrlEncode($Parameter[$_]) }
+            $Body = $Body -join '&'
             $contentType = 'application/x-www-form-urlencoded; charset=utf-8'
             $debugBody = $Parameter.Keys | ForEach-Object {
                 $value = $Parameter[$_]
@@ -110,20 +113,16 @@ function Invoke-ProGetRestMethod
     try
     {
         $bodyParam = @{ }
-        if( $body )
+        if( $PSCmdlet.ParameterSetName -in ('ByParameter', 'ByContent') )
         {
-            $bodyParam['Body'] = $body
+            $bodyParam['Body'] = $Body
         }
-        elseif( $Infile )
+        elseif( $PSCmdlet.ParameterSetName -eq ('ByFile') )
         {
-            $body = @{ }
             $bodyParam['Infile'] = $Infile
             $contentType = 'multipart/form-data'
         }
-        elseif( $BodyContent )
-        {
-            $bodyParam['Body'] = $BodyContent
-        }
+
         $credentialParam = @{ }
         if( $Session.Credential )
         {

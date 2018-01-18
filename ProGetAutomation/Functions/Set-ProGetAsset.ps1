@@ -12,7 +12,7 @@ function Set-ProGetAsset
         * DirectoryName - the root asset directory where the asset is currently located or will be created.
         * Path - the filepath, relative to the root asset directory, where the asset is currently located or will be created.
         * FilePath - the filepath, relative to the current working directory, of the file that will be published as an asset.
-        * Body - the content that will be published as an asset.
+        * Value - the content that will be published as an asset.
 
         .EXAMPLE
         Set-ProGetAsset -Session $session -DirectoryName 'assetDirectory'-Path 'subdir/exampleAsset.txt' -FilePath 'path/to/file.txt'
@@ -20,7 +20,7 @@ function Set-ProGetAsset
         Example of publishing a file located at `path/to/file.txt` to ProGet in the `assetDirectory/subdir` folder. If `assetDirectory` is not created it will throw an error. If subdir is not created it will create the folder.
         
         .EXAMPLE
-        Set-ProGetAsset -Session $session -Directory 'assetDirectory' -Path 'exampleAsset.txt' -Body $bodyContent
+        Set-ProGetAsset -Session $session -Directory 'assetDirectory' -Path 'exampleAsset.txt' -Value $bodyContent
 
         Example of publishing content contained in the $bodyContent variable to ProGet in the `assetDirectory` folder.
     #>
@@ -49,7 +49,7 @@ function Set-ProGetAsset
         [Parameter(Mandatory = $true, ParameterSetName = 'ByContent')]
         [string]
         # The content to be published as an asset.
-        $Body
+        $Value
     )
 
     Set-StrictMode -Version 'Latest'
@@ -67,7 +67,7 @@ function Set-ProGetAsset
             Invoke-ProGetRestMethod -Session $Session -Path ('/endpoints/{0}/content/{1}' -f $DirectoryName, $Path) -Method Post -Infile $FilePath
         }
         'ByContent' {
-            Invoke-ProGetRestMethod -Session $Session -Path ('/endpoints/{0}/content/{1}' -f $DirectoryName, $Path) -Method Post -BodyContent $Body
+            Invoke-ProGetRestMethod -Session $Session -Path ('/endpoints/{0}/content/{1}' -f $DirectoryName, $Path) -Method Post -Body $Value
         }
     }
 }

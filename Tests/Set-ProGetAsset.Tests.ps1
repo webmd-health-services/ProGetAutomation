@@ -9,7 +9,7 @@ function Init
     $script:baseDirectory = (Split-Path -Path $TestDrive.FullName -Leaf)
     $script:directory = $null
     $script:filePath = $null
-    $script:bodyContent = $null
+    $script:valueContent = $null
 }
 
 function GivenSession 
@@ -59,28 +59,31 @@ function GivenSourceFilePath
     }
 }
 
-function GivenSourceBodyContent
+function GivenSourceValue
 {
     param(
         [string]
-        $Body
+        $Value
     )
 
-    $script:bodyContent = $Body
+    $script:valueContent = $Value
 }
 
 function WhenAssetIsPublished
 {
     $Global:Error.Clear()
-    
+
+    $params = @{ }
     if( $filePath )
     {
-        Set-ProGetAsset -Session $session -Path $proGetAssetName -DirectoryName $baseDirectory -FilePath $filePath -ErrorAction SilentlyContinue
+        $params['FilePath'] = $filePath
     }
-    elseif( $bodyContent )
+    else
     {
-        Set-ProGetAsset -Session $session -Path $proGetAssetName -DirectoryName $baseDirectory -Body $bodyContent -ErrorAction SilentlyContinue
+        $params['Value'] = $valueContent
     }
+
+    Set-ProGetAsset -Session $session -Path $proGetAssetName -DirectoryName $baseDirectory @params -ErrorAction SilentlyContinue
 }
 
 function ThenAssetShouldExist
@@ -106,6 +109,20 @@ function ThenAssetShouldNotExist
     )
     it ('should not contain the asset ''{0}''' -f $Name) {
         Get-ProGetAsset -Session $session -DirectoryName $baseDirectory -Path $Directory | Where-Object { $_.name -match $name } | Should -BeNullOrEmpty
+    }
+}
+
+function ThenAssetContentsShouldMatch
+{
+    param(
+        $Value
+    )
+
+    $assetContents = Invoke-ProGetRestMethod -Session $session -Path ('/endpoints/{0}/content/{1}' -f $baseDirectory, $progetAssetName) -Method Get
+
+    It 'should post the correct content to the ProGet asset' {
+        $assetContents.Test | Should Be $Value.Test
+        $assetContents.Test2 | Should Be $Value.Test2
     }
 }
 
@@ -203,8 +220,9 @@ Describe 'Set-ProGetAsset.when body content is provided instead of a file' {
     Init
     GivenSession
     GivenAssetName 'foo.txt'
-    GivenSourceBodyContent (@{ Test = 'Test'; Test2 = 'Test2' } | ConvertTo-Json | Out-String)
+    GivenSourceValue (@{ Test = 'Test'; Test2 = 'Test2' } | ConvertTo-Json | Out-String)
     WhenAssetIsPublished
     ThenAssetShouldExist -Name 'foo.txt' -Directory ''
+    ThenAssetContentsShouldMatch @{ Test = 'Test'; Test2 = 'Test2' }
     ThenNoErrorShouldBeThrown
 }

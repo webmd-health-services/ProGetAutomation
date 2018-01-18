@@ -25,7 +25,7 @@ Describe 'Invoke-ProGetRestMethod.when making a POST request with defined body c
     Mock -CommandName 'Invoke-RestMethod' -ModuleName 'ProGetAutomation'
     
     It 'should not throw an error' {
-        { Invoke-ProGetRestMethod -Session $session -Method Post -Path ('/upack/Fubar/versions') -BodyContent 'xyz body content' } | Should -Not -Throw
+        { Invoke-ProGetRestMethod -Session $session -Method Post -Path ('/upack/Fubar/versions') -Body 'xyz body content' } | Should -Not -Throw
     }
 
     It 'should not write any errors' {
