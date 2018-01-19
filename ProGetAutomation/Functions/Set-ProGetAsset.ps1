@@ -55,6 +55,7 @@ function Set-ProGetAsset
     Set-StrictMode -Version 'Latest'
     Use-CallerPreference -Cmdlet $PSCmdlet -SessionState $ExecutionContext.SessionState
 
+    $contentParam = @{ }
     switch( $PSCmdlet.ParameterSetName )
     {
         'ByFile' {
@@ -64,10 +65,12 @@ function Set-ProGetAsset
                 return
             }
 
-            Invoke-ProGetRestMethod -Session $Session -Path ('/endpoints/{0}/content/{1}' -f $DirectoryName, $Path) -Method Post -Infile $FilePath
+            $contentParam['Infile'] = $FilePath
         }
         'ByContent' {
-            Invoke-ProGetRestMethod -Session $Session -Path ('/endpoints/{0}/content/{1}' -f $DirectoryName, $Path) -Method Post -Body $Value
+            $contentParam['Body'] = $Value
         }
     }
+
+    Invoke-ProGetRestMethod -Session $Session -Path ('/endpoints/{0}/content/{1}' -f $DirectoryName, $Path) -Method Post @contentParam
 }
