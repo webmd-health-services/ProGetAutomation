@@ -40,6 +40,6 @@ function Invoke-ProGetNativeApiMethod
         $Parameter = @{}
     }
     
-    Invoke-ProGetRestMethod -Session $Session -Path ('/api/json/{0}' -f $Name) -Method Post -Parameter $Parameter -AsJson
+    Invoke-ProGetRestMethod -Session $Session -Path ('/api/json/{0}' -f $Name) -Method Post -Parameter $Parameter -ContentType Json
 
 }

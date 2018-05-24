@@ -27,12 +27,13 @@ function Invoke-ProGetRestMethod
         $Method = [Microsoft.PowerShell.Commands.WebRequestMethod]::Post,
 
         [hashtable]
-        # That parameters to pass to the method. These are converted to JSON and sent to the API in the body of the request.
+        # The parameters to pass to the method.
         $Parameter,
 
-        [Switch]
-        # Send the request as JSON. Otherwise, the data is sent as name/value pairs.
-        $AsJson,
+        [string]
+        [ValidateSet('Form','Json')]
+        # Controls how the parameters are sent to the API. The default is `Form`, which sends them as URL-encoded name/value pairs (i.e. like a HTML form submission). The other options is `Json`, which converts the parameters to JSON and sends that JSON text as the content/body of the request. This parameter is ignored if there are no parmaeters to send or if the `InFile` parameter is used.
+        $ContentType,
         
         # Sends the contents of the file at this path as the body of the web request.
         [String]
@@ -47,13 +48,13 @@ function Invoke-ProGetRestMethod
 
     $uri = New-Object 'Uri' -ArgumentList $Session.Uri,$Path
     
-    $contentType = 'application/json; charset=utf-8'
+    $requestContentType = 'application/json; charset=utf-8'
     $bodyParam = @{ }
     $body = ''
     $debugBody = ''
     if( $Parameter )
     {
-        if( $AsJson )
+        if( $ContentType -eq 'Json' )
         {
             $body = $Parameter | ConvertTo-Json -Depth 100
             $debugBody = $body -replace '("API_Key": +")[^"]+','$1********'
@@ -62,7 +63,7 @@ function Invoke-ProGetRestMethod
         {
             $body = $Parameter.Keys | ForEach-Object { '{0}={1}' -f [Web.HttpUtility]::UrlEncode($_),[Web.HttpUtility]::UrlEncode($Parameter[$_]) }
             $body = $body -join '&'
-            $contentType = 'application/x-www-form-urlencoded; charset=utf-8'
+            $requestContentType = 'application/x-www-form-urlencoded; charset=utf-8'
             $debugBody = $Parameter.Keys | ForEach-Object {
                 $value = $Parameter[$_]
                 if( $_ -eq 'API_Key' )
@@ -89,7 +90,7 @@ function Invoke-ProGetRestMethod
 
     #$DebugPreference = 'Continue'
     Write-Debug -Message ('{0} {1}' -f $Method.ToString().ToUpperInvariant(),($uri -replace '\b(API_Key=)([^&]+)','$1********'))
-    Write-Debug -Message ('    Content-Type: {0}' -f $contentType)
+    Write-Debug -Message ('    Content-Type: {0}' -f $requestContentType)
     foreach( $headerName in $headers.Keys )
     {
         $value = $headers[$headerName]
@@ -118,7 +119,7 @@ function Invoke-ProGetRestMethod
         {
             $body = @{ }
             $bodyParam['Infile'] = $Infile
-            $contentType = 'multipart/form-data'
+            $requestContentType = 'multipart/form-data'
         }
         $credentialParam = @{ }
         if( $Session.Credential )
@@ -132,7 +133,7 @@ function Invoke-ProGetRestMethod
             $cmdName = 'Invoke-WebRequest'
         }
 
-        & $cmdName -Method $Method -Uri $uri @bodyParam -ContentType $contentType -Headers $headers @credentialParam | 
+        & $cmdName -Method $Method -Uri $uri @bodyParam -ContentType $requestContentType -Headers $headers @credentialParam | 
             ForEach-Object { $_ } 
     }
     catch [Net.WebException]
