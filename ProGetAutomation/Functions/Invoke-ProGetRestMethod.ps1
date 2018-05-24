@@ -10,7 +10,7 @@ function Invoke-ProGetRestMethod
 
     You also need to pass an object that represents the ProGet instance and API key to use when connecting via the `Session` parameter. Use the `New-ProGetSession` function to create a session object.
     #>
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName='None')]
     param(
         [Parameter(Mandatory=$true)]
         [object]
@@ -18,7 +18,7 @@ function Invoke-ProGetRestMethod
         $Session,
 
         [Parameter(Mandatory=$true)]
-        [string]
+        [String]
         # The path to the API endpoint.
         $Path,
 
@@ -26,18 +26,26 @@ function Invoke-ProGetRestMethod
         # The HTTP/web method to use. The default is `POST`.
         $Method = [Microsoft.PowerShell.Commands.WebRequestMethod]::Post,
 
+        [Parameter(ParameterSetName = 'ByParameter')]
         [hashtable]
         # The parameters to pass to the method.
         $Parameter,
 
+        [Parameter(ParameterSetName = 'ByParameter')]
         [string]
         [ValidateSet('Form','Json')]
         # Controls how the parameters are sent to the API. The default is `Form`, which sends them as URL-encoded name/value pairs (i.e. like a HTML form submission). The other options is `Json`, which converts the parameters to JSON and sends that JSON text as the content/body of the request. This parameter is ignored if there are no parmaeters to send or if the `InFile` parameter is used.
         $ContentType,
-        
-        # Sends the contents of the file at this path as the body of the web request.
+
+        [Parameter(ParameterSetName = 'ByFile')]
         [String]
+        # Send the contents of the file at this path as the body of the web request.
         $InFile,
+
+        [Parameter(ParameterSetName = 'ByContent')]
+        [String]
+        # Send the content of this string as the body of the web request.
+        $Body,
 
         [Switch]
         # Return the raw content from the request instead of attempting to convert the response from JSON into an object.
@@ -49,20 +57,19 @@ function Invoke-ProGetRestMethod
     $uri = New-Object 'Uri' -ArgumentList $Session.Uri,$Path
     
     $requestContentType = 'application/json; charset=utf-8'
-    $bodyParam = @{ }
-    $body = ''
-    $debugBody = ''
-    if( $Parameter )
+    $debugBody = $null
+
+    if( $PSCmdlet.ParameterSetName -eq 'ByParameter' )
     {
         if( $ContentType -eq 'Json' )
         {
-            $body = $Parameter | ConvertTo-Json -Depth 100
-            $debugBody = $body -replace '("API_Key": +")[^"]+','$1********'
+            $Body = $Parameter | ConvertTo-Json -Depth 100
+            $debugBody = $Body -replace '("API_Key": +")[^"]+','$1********'
         }
         else
         {
-            $body = $Parameter.Keys | ForEach-Object { '{0}={1}' -f [Web.HttpUtility]::UrlEncode($_),[Web.HttpUtility]::UrlEncode($Parameter[$_]) }
-            $body = $body -join '&'
+            $Body = $Parameter.Keys | ForEach-Object { '{0}={1}' -f [Web.HttpUtility]::UrlEncode($_),[Web.HttpUtility]::UrlEncode($Parameter[$_]) }
+            $Body = $Body -join '&'
             $requestContentType = 'application/x-www-form-urlencoded; charset=utf-8'
             $debugBody = $Parameter.Keys | ForEach-Object {
                 $value = $Parameter[$_]
@@ -110,21 +117,29 @@ function Invoke-ProGetRestMethod
     $errorsAtStart = $Global:Error.Count
     try
     {
-        $bodyParam = @{ }
-        if( $body )
+        $optionalParams = @{
+                                'ContentType' = $requestContentType;
+                           }
+        if( $PSCmdlet.ParameterSetName -in ('ByParameter', 'ByContent') )
         {
-            $bodyParam['Body'] = $body
+            if( $Body )
+            {
+                $optionalParams['Body'] = $Body
+            }
+            else
+            {
+                $optionalParams.Remove('ContentType')
+            }
         }
-        elseif( $Infile )
+        elseif( $PSCmdlet.ParameterSetName -eq ('ByFile') )
         {
-            $body = @{ }
-            $bodyParam['Infile'] = $Infile
+            $optionalParams['Infile'] = $Infile
             $requestContentType = 'multipart/form-data'
         }
-        $credentialParam = @{ }
+
         if( $Session.Credential )
         {
-            $credentialParam['Credential'] = $Session.Credential
+            $optionalParams['Credential'] = $Session.Credential
         }
 
         $cmdName = 'Invoke-RestMethod'
@@ -133,7 +148,7 @@ function Invoke-ProGetRestMethod
             $cmdName = 'Invoke-WebRequest'
         }
 
-        & $cmdName -Method $Method -Uri $uri @bodyParam -ContentType $requestContentType -Headers $headers @credentialParam | 
+        & $cmdName -Method $Method -Uri $uri @optionalParams -Headers $headers | 
             ForEach-Object { $_ } 
     }
     catch [Net.WebException]
