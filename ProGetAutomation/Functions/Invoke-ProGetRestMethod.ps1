@@ -36,7 +36,11 @@ function Invoke-ProGetRestMethod
         
         # Sends the contents of the file at this path as the body of the web request.
         [String]
-        $InFile
+        $InFile,
+
+        [Switch]
+        # Return the raw content from the request instead of attempting to convert the response from JSON into an object.
+        $Raw
     )
 
     Set-StrictMode -Version 'Latest'
@@ -99,7 +103,7 @@ function Invoke-ProGetRestMethod
     
     if( $debugBody )
     {
-        $debugBody | Write-Debug
+        $debugBody | Write-Verbose
     }
 
     $errorsAtStart = $Global:Error.Count
@@ -122,7 +126,13 @@ function Invoke-ProGetRestMethod
             $credentialParam['Credential'] = $Session.Credential
         }
 
-        Invoke-RestMethod -Method $Method -Uri $uri @bodyParam -ContentType $contentType -Headers $headers @credentialParam | 
+        $cmdName = 'Invoke-RestMethod'
+        if( $Raw )
+        {
+            $cmdName = 'Invoke-WebRequest'
+        }
+
+        & $cmdName -Method $Method -Uri $uri @bodyParam -ContentType $contentType -Headers $headers @credentialParam | 
             ForEach-Object { $_ } 
     }
     catch [Net.WebException]
