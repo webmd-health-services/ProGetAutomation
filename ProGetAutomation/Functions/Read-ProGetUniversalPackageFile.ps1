@@ -52,7 +52,6 @@ function Read-ProGetUniversalPackageFile
     Use-CallerPreference -Cmdlet $PSCmdlet -SessionState $ExecutionContext.SessionState
 
     $uriPath = '/upack/{0}/download-file/{1}/' -f ($FeedName,$Name | ForEach-Object { [Uri]::EscapeUriString($_) })
-    #$uriPath = '/upack/{0}/download-file/{1}/{2}/?path={3}' -f ($FeedName,$Name,$Version,$Path | ForEach-Object { [Uri]::EscapeUriString($_) })
     if( $Version )
     {
         $uriPath = '{0}{1}/?' -f $uriPath,[Uri]::EscapeUriString($Version)
