@@ -185,6 +185,7 @@ See http://inedo.com/support/documentation/various/universal-packages/universal-
         [Net.Http.StreamContent]$streamContent = $null
         [Threading.Tasks.Task[Net.Http.HttpResponseMessage]]$httpResponseMessage = $null
         [Net.Http.HttpResponseMessage]$response = $null
+        [Threading.CancellationTokenSource]$canceller = $null
         try
         {
             $httpClientHandler = New-Object 'Net.Http.HttpClientHandler'
@@ -202,9 +203,18 @@ See http://inedo.com/support/documentation/various/universal-packages/universal-
             $packageStream = New-Object 'IO.FileStream' ($PackagePath, 'Open', 'Read')
             $streamContent = New-Object 'Net.Http.StreamContent' ([IO.Stream]$packageStream)
             $streamContent.Headers.ContentType = New-Object 'Net.Http.Headers.MediaTypeHeaderValue' ('application/octet-stream')
-            $httpResponseMessage = $httpClient.PutAsync($proGetPackageUri, [Net.Http.HttpContent]$streamContent)
+            $canceller = New-Object 'Threading.CancellationTokenSource'
+            $httpResponseMessage = $httpClient.PutAsync($proGetPackageUri, [Net.Http.HttpContent]$streamContent, $canceller.Token)
             if( -not $httpResponseMessage.Wait($maxDuration) )
             {
+                $canceller.Cancel()
+                $maxTries = 1000
+                $tryNum = 0
+                while( $tryNum -lt $maxTries -and -not $httpResponseMessage.IsCanceled )
+                {
+                    $tryNum += 1
+                    Start-Sleep -Milliseconds 100
+                }
                 Write-Error -Message ('Uploading file ''{0}'' to ''{1}'' timed out after {2} second(s). To increase this timeout, set the Timeout parameter to the number of seconds to wait for the upload to complete.' -f $PackagePath,$proGetPackageUri,$Timeout)
                 return
             }
@@ -235,7 +245,7 @@ See http://inedo.com/support/documentation/various/universal-packages/universal-
         }
         finally
         {
-            $disposables = @( 'httpClientHandler', 'httpClient', 'packageStream', 'streamContent', 'httpResponseMessage', 'response' ) 
+            $disposables = @( 'httpClientHandler', 'httpClient', 'canceller', 'packageStream', 'streamContent', 'httpResponseMessage', 'response' ) 
             $disposables |
                 ForEach-Object { Get-Variable -Name $_ -ValueOnly -ErrorAction Ignore } |
                 Where-Object { $_ -ne $null } |
