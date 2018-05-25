@@ -34,6 +34,7 @@ function Invoke-ProGetNativeApiMethod
     )
 
     Set-StrictMode -Version 'Latest'
+    Use-CallerPreference -Cmdlet $PSCmdlet -SessionState $ExecutionContext.SessionState
 
     if( -not $Parameter )
     {

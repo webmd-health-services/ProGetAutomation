@@ -53,7 +53,8 @@ function Invoke-ProGetRestMethod
     )
 
     Set-StrictMode -Version 'Latest'
-
+    Use-CallerPreference -Cmdlet $PSCmdlet -SessionState $ExecutionContext.SessionState
+    
     $uri = New-Object 'Uri' -ArgumentList $Session.Uri,$Path
     
     $requestContentType = 'application/json; charset=utf-8'
