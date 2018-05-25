@@ -15,7 +15,12 @@ function Read-ProGetUniversalPackageFile
     .EXAMPLE
     Read-ProGetUniversalPackageFile -Session $session -FeedName 'Apps' -Name 'MyApp' -Path 'upack.json'
 
-    Demonstr
+    Demonstrates how to read the upack.json file from a package in a ProGet universal feed without downloading the entire package. In this example, the upack.json file is read from the package.
+
+    .EXAMPLE
+    Read-ProGetUniversalPackageFile -Session $session -FeedName 'Apps' -Name 'MyApp' -Path 'package/readme.md'
+
+    Demonstrates how to read the readme.md file that was included in a package.
     #>
     [CmdletBinding()]
     param(
