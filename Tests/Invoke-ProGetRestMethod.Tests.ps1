@@ -8,11 +8,8 @@ $session = New-ProGetTestSession
 New-ProGetFeed -Session $session -FeedName 'Fubar' -FeedType 'ProGet' -ErrorAction Ignore
 
 Describe 'Invoke-ProGetRestMethod.when making a GET request' {
-    
-
     $Global:Error.Clear()
 
-    # This failed in early versions of the module.
     It 'should not throw an error' {
         { Invoke-ProGetRestMethod -Session $session -Method Get -Path ('/upack/Fubar/versions') } | Should -Not -Throw
     }
@@ -20,7 +17,24 @@ Describe 'Invoke-ProGetRestMethod.when making a GET request' {
     It 'should not write any errors' {
         $Global:Error | Should -BeNullOrEmpty
     }
+}
 
+Describe 'Invoke-ProGetRestMethod.when making a POST request with defined body content' {
+    $Global:Error.Clear()
+
+    Mock -CommandName 'Invoke-RestMethod' -ModuleName 'ProGetAutomation'
+    
+    It 'should not throw an error' {
+        { Invoke-ProGetRestMethod -Session $session -Method Post -Path ('/upack/Fubar/versions') -Body 'xyz body content' } | Should -Not -Throw
+    }
+
+    It 'should not write any errors' {
+        $Global:Error | Should -BeNullOrEmpty
+    }
+
+    It 'should send defined body content to Invoke-RestMethod' {
+        Assert-MockCalled -CommandName 'Invoke-RestMethod' -ModuleName 'ProGetAutomation' -ParameterFilter { $Body -eq 'xyz body content' }
+    }
 }
 
 Describe 'Invoke-ProGetRestMethod.when using credential in session' {
@@ -49,5 +63,4 @@ Describe 'Invoke-ProGetRestMethod.when not using a credential' {
     It 'should not write any errors' {
         $Global:Error | Should -BeNullOrEmpty
     }
-
-} 
+}
