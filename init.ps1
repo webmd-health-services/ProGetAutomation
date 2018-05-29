@@ -5,6 +5,8 @@ param(
 #Requires -Version 4
 Set-StrictMode -Version 'Latest'
 
+Import-Module (Join-Path -Path $PSScriptRoot -ChildPath 'Modules\Carbon') -Force
+
 $runningUnderAppVeyor = (Test-Path -Path 'env:APPVEYOR')
 
 $version = '4.8.12'
