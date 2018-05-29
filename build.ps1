@@ -1,26 +1,38 @@
-[CmdletBinding()]
+[CmdletBinding(DefaultParameterSetName='Build')]
 param(
+    [Parameter(Mandatory=$true,ParameterSetName='Clean')]
+    [Switch]
+    # Runs the build in clean mode, which removes any files, tools, packages created by previous builds.
+    $Clean,
+
+    [Parameter(Mandatory=$true,ParameterSetName='Initialize')]
+    [Switch]
+    # Initializes the repository.
+    $Initialize
 )
 
-& (Join-Path -Path $PSScriptRoot -ChildPath 'init.ps1' -Resolve)
 
-Import-Module -Name (Join-Path -Path $PSScriptRoot -ChildPath 'Pester' -Resolve) -Force -Verbose:$false
+#Requires -Version 4
+Set-StrictMode -Version Latest
 
-$outputdir = Join-Path -Path $PSScriptRoot -ChildPath '.output'
+& (Join-Path -Path $PSScriptRoot -ChildPath '.whiskey\Import-Whiskey.ps1' -Resolve)
 
-New-Item -Path $outputdir -ItemType 'Directory' -ErrorAction Ignore
-Get-ChildItem -Path $outputdir | Remove-Item -Recurse -Force
+$configPath = Join-Path -Path $PSScriptRoot -ChildPath 'whiskey.yml' -Resolve
 
-$outputFile = Join-Path -Path $outputdir -ChildPath 'pester.xml'
-$result = Invoke-Pester -Script (Join-Path -Path $PSScriptRoot -ChildPath 'Tests\*.Tests.ps1') `
-                        -OutputFile $outputFile `
-                        -OutputFormat NUnitXml `
-                        -PassThru
-
-if( (Test-Path -Path 'env:APPVEYOR') -and (Test-Path -Path $outputFile) )
+$optionalArgs = @{ }
+if( $Clean )
 {
-    $wc = New-Object 'System.Net.WebClient'
-    $wc.UploadFile("https://ci.appveyor.com/api/testresults/nunit/$($env:APPVEYOR_JOB_ID)", $outputFile)
+    $optionalArgs['Clean'] = $true
 }
 
-exit $result.FailedCount
+if( $Initialize )
+{
+    $optionalArgs['Initialize'] = $true
+}
+
+$context = New-WhiskeyContext -Environment 'Dev' -ConfigurationPath $configPath
+if( (Test-Path -Path 'env:PowerShellGalleryApiKey') )
+{
+    Add-WhiskeyApiKey -Context $context -ID 'PowerShellGalleryApiKey' -Value $env:PowerShellGalleryApiKey
+}
+Invoke-WhiskeyBuild -Context $context @optionalArgs

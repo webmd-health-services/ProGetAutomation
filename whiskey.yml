@@ -1,0 +1,17 @@
+PublishOn:
+- master
+
+Build:
+- Version:
+    Path: ProGetAutomation\ProGetAutomation.psd1
+- PowerShell:
+    Path: init.ps1
+- Pester4:
+    Path: Tests\*.Tests.ps1
+
+Publish:
+- PublishPowerShellModule:
+    Path: ProGetAutomation
+    RepositoryName: PSGallery
+    RepositoryUri: https://www.powershellgallery.com/api/v2/ 
+    ApiKeyID: PowerShellGalleryApiKey

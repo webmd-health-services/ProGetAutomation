@@ -5,19 +5,6 @@ param(
 #Requires -Version 4
 Set-StrictMode -Version 'Latest'
 
-foreach( $moduleName in @( 'Pester', 'Carbon' ) )
-{
-    if( (Test-Path -Path (Join-Path -Path $PSScriptRoot -ChildPath $moduleName) -PathType Container) )
-    {
-        continue
-    }
-
-    Save-Module -Name $moduleName -Path '.' 
-}
-
-if (Get-Module -Name 'Carbon') {Remove-Module -Name 'Carbon'}
-Import-Module -Name (Join-Path -Path $PSScriptRoot -ChildPath 'Carbon') -Force -Verbose:$false
-
 $runningUnderAppVeyor = (Test-Path -Path 'env:APPVEYOR')
 
 $version = '4.8.12'
