@@ -34,12 +34,13 @@ function Invoke-ProGetNativeApiMethod
     )
 
     Set-StrictMode -Version 'Latest'
+    Use-CallerPreference -Cmdlet $PSCmdlet -SessionState $ExecutionContext.SessionState
 
     if( -not $Parameter )
     {
         $Parameter = @{}
     }
     
-    Invoke-ProGetRestMethod -Session $Session -Path ('/api/json/{0}' -f $Name) -Method Post -Parameter $Parameter -AsJson
+    Invoke-ProGetRestMethod -Session $Session -Path ('/api/json/{0}' -f $Name) -Method Post -Parameter $Parameter -ContentType Json
 
 }

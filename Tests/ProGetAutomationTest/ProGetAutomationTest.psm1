@@ -75,6 +75,15 @@ function New-ProGetTestSession
     return New-ProGetSession -Uri $uri -Credential $credential -ApiKey $apiKey
 }
 
+# Activate ProGet. Otherwise, it takes ProGet 30 minutes to activeate itself.
+$loginUri = New-Object 'Uri' $uri,'/log-in'
+$response = Invoke-WebRequest -Uri $loginUri -SessionVariable 'progetSession'
+
+$loginBody = '.ASPXAUTH=uninclused&ah0%7Eah0%7Eah0%7Eah3%7Eah1%7Eah1=Admin&ah0%7Eah0%7Eah0%7Eah3%7Eah2%7Eah1=Admin&ah0%7Eah0%7Eah0%7Eah3%7Eah3%7Eah0=click&__AhTrigger=null'
+Invoke-WebRequest -Method Post -Uri $loginUri -Body $loginBody -WebSession $progetSession
+$activateUri = New-Object 'Uri' $uri,'/administration/licensing/activate'
+Invoke-WebRequest -Uri $activateUri -WebSession $progetSession
+
 # ProGet does not respond correctly to Native API calls upon installation. Initial calls are instead returned the complete HTML of the ProGet login screen.
 # This code ensures that ProGet is awake and functioning correctly for unit testing during the build process and future API calls
 $ProGetSession = New-ProGetTestSession
