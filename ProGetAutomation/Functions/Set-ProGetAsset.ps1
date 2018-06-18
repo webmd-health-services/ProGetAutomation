@@ -1,28 +1,28 @@
 function Set-ProGetAsset
 {
     <#
-        .SYNOPSIS
-        Adds and updates assets to the ProGet asset manager. 
+    .SYNOPSIS
+    Adds and updates assets to the ProGet asset manager. 
 
-        .DESCRIPTION
-        The `Set-ProGetAsset` adds assets to a ProGet session. A DirectoryName and Path are required. Either a FilePath or Body must be provided.
+    .DESCRIPTION
+    The `Set-ProGetAsset` adds assets to a ProGet session. A DirectoryName and Path are required. Either a FilePath or Body must be provided.
 
-        A root directory needs to be created in ProGet using the `New-ProGetFeed` function with Type `Asset`.
+    A root directory needs to be created in ProGet using the `New-ProGetFeed` function with Type `Asset`.
         
-        * DirectoryName - the root asset directory where the asset is currently located or will be created.
-        * Path - the filepath, relative to the root asset directory, where the asset is currently located or will be created.
-        * FilePath - the filepath, relative to the current working directory, of the file that will be published as an asset.
-        * Value - the content that will be published as an asset.
+    * DirectoryName - the root asset directory where the asset is currently located or will be created.
+    * Path - the filepath, relative to the root asset directory, where the asset is currently located or will be created.
+    * FilePath - the filepath, relative to the current working directory, of the file that will be published as an asset.
+    * Content - the content that will be published as an asset.
 
-        .EXAMPLE
-        Set-ProGetAsset -Session $session -DirectoryName 'assetDirectory'-Path 'subdir/exampleAsset.txt' -FilePath 'path/to/file.txt'
+    .EXAMPLE
+    Set-ProGetAsset -Session $session -DirectoryName 'assetDirectory'-Path 'subdir/exampleAsset.txt' -FilePath 'path/to/file.txt'
 
-        Example of publishing a file located at `path/to/file.txt` to ProGet in the `assetDirectory/subdir` folder. If `assetDirectory` is not created it will throw an error. If subdir is not created it will create the folder.
+    Example of publishing a file located at `path/to/file.txt` to ProGet in the `assetDirectory/subdir` folder. If `assetDirectory` is not created it will throw an error. If subdir is not created it will create the folder.
         
-        .EXAMPLE
-        Set-ProGetAsset -Session $session -Directory 'assetDirectory' -Path 'exampleAsset.txt' -Value $bodyContent
+    .EXAMPLE
+    Set-ProGetAsset -Session $session -Directory 'assetDirectory' -Path 'exampleAsset.txt' -Content $bodyContent
 
-        Example of publishing content contained in the $bodyContent variable to ProGet in the `assetDirectory` folder.
+    Example of publishing content contained in the $bodyContent variable to ProGet in the `assetDirectory` folder.
     #>
     [CmdletBinding()]
     param(
@@ -49,7 +49,7 @@ function Set-ProGetAsset
         [Parameter(Mandatory = $true, ParameterSetName = 'ByContent')]
         [string]
         # The content to be published as an asset.
-        $Value
+        $Content
     )
 
     Set-StrictMode -Version 'Latest'
@@ -68,7 +68,7 @@ function Set-ProGetAsset
             $contentParam['Infile'] = $FilePath
         }
         'ByContent' {
-            $contentParam['Body'] = $Value
+            $contentParam['Body'] = $Content
         }
     }
 
