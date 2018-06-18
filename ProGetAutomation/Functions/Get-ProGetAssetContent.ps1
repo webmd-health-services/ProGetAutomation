@@ -10,7 +10,7 @@ function Get-ProGetAssetContent
 
     If an asset doesn't exist, an error will be written and nothing is returned.
 
-    Pass a ProGet session object to the `$Session` parameter. This object controls what instance of ProGet to use and what credentials and/or API keys to use. Use the `New-ProGetSession` function to create session objects.
+    Pass a ProGet session object to the `Session` parameter. This object controls what instance of ProGet to use and what credentials and/or API keys to use. Use the `New-ProGetSession` function to create session objects.
 
     .Example
     Get-ProGetAssetContent -Session $session -DirectoryName 'versions' -Path 'subdirectory/file.json'
