@@ -149,6 +149,11 @@ function Invoke-ProGetRestMethod
             $cmdName = 'Invoke-WebRequest'
         }
 
+        if( (Get-Command -Name $cmdName -ParameterName 'UseBasicParsing' -ErrorAction Ignore) )
+        {
+            $optionalParams['UseBasicParsing'] = $true
+        }
+
         & $cmdName -Method $Method -Uri $uri @optionalParams -Headers $headers | 
             ForEach-Object { $_ } 
     }
