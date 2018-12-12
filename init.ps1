@@ -2,10 +2,11 @@
 param(
 )
 
-#Requires -Version 4
+#Requires -Version 5.1
+#Requires -RunAsAdministrator
 Set-StrictMode -Version 'Latest'
 
-Import-Module (Join-Path -Path $PSScriptRoot -ChildPath 'Modules\Carbon') -Force
+Import-Module (Join-Path -Path $PSScriptRoot -ChildPath 'PSModules\Carbon') -Force
 
 $runningUnderAppVeyor = (Test-Path -Path 'env:APPVEYOR')
 
