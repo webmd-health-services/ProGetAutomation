@@ -152,13 +152,7 @@ See http://inedo.com/support/documentation/various/universal-packages/universal-
             return
         }
 
-        $groupParam = ''
-        if( $group )
-        {
-            $groupParam = '&group={0}' -f [Web.HttpUtility]::UrlEncode($group)
-        }
-        $path = '/upack/{0}/packages?name={1}{2}' -f $FeedName,[Web.HttpUtility]::UrlEncode($name),$groupParam
-        $packageInfo = Invoke-ProGetRestMethod -Session $Session -Path $path -Method Get -ErrorAction Ignore
+        $packageInfo = Get-ProGetUniversalPackage -Session $Session -FeedName $FeedName -GroupName $group -Name $name -ErrorAction Ignore
         if( $packageInfo -and $packageInfo.versions -contains $version )
         {
             Write-Error -Message ('Package {0} {1} already exists in universal ProGet feed ''{2}''.' -f $name,$version,$proGetPackageUri)
