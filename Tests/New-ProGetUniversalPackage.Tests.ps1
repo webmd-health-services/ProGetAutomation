@@ -81,6 +81,7 @@ function ThenPackage
             $HasMetadata['createdUsing'] = $expectedCreatedBy
         }
         $parameterToPropertyMap = @{
+                                        'groupName' = 'group';
                                         'dependency' = 'dependencies';
                                         'author' = 'createdBy';
                                         'reason' = 'createdReason';

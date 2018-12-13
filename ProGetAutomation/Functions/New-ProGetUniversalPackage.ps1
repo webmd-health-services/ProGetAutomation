@@ -165,7 +165,7 @@ function New-ProGetUniversalPackage
         }
 
         $parameterToMetadataMap = @{
-                                        'GroupName' = 'groupName';
+                                        'GroupName' = 'group';
                                         'Title' = 'title';
                                         'ProjectUri' = 'projectUri';
                                         'IconUri' = 'iconUri';
