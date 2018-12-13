@@ -97,7 +97,7 @@ do
 
     New-ProGetFeed -Session $ProGetSession -FeedName 'ProGetAutomationTest' -FeedType 'ProGet' -ErrorAction Ignore
     Invoke-WebRequest -UseBasicParsing -Uri (New-Object 'Uri' ($uri,'/log-in?ReturnUrl=%2F')) -ErrorAction Ignore | Out-Null
-    $feed = Invoke-ProGetNativeApiMethod -Session $ProGetSession -Name 'Feeds_GetFeeds' -Parameter @{ IncludeInactive_Indicator = $true }
+    $feed = Get-ProGetFeed -Session $progetSession -Force
     if( $feed -and ($feed | Select-Object -First 1 | Get-Member -Name 'Feed_Id') )
     {
         $readyToGo = $true

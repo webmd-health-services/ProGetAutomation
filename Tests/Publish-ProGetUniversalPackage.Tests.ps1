@@ -20,7 +20,7 @@ function Initialize-PublishProGetPackageTests
     $Global:Error.Clear()
 
     # Remove all feeds from target ProGet instance
-    $feeds = Invoke-ProGetNativeApiMethod -Session $ProGetSession -Name 'Feeds_GetFeeds' -Parameter @{IncludeInactive_Indicator = $true}
+    $feeds = Get-ProGetFeed -Session $ProGetSession -Force
     if($feeds -match 'Feed_Id')
     {
         $feeds | ForEach-Object {
@@ -29,7 +29,7 @@ function Initialize-PublishProGetPackageTests
     }
     
     New-ProGetFeed -Session $ProGetSession -FeedType 'ProGet' -FeedName $feedName
-    $feedId = (Invoke-ProGetNativeApiMethod -Session $ProGetSession -Name 'Feeds_GetFeed' -Parameter @{Feed_Name = $feedName}).Feed_Id
+    $feedId = (Get-ProGetFeed -Session $ProGetSession -Name $feedName).Feed_Id
     
     return $feedId
     

@@ -60,7 +60,10 @@
     # TypesToProcess = @()
 
     # Format files (.ps1xml) to be loaded when importing this module
-    FormatsToProcess = @( 'Formats\Inedo.ProGet.PackageInfo.ps1xml' )
+    FormatsToProcess = @( 
+                            'Formats\Inedo.ProGet.Native.Feed.ps1xml' 
+                            'Formats\Inedo.ProGet.PackageInfo.ps1xml' 
+                        )
 
     # Modules to import as nested modules of the module specified in RootModule/ModuleToProcess
     NestedModules = @( 'Zip' )
@@ -70,6 +73,7 @@
                             'Add-ProGetUniversalPackageFile',
                             'Get-ProGetAsset',
                             'Get-ProGetAssetContent',
+                            'Get-ProGetFeed',
                             'Get-ProGetUniversalPackage',
                             'Invoke-ProGetNativeApiMethod',
                             'Invoke-ProGetRestMethod',
@@ -123,7 +127,8 @@
             ReleaseNotes = @'
 * Created `New-ProGetUniversalPackage` function to create a new upack file with a correctly formatted upack.json file.
 * Created `Add-ProGetUniversalPackageFile` function for adding files a upack file.
-* Created `Get-ProGetUniversalPackage` funcion to read packages from a ProGet universal feed.
+* Created `Get-ProGetUniversalPackage` function to read packages from a ProGet universal feed.
+* Created `Get-ProGetFeed` function that gets a list of feeds from ProGet.
 '@
 
         } # End of PSData hashtable

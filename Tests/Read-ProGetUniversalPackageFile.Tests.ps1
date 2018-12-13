@@ -39,8 +39,7 @@ function Init
     $script:result = $null
     $script:upackFile = $null
 
-    Invoke-ProGetNativeApiMethod -Session $Session -Name 'Feeds_GetFeed' -Parameter @{ 'Feed_Name' = $feedName } |
-        Where-Object { $_ } |
+    Get-ProGetFeed -Session $Session -Name $feedName |
         ForEach-Object { Invoke-ProGetNativeApiMethod -Session $Session -Name 'Feeds_DeleteFeed' -Parameter @{ 'Feed_Id' = $_.Feed_Id } }
     New-ProGetFeed -Session $session -FeedName $feedName -FeedType ProGet
 }

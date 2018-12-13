@@ -19,7 +19,11 @@ function Add-PSTypeName
 
         [Parameter(Mandatory=$true,ParameterSetName='PackageInfo')]
         [Switch]
-        $PackageInfo
+        $PackageInfo,
+
+        [Parameter(Mandatory=$true,ParameterSetName='Native.Feed')]
+        [Switch]
+        $NativeFeed
     )
 
     process
