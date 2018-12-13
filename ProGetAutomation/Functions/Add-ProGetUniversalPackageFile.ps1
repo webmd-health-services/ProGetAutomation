@@ -83,6 +83,6 @@ function Add-ProGetUniversalPackageFile
 
     process
     {
-        $InputObject | Add-ProGetUniversalPackageFile -PackagePath $PackagePath -BasePath $BasePath -CompressionLevel $CompressionLevel -EntryParentPath $parentPath -Force:$Force
+        $InputObject | Add-ZipArchiveEntry -ZipArchivePath $PackagePath -BasePath $BasePath -CompressionLevel $CompressionLevel -EntryParentPath $parentPath -Force:$Force
     }
 }
