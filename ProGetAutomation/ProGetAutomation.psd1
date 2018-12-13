@@ -67,6 +67,7 @@
 
     # Functions to export from this module
     FunctionsToExport = @(
+                            'Add-ProGetUniversalPackageFile',
                             'Get-ProGetAsset',
                             'Get-ProGetAssetContent',
                             'Invoke-ProGetNativeApiMethod',
@@ -120,6 +121,7 @@
             # ReleaseNotes of this module
             ReleaseNotes = @'
 * Created `New-ProGetUniversalPackage` function to create a new upack file with a correctly formatted upack.json file.
+* Created `Add-ProGetUniversalPackageFile` function for adding files a upack file.
 '@
 
         } # End of PSData hashtable
