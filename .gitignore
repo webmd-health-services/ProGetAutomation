@@ -3,3 +3,5 @@
 *.log
 *.orig
 .psgallerykey
+/.whiskey/**/*_HelpInfo.xml
+/.whiskey/**/en-US/**
