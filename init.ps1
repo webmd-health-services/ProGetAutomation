@@ -84,3 +84,5 @@ elseif( $pgInstallInfo.DisplayVersion -notmatch ('^{0}\b' -f [regex]::Escape($ve
 {
     Write-Warning -Message ('You''ve got an old version of ProGet installed. You''re on version {0}, but we expected version {1}. Please *completely* uninstall version {0} using the Programs and Features control panel, then re-run this script.' -f $pgInstallInfo.DisplayVersion, $version)
 }
+
+Get-Service -Name 'InedoProget*' | Start-Service
