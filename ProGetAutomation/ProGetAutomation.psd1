@@ -24,7 +24,7 @@
     CompanyName = 'WebMD Health Services'
 
     # Copyright statement for this module
-    Copyright = '(c) 2017 WebMD Health Services. All rights reserved.'
+    Copyright = '(c) 2017 - 2018 WebMD Health Services. All rights reserved.'
 
     # Description of the functionality provided by this module
     Description = 'The ProGetAutomation module is used to automate Inedo''s ProGet, a universal package manager. It can host your own NuGet, Docker, PowerShell, Ruby Gems, Visual Studio Extensions, Maven, NPM, Bower, and Chocolatey repositories. It has its own proprietary universal package repositories.'
@@ -131,6 +131,7 @@
 * Created `Get-ProGetUniversalPackage` function to read packages from a ProGet universal feed.
 * Created `Get-ProGetFeed` function that gets a list of feeds from ProGet.
 * Created `Remove-ProGetFeed` function for removing ProGet feeds.
+* Adding `WhatIf` support to `Invoke-ProGetRestMethod` and `Invoke-ProGetNativeApiMethod`. When using `-WhatIf` switch, only GET requests will actually be made.
 '@
 
         } # End of PSData hashtable

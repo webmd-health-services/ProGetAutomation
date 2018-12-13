@@ -5,11 +5,16 @@ Set-StrictMode -Version 'Latest'
 & (Join-Path -Path $PSScriptRoot -ChildPath 'Initialize-Tests.ps1' -Resolve)
 
 $session = New-ProGetTestSession
+$feedName = $PSCommandPath | Split-Path -Leaf
+
+function Init
+{
+    Get-ProGetFeed -Session $session -Name $feedName | Remove-ProGetFeed -Session $session
+    New-ProGetFeed -Session $session -FeedName $feedName -FeedType 'ProGet'
+}
 
 Describe 'Invoke-ProGetNativeApiMethod.when making a GET request' {
-    
-    New-ProGetFeed -Session $session -FeedName 'Fubar' -FeedType 'ProGet' -ErrorAction Ignore
-
+    Init
     # This failed in early versions of the module.
     $Global:Error.Clear()
     It 'should not throw an error' {
@@ -20,4 +25,15 @@ Describe 'Invoke-ProGetNativeApiMethod.when making a GET request' {
         $Global:Error | Should -BeNullOrEmpty
     }
 
+}
+
+Describe 'Invoke-ProGetNativeApiMethod.when using WhatIf' {
+    Init
+    $feed = Get-ProGetFeed -Session $Session -Name $feedName
+
+    Invoke-ProGetNativeApiMethod -Session $Session -Name 'Feeds_DeleteFeed' -Parameter @{ Feed_Id = $feed.Feed_Id } -WhatIf
+
+    It ('should not make web request') {
+        Get-ProGetFeed -Session $Session -Name $feedName | Should -Not -BeNullOrEmpty
+    }
 }

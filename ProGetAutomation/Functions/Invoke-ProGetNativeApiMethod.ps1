@@ -17,14 +17,14 @@ function Invoke-ProGetNativeApiMethod
 
     Demonstrates how to call `Invoke-ProGetNativeApiMethod`. In this example, it is calling the `Feeds_CreateOrUpdateProGetFeed` method to create a new Universal feed named `Apps`.
     #>
-    [CmdletBinding()]
+    [CmdletBinding(SupportsShouldProcess)]
     param(
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory)]
         [object]
         # A session object that represents the ProGet instance to use. Use the `New-ProGetSession` function to create session objects.
         $Session,
 
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory)]
         [string]
         # The name of the API method to use. The list can be found at `http://inedo.com/support/documentation/proget/reference/api/native` or in your ProGet installation at `/reference/api/native` 
         $Name,
