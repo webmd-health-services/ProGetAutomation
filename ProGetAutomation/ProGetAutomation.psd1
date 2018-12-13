@@ -12,7 +12,7 @@
     RootModule = 'ProGetAutomation.psm1'
 
     # Version number of this module.
-    ModuleVersion = '0.6.1'
+    ModuleVersion = '0.7.0'
 
     # ID used to uniquely identify this module
     GUID = 'b7139a9b-572b-48cf-b08c-82a96cdab454'
@@ -51,7 +51,7 @@
     # RequiredModules = @()
 
     # Assemblies that must be loaded prior to importing this module
-    # RequiredAssemblies = @()
+    RequiredAssemblies = @( )
 
     # Script files (.ps1) that are run in the caller's environment prior to importing this module.
     # ScriptsToProcess = @()
@@ -63,7 +63,7 @@
     # FormatsToProcess = @()
 
     # Modules to import as nested modules of the module specified in RootModule/ModuleToProcess
-    # NestedModules = @()
+    NestedModules = @( 'Zip' )
 
     # Functions to export from this module
     FunctionsToExport = @(
@@ -73,6 +73,7 @@
                             'Invoke-ProGetRestMethod',
                             'New-ProGetFeed',
                             'New-ProGetSession',
+                            'New-ProGetUniversalPackage',
                             'Publish-ProGetUniversalPackage',
                             'Read-ProGetUniversalPackageFile',
                             'Remove-ProGetAsset',
@@ -118,7 +119,7 @@
 
             # ReleaseNotes of this module
             ReleaseNotes = @'
-* Fixed: calling APIs fails on servers where Internet Explorer's first-launch configuration hasn't run.
+* Created `New-ProGetUniversalPackage` function to create a new upack file with a correctly formatted upack.json file.
 '@
 
         } # End of PSData hashtable
