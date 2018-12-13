@@ -83,6 +83,7 @@
                             'Publish-ProGetUniversalPackage',
                             'Read-ProGetUniversalPackageFile',
                             'Remove-ProGetAsset',
+                            'Remove-ProGetFeed',
                             'Remove-ProGetUniversalPackage',
                             'Set-ProGetAsset',
                             'Test-ProGetFeed'
@@ -129,6 +130,7 @@
 * Created `Add-ProGetUniversalPackageFile` function for adding files a upack file.
 * Created `Get-ProGetUniversalPackage` function to read packages from a ProGet universal feed.
 * Created `Get-ProGetFeed` function that gets a list of feeds from ProGet.
+* Created `Remove-ProGetFeed` function for removing ProGet feeds.
 '@
 
         } # End of PSData hashtable

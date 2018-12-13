@@ -15,8 +15,7 @@ function GivenFeed
         $Name
     )
 
-    Get-ProGetFeed -Session $Session -Name $Name |
-        ForEach-Object { Invoke-ProGetNativeApiMethod -Session $Session -Name 'Feeds_DeleteFeed' -Parameter @{ 'Feed_Id' = $_.Feed_Id } }
+    Get-ProGetFeed -Session $Session -Name $Name | Remove-ProGetFeed -Session $Session
     New-ProGetFeed -Session $session -FeedName $Name -FeedType 'ProGet'
 }
 
