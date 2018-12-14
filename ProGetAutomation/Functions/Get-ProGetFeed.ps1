@@ -28,10 +28,15 @@ function Get-ProGetFeed
         [object]
         $Session,
 
-        [Parameter(Mandatory,ParameterSetName='SpecificFeed')]
+        [Parameter(Mandatory,ParameterSetName='ByName')]
         [string]
-        # By default, all feeds are returned. Use this parameter to return a specific feed.
+        # By default, all feeds are returned. Use this parameter to return a specific feed using its name.
         $Name,
+
+        [Parameter(Mandatory,ParameterSetName='ByID')]
+        [string]
+        # By default, all feeds are returned. Use this parameter to return a specific feed using its ID.
+        $ID,
 
         [Parameter(ParameterSetName='AllFeeds')]
         [Switch]
@@ -51,7 +56,14 @@ function Get-ProGetFeed
     {
         $methodName = 'Feeds_GetFeed'
         $parameter = @{ 
-                        'Feed_Name' = $Name ;
+                        'Feed_Name' = $Name;
+                    }
+    }
+    elseif( $ID )
+    {
+        $methodName = 'Feeds_GetFeed'
+        $parameter = @{ 
+                        'Feed_Id' = $ID;
                     }
     }
 

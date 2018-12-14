@@ -20,7 +20,7 @@ function Initialize-PublishProGetPackageTests
     $Global:Error.Clear()
 
     # Remove all feeds from target ProGet instance
-    Get-ProGetFeed -Session $ProGetSession -Force | Remove-ProGetFeed -Session $ProGetSession
+    Get-ProGetFeed -Session $ProGetSession -Force | Remove-ProGetFeed -Session $ProGetSession -Force
     
     New-ProGetFeed -Session $ProGetSession -FeedType 'ProGet' -FeedName $feedName
     $feedId = (Get-ProGetFeed -Session $ProGetSession -Name $feedName).Feed_Id

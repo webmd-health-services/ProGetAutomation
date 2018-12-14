@@ -67,7 +67,7 @@ Describe 'Invoke-ProGetRestMethod.when not using a credential' {
 
 Describe 'Invoke-ProGetRestMethod.when using WhatIf' {
     $feedName = 'Invoke-ProGetRestMethod.Tests.ps1.WhatIf'
-    Get-ProGetFeed -Session $session -Name $feedName | Remove-ProGetFeed -Session $session
+    Get-ProGetFeed -Session $session -Name $feedName | Remove-ProGetFeed -Session $session -Force
     New-ProGetFeed -Session $session -FeedName $feedName -FeedType 'ProGet'
     $package = New-ProGetUniversalPackage -OutFile (Join-Path -Path $TestDrive.FullName -ChildPath 'package.upack') -Version '0.0.0' -Name 'WhatIf'
     Publish-ProGetUniversalPackage -Session $session -FeedName $feedName -PackagePath $package.FullName

@@ -25,10 +25,10 @@ function GivenPackage
         [IO.File]::WriteAllText( $filePath, $Content[$filename] )
     }
 
-    $packFilePath = Join-Path -Path $TestDrive.FullName -ChildPath ('{0}-{1}.upack' -f $Name,$Version)
+    $packFilePath = Join-Path -Path $TestDrive.FullName -ChildPath ('{0}-{1}.upack.zip' -f $Name,$Version)
     $script:upackFile = New-ProGetUniversalPackage -OutFile $packFilePath -Version $Version -Name $Name -Title $Name -Description ('--description=ProGetAutomation test package for {0}' -f ($PSCommandPath | Split-Path -Leaf))
     Get-ChildItem -Path $TestDrive.FullName |
-        Where-Object { $_.Extension -ne '.upack' } |
+        Where-Object { $_.Extension -ne '.zip' } |
         Add-ProGetUniversalPackageFile -PackagePath $upackFile.FullName -BasePath $TestDrive.FullName
     Publish-ProGetUniversalPackage -Session $session -FeedName $feedName -PackagePath $upackFile.FullName
 }
@@ -39,7 +39,7 @@ function Init
     $script:result = $null
     $script:upackFile = $null
 
-    Get-ProGetFeed -Session $Session -Name $feedName | Remove-ProGetFeed -Session $Session
+    Get-ProGetFeed -Session $Session -Name $feedName | Remove-ProGetFeed -Session $Session -Force
     New-ProGetFeed -Session $session -FeedName $feedName -FeedType ProGet
 }
 

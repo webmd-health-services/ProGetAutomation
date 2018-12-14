@@ -13,7 +13,7 @@ function Initialize-ProGetFeedTests
     $Global:Error.Clear()
     
     # Remove all feeds from target ProGet instance
-    Get-ProGetFeed -Session $ProGetSession -Force | Remove-ProGetFeed -Session $ProGetSession
+    Get-ProGetFeed -Session $ProGetSession -Force | Remove-ProGetFeed -Session $ProGetSession -Force
 }
 
 Describe 'New-ProGetFeed.create a new Universal package feed' {

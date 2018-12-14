@@ -15,7 +15,7 @@ function GivenFeed
         $Name
     )
 
-    Get-ProGetFeed -Session $Session -Name $Name | Remove-ProGetFeed -Session $Session
+    Get-ProGetFeed -Session $Session -Name $Name | Remove-ProGetFeed -Session $Session -Force
     New-ProGetFeed -Session $session -FeedName $Name -FeedType 'ProGet'
 }
 
