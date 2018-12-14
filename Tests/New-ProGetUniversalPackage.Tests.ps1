@@ -65,7 +65,7 @@ function ThenPackage
         $packageInfo | Should -Exist
     }
 
-    $packageExpandPath = Join-Path -Path $TestDrive.FullName -ChildPath ('upack.{0}' -f [IO.Path]::GetRandomFileName())
+    $packageExpandPath = Join-Path -Path $TestDrive.FullName -ChildPath ('upack.{0}.zip' -f [IO.Path]::GetRandomFileName())
     Expand-Archive -Path $packageInfo.FullName -DestinationPath $packageExpandPath
 
     $upackJsonPath = Join-Path -Path $packageExpandPath -ChildPath 'upack.json'
@@ -132,7 +132,7 @@ function WhenPackaging
     $Global:Error.Clear()
     try
     {
-        $script:packageInfo = New-ProGetUniversalPackage @WithParameters -OutFile (Join-Path -Path $TestDrive.FullName -ChildPath 'test.upack')
+        $script:packageInfo = New-ProGetUniversalPackage @WithParameters -OutFile (Join-Path -Path $TestDrive.FullName -ChildPath 'test.upack.zip')
     }
     catch
     {

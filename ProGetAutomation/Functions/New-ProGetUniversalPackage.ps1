@@ -76,9 +76,9 @@ function New-ProGetUniversalPackage
         # The name of the package. Must only contain letters, numbers, periods, underscores or hyphens.
         $Name,
 
-        [ValidatePattern('^[A-Za-z0-9._/-]+$')]
-        [ValidatePattern('^[^/]')]
-        [ValidatePattern('[^/]$')]
+        [ValidatePattern('(^[A-Za-z0-9._/-]+$)|(^$)')]
+        [ValidatePattern('(^[^/])|(^$)')]
+        [ValidatePattern('([^/]$)|(^$)')]
         [string]
         # The group name of the package. Must only contain letters, numbers, periods, underscores, forward slashes, or hyphens. Must not begin or end with forward slashes.
         $GroupName,
@@ -177,7 +177,7 @@ function New-ProGetUniversalPackage
                                     }
         foreach( $parameterName in $parameterToMetadataMap.Keys )
         {
-            if( -not $PSBoundParameters.ContainsKey($parameterName) )
+            if( -not $PSBoundParameters[$parameterName] )
             {
                 continue
             }

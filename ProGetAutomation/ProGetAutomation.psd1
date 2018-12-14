@@ -132,6 +132,7 @@
 * Created `Get-ProGetFeed` function that gets a list of feeds from ProGet.
 * Created `Remove-ProGetFeed` function for removing ProGet feeds.
 * Adding `WhatIf` support to `Invoke-ProGetRestMethod` and `Invoke-ProGetNativeApiMethod`. When using `-WhatIf` switch, only GET requests will actually be made.
+* Created `Remove-ProGetUniversalPackage` function to remove packages from a universal feed.
 '@
 
         } # End of PSData hashtable
