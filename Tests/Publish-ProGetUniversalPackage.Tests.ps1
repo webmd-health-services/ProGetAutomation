@@ -78,7 +78,7 @@ Describe 'Publish-ProGetUniversalPackage.invalid credentials are passed' {
     
     $session = New-ProGetTestSession
     [String]$feedId = Initialize-PublishProGetPackageTests -ProGetSession $session
-    $session.Credential = New-Credential -UserName 'Invalid' -Password 'Credentia'
+    $session.Credential = New-Object 'pscredential' ('Invalid',(ConvertTo-SecureString 'Credentia' -AsPlainText -Force))
 
     Publish-ProGetUniversalPackage -Session $session -FeedName $feedName -PackagePath $packagePath -ErrorAction SilentlyContinue
     $packageExists = Get-ProGetUniversalPackage -Session $session -FeedName $feedName -Name $packageName -ErrorAction Ignore

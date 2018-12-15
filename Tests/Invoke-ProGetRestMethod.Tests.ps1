@@ -39,7 +39,7 @@ Describe 'Invoke-ProGetRestMethod.when making a POST request with defined body c
 
 Describe 'Invoke-ProGetRestMethod.when using credential in session' {
     $session = New-ProGetTestSession
-    $session.Credential = New-Credential -UserName 'fubar' -Password 'snafu'
+    $session.Credential = New-Object 'pscredential' ('fubar',(ConvertTo-SecureString 'snafu' -AsPlainText -Force))
 
     Mock -CommandName 'Invoke-RestMethod' -ModuleName 'ProGetAutomation'
 

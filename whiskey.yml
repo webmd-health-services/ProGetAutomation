@@ -4,11 +4,6 @@ PublishOn:
 Build:
 - Version:
     Path: ProGetAutomation\ProGetAutomation.psd1
-- GetPowerShellModule:
-    Name: 
-    - Carbon
-    - Glob
-    - Zip
 - PowerShell:
     Path: init.ps1
 - Pester4:
