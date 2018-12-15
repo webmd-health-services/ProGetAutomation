@@ -3,37 +3,46 @@ function Add-ProGetUniversalPackageFile
 {
     <#
     .SYNOPSIS
-    Adds files to a ProGet universal package.
+    Adds files and directories to a ProGet universal package.
 
     .DESCRIPTION
-    The `Add-ProGetUniversalPackageFile` function adds files to a upack file (use `New-ProGetUniversalPackage` to create a upack file). All files are added under the `package` directory in the package, per the upack specification.
+    The `Add-ProGetUniversalPackageFile` function adds files and directories to a upack file (use `New-ProGetUniversalPackage` to create a upack file). All items are added under the `package` directory in the package, per the upack specification.
 
-    Pass the path to the upack file to the `PackagePath` parameter. Pipe file/directory objects to add to the package to the function. Pass the base path of the files to the `BasePath` parameter. The value of the base path parameter is removed from the file/directory paths when they are added to the package.
+    Files are added to the package using their names. They are always added to the `package` directory in the package. For example, if you added `C:\Projects\Zip\Zip\Zip.psd1` to the package, it would get added at `package\Zip.psd1`.
+    
+    Directories are added into a directory in the `package` directory. The directory in the package will use the name of the source directory. For example, if you add 'C:\Projects\Zip', all items will be added to the package at `package\Zip`.
 
-    If you want a file/directory to have a custom parent path in the upack file, pass that parent path to the `PackageParentPath` parameter.
+    You can change the name an item will have in the package with the `PackageItemName` parameter. Path separators are allowed, so you can put any item into any directory in the package.
 
-    You can control the compression level of items added to the upack file with the `CompressionLevel` parameter. The default level is `Optimal`. Other compression levels are `Fastest` (larger file, compressed faster) or `None` (no compression).
+    If you don't want to add an entire directory to the package, but instead want a filtered set of files from that directory, pipe the filtered list of files to `Add-ProGetUniversalPackageFile` and use the `BasePath` parameter to specify the base path of the incoming files. `Add-ProGetUniversalPackageFile` removes the base path from each file and uses the remaining path as the file's name in the package.
 
-    The upack file can't contain duplicate files. If you try to add a duplicate file, you'll get an error. To overwrite existing files, use the `-Force` switch.
+    If you want to change an item's parent directory structure in the package, pass the parent path you want to the `PackageParentPath` parameter. For example, if you passed `tools` as the `PackageParentPath`, every item added will be put in a `package\tools` directory in the package.
 
-    This function uses the `Zip` module's `Add-ProGetUniversalPackageFile` function to add files to the upack file.
+    You can control the compression level of items getting added with the `CompressionLevel` parameter. The default is `Optimal`. Other options are `Fastest` (larger files, compresses faster) and `None`.
 
-    .EXAMPLE
-    Get-ChildItem 'C:\Projects\ProGetAutomation' -File | Add-ProGetUniversalPackageFile -PackagePath 'ProGetAutomation.upack' -BasePath 'C:\Projects\ProGetAutomation'
-
-    Demonstrates how to add files to a upack file. In this case, files will *not* start with `Projects\ProGetAutomation`. `Add-ProGetUniversalPackageFile` removes the `BasePath` from the start of each file's path when determining its path in the upack file. All the files under `C:\Projects\ProGetAutomation' will be added to the `package` directory in the package.
-
-    .EXAMPLE
-    Add-ProGetUniversalPackageFile -PackagePath 'ProGetAutomation.upack' -InputObject 'ProGetAutomation' -BasePath (Get-Location).Path
-
-    Demonstrates how to pass a path to add that directory/file to a upack file. In this example, the contents of the `ProGetAutomation` directory in the current directory will be added to the upack file.
+    This function uses the `Zip` PowerShell module, which uses the native .NET `System.IO.Compression` namespace/classes to do its work.
 
     .EXAMPLE
-    Get-Item -Path '.\ProGetAutomation' | Add-ProGetUniversalPackageFile -PackagePath 'ProGetAutomation.upack' -BasePath (Get-Location).Path -PackageParentPath 'ModuleRoot'
+    Get-ChildItem 'C:\Projects\Zip' | Add-ProGetUniversalPackageFile -PackagePath 'zip.upack'
 
-    Demonstrates how to customize the directory in the package files will be added to. In this case, all the files under the `ProGetAutomation` directory will be put in a `package\ModuleRoot` directory in the package.
+    Demonstrates how to pipe the files you want to add to your package into `Add-ProGetUniversalPackageFile`. In this case, all the files and directories in the  `C:\Projects\Zip` directory are added to the package to the `package` directory.
+
+    .EXAMPLE
+    Get-ChildItem -Path 'C:\Projects\Zip' -Filter '*.ps1' -Recurse | Add-ProGetUniversalPackageFile -PackagePath 'zip.upack' -BasePath 'C:\Projects\Zip'
+
+    This is like the previous example, but instead of adding every file under `C:\Projects\Zip`, we're only adding files with a `.ps1` extension. Since we're piping all the files to the `Add-ProGetUniversalPackageFile` function, we need to pass the base path of our search to the `BasePath` parameter. Otherwise, every file would get added to the `package` directory without preserving their directory structure. Instead, the `BasePath` is removed from every file's path and the remaining path is used as the item's path in the package.
+
+    .EXAMPLE
+    Get-Item -Path '.\Zip' | Add-ProGetUniversalPackageFile -PackagePath 'zip.upack' -PackageParentPath 'tools'
+
+    Demonstrates how to customize the directory in the package files will be added at. In this case, all the files under the `Zip` directory will be put in a `package\tools` directory, e.g. `package\tools\Zip`.
+
+    .EXAMPLE
+    Get-ChildItem 'C:\Projects\Zip' | Add-ProGetUniversalPackageFile -PackagePath 'zip.upack' -EntryName 'tools\ZipModule'
+
+    Demonstrates how to change the name of an item. In this case, the `C:\Projects\Zip` directory will be added to the package with a path of `package\tools\ZipModule` instead of `package\Zip`.
     #>
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName='ItemName')]
     param(
         [Parameter(Mandatory)]
         [string]
@@ -51,13 +60,20 @@ function Add-ProGetUniversalPackageFile
         # All files are added to the `packages` directory in the upack file.
         $InputObject,
 
-        [Parameter(Mandatory)]
+        [Parameter(ParameterSetName='BasePath')]
         [string]
-        # The `BasePath` parameter controls what portion of the source file's path is removed when determining its name in the upack archive.
+        # When determining a file's path/name in the package, the value of this parameter is removed from the beginning of each file's path. Use this parameter if you are piping in a filtered list of files from a directory instead of the directory itself.
         $BasePath,
 
+        [Parameter(ParameterSetName='ItemName')]
+        [ValidatePattern('^[^\\/]')]
+        [ValidatePattern('[^\\/]$')]
         [string]
-        # A parent path to add to each file in the upack file. Use this to put files/directories into specific places in the package.
+        # By default, items are added to the package using their name. You can change the name with this parameter. For example, if you added file `Zip.psd1` and passed `NewZip.psd1` as the value to the parameter, the file would get added to the package as `NewZip.psd1`.
+        $PackageItemName,
+
+        [ValidatePattern('^[^\\/]')]
+        [string]
         $PackageParentPath,
 
         [IO.Compression.CompressionLevel]
@@ -79,10 +95,26 @@ function Add-ProGetUniversalPackageFile
         {
             $parentPath = Join-Path -Path $parentPath -ChildPath $PackageParentPath
         }
+
+        $params = @{ }
+        if( $BasePath )
+        {
+            $params['BasePath'] = $BasePath
+        }
+
+        if( $PackageItemName )
+        {
+            $params['EntryName'] = $PackageItemName
+        }
+        
+        if( $Force )
+        {
+            $params['Force'] = $true
+        }
     }
 
     process
     {
-        $InputObject | Add-ZipArchiveEntry -ZipArchivePath $PackagePath -BasePath $BasePath -CompressionLevel $CompressionLevel -EntryParentPath $parentPath -Force:$Force
+        $InputObject | Add-ZipArchiveEntry -ZipArchivePath $PackagePath -EntryParentPath $parentPath -CompressionLevel $CompressionLevel @params
     }
 }

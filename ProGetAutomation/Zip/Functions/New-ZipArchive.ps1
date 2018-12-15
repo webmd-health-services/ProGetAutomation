@@ -6,9 +6,9 @@ function New-ZipArchive
     Creates a new, empty ZIP archive.
 
     .DESCRIPTION
-    The `New-ZipArchive` function createa a new, empty ZIP archive. Pass the path to the archive to the Path parameter. A new, empty ZIP archive is created at that path. The function returns a `IO.FileInfo` objecy representing the new ZIP archive.
+    The `New-ZipArchive` function createa a new, empty ZIP archive. Pass the path to the archive to the Path parameter. A new, empty ZIP archive is created at that path. The function returns a `IO.FileInfo` object representing the new ZIP archive.
 
-    If `Path` is relative, it is create relative to the current directory. 
+    If `Path` is relative, it is created relative to the current directory. 
 
     If a file already exists, you'll get an error and nothing will be returned. To delete any existing file and create a new, empty ZIP archive, pass the `Force` switch.
 
@@ -22,12 +22,12 @@ function New-ZipArchive
     Creates a new, empty ZIP file named `archive.zip` in the current directory.
 
     .EXAMPLE
-    New-ZipArchive Path 'archive.zip' -Force
+    New-ZipArchive -Path 'archive.zip' -Force
 
     Creates a new, empty ZIP file named `archive.zip` in the current directory. If a file named 'archive.zip' already exists in the current directory, it is deleted and a new file created.
 
     .EXAMPLE
-    New-ZipArchive Path 'archive.zip' -CompressionLevel Fastest -Encoding [Text.Encoding]::ASCII
+    New-ZipArchive -Path 'archive.zip' -CompressionLevel Fastest -Encoding [Text.Encoding]::ASCII
 
     Creates a new, empty ZIP file using fastest compression and encoding entry names in ASCII.
     #>
@@ -60,6 +60,12 @@ function New-ZipArchive
 
     if( (Test-Path -Path $Path) )
     {
+        if( (Test-Path -Path $Path -PathType Container) )
+        {
+            Write-Error -Message ('Path "{0}" is a directory. Unable to create a ZIP archive there.' -f $Path)
+            return
+        }
+
         if( $Force )
         {
             Remove-Item -Path $Path
@@ -71,7 +77,7 @@ function New-ZipArchive
         }
     }
 
-    $tempDir = Join-Path -Path $env:TEMP -ChildPath ('{0}.{1}' -f ($Path | Split-Path -Leaf),([IO.Path]::GetRandomFileName()))
+    $tempDir = Join-Path -Path ([IO.Path]::GetTempPath()) -ChildPath ('{0}.{1}' -f ($Path | Split-Path -Leaf),([IO.Path]::GetRandomFileName()))
     New-Item -Path $tempDir -ItemType 'Directory' | Out-Null
     try
     {

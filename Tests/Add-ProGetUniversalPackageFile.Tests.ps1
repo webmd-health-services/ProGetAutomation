@@ -3,7 +3,6 @@
 Set-StrictMode -Version 'Latest'
 
 & (Join-Path -Path $PSScriptRoot -ChildPath '..\ProGetAutomation\Import-ProGetAutomation.ps1' -Resolve)
-Import-Module -Name (Join-Path -Path $PSScriptRoot -ChildPath '..\PSModules\Glob' -Resolve) -Force
 
 $package = $null
 
@@ -148,14 +147,9 @@ function WhenAddingFiles
 
         $AtPackageRoot,
 
-        [Switch]
-        $NoPipeline,
+        $WithBasePath,
 
-        [Switch]
-        $NoBasePath,
-
-        [string]
-        $AtBasePath
+        $WithName
     )
 
     $packagePath = Join-Path -Path $TestDrive.FullName -ChildPath 'package.upack.zip'
@@ -167,14 +161,6 @@ function WhenAddingFiles
     $params = @{
                     PackagePath = $package.FullName;
                 }
-    if( $AtBasePath )
-    {
-        $params['BasePath'] = $AtBasePath
-    }
-    else
-    {
-        $params['BasePath'] = $TestDrive.FullName
-    }
 
     if( $AtPackageRoot )
     {
@@ -186,26 +172,22 @@ function WhenAddingFiles
         $params['Force'] = $true
     }
 
+    if( $WithBasePath )
+    {
+        $params['BasePath'] = $WithBasePath
+    }
+
+    if( $WithName )
+    {
+        $params['PackageItemName'] = $WithName
+    }
+
     $Global:Error.Clear()
-    if( $NoPipeline )
-    {
-        Push-Location -Path $TestDrive.FullName
-        try
-        {
-            foreach( $item in $Path )
-            {
-                Add-ProGetUniversalPackageFile @params -InputObject $item
-            }
-        }
-        finally
-        {
-            Pop-Location
-        }
-    }
-    else
-    {
-        Find-GlobFile -Path $TestDrive.FullName -Include $Path | Add-ProGetUniversalPackageFile @params
-    }
+
+    $Path | 
+        ForEach-Object { Join-Path -Path $TestDrive.FullName -ChildPath $_ } |
+        Get-Item |
+        Add-ProGetUniversalPackageFile @params
 }
 
 Describe 'Add-ProGetUniversalPackageFile' {
@@ -245,21 +227,58 @@ Describe 'Add-ProGetUniversalPackageFile.when adding package root' {
 Describe 'Add-ProGetUniversalPackageFile.when passing path instead of file objects' {
     Init
     GivenFile 'one.cs','two.cs'
-    WhenAddingFiles '*.cs' -NoPipeline
+    WhenAddingFiles '*.cs'
     ThenPackageContains 'one.cs','two.cs'
 }
 
-Describe 'Add-ProGetUniversalPackageFile.when passing a directory' {
+Describe 'Add-ZipArchiveEntry.when changing name' {
     Init
-    GivenFile 'dir1\one.cs','dir1\two.cs'
-    WhenAddingFiles (Join-Path -Path $TestDrive.FullName -ChildPath 'dir1') -NoPipeline
-    ThenPackageContains 'dir1\one.cs','dir1\two.cs'
+    GivenFile 'one.cs'
+    WhenAddingFiles 'one.cs' -WithName 'cs.one'
+    ThenPackageContains 'cs.one'
+    ThenPackageNotContains 'one.cs'
 }
 
-Describe 'Add-ProGetUniversalPackageFile.when giving an item a new root name' {
+Describe 'Add-ZipArchiveEntry.when passing a directory' {
+    Init
+    GivenFile 'dir1\one.cs','dir1\two.cs', 'dir1\three\four.cs'
+    WhenAddingFiles 'dir1'
+    ThenPackageContains 'dir1\one.cs','dir1\two.cs','dir1\three\four.cs'
+}
+
+Describe 'Add-ZipArchiveEntry.when customizing a directory name' {
+    Init
+    GivenFile 'dir1\one.cs','dir1\two.cs', 'dir1\three\four.cs'
+    WhenAddingFiles 'dir1' -WithName '1dir'
+    ThenPackageContains '1dir\one.cs','1dir\two.cs','1dir\three\four.cs'
+    ThenPackageNotContains 'dir1\one.cs','dir1\two.cs','dir1\three\four.cs'
+}
+
+Describe 'Add-ZipArchiveEntry.when passing a directory with a custom base path' {
+    Init
+    GivenFile 'dir1\one.cs','dir1\two.cs', 'dir1\three\four.cs'
+    WhenAddingFiles 'dir1'
+    ThenPackageContains 'dir1\one.cs','dir1\two.cs','dir1\three\four.cs'
+}
+
+Describe 'Add-ZipArchiveEntry.when piping filtered list of files' {
+    Init
+    GivenFile 'dir1\another\one.cs','dir1\another\two.cs'
+    $root = Join-Path -Path $TestDrive.FullName -ChildPath 'dir1'
+    WhenAddingFiles 'dir1\another\one.cs','dir1\another\two.cs' -AtPackageRoot 'dir2' -WithBasePath $root
+    ThenPackageContains 'dir2\another\one.cs','dir2\another\two.cs'
+}
+
+Describe 'Add-ZipArchiveEntry.when giving a direcotry a new root name' {
     Init
     GivenFile 'dir1\one.cs','dir1\two.cs'
     $root = Join-Path -Path $TestDrive.FullName -ChildPath 'dir1'
-    WhenAddingFiles $root -AtBasePath $root -AtPackageRoot 'dir2' -NoPipeline
+    WhenAddingFiles 'dir1\*.cs' -AtPackageRoot 'dir2'
     ThenPackageContains 'dir2\one.cs','dir2\two.cs'
+}
+Describe 'Add-ZipArchiveEntry.when base path doesn''t match files' {
+    Init
+    GivenFile 'one.cs'
+    WhenAddingFiles 'one.cs' -WithBasePath 'C:\Windows\System32' -ErrorAction SilentlyContinue
+    ThenError -Matches 'is\ not\ in'
 }

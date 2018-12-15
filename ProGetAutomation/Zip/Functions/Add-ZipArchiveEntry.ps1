@@ -3,16 +3,20 @@ function Add-ZipArchiveEntry
 {
     <#
     .SYNOPSIS
-    Adds files to a ZIP archive.
+    Adds files and directories to a ZIP archive.
 
     .DESCRIPTION
-    The `Add-ZipArchiveEntry` function adds files to a ZIP archive. The archive must exist. Use the `New-ZipArchive` function to create a new ZIP file. Pipe file or directory objects that you want to add to the pipeline. You may also pass paths directly to the `InputObject` parameter. Relative paths are resolved from the current directory. If you pass a directory or path to a directory, the entire directory and all its sub-directories/files are added to the archive.
+    The `Add-ZipArchiveEntry` function adds files and directories to a ZIP archive. The archive must exist. Use the `New-ZipArchive` function to create a new ZIP file. Pipe file or directory objects that you want to add to the pipeline. You may also pass paths directly to the `InputObject` parameter. Relative paths are resolved from the current directory. If you pass a directory or path to a directory, the entire directory and all its sub-directories/files are added to the archive.
     
-    Files are added to the ZIP archive using their full paths, minus the drive/qualifier. For example, if you add 'C:\Projects\Zip', all items will be added to the ZIP archive at `Projects\Zip`.
+    Files are added to the ZIP archive using their names. They are always added to the root of the archive. For example, if you added `C:\Projects\Zip\Zip\Zip.psd1` to an archive, it would get added at `Zip.psd1`.
+    
+    Directories are added into a directory in the root of the archive with the source directory's name. For example, if you add 'C:\Projects\Zip', all items will be added to the ZIP archive at `Zip`.
 
-    You can change the base path `Add-ZipArchiveEntry` uses when adding items with the `BasePath` parameter. This parameter tells `Add-ZipArchiveEntry` the part of the source path to ignore/remove when adding it to the archive. For example, if you added an item at `C:\Projects\powershell-zip\Zip` with a `BasePath` of `C:\Projects\powershell-zip`, the item will be added to the archive at `Zip` (instead of `Projects\powershell-zip\Zip`).
+    You can change the name an item will have in the archive with the `EntryName` parameter. Path separators are allowed, so you can put any item into any directory.
 
-    If you want to add the item to a custom parent directory in the archive, pass the parent path you want to the `EntryParentPath` parameter. For example, if you passed `package`, everything would be added in a `package` directory.
+    If you don't want to add an entire directory to the archive, but instead only want a filtered set of files from that directory, pipe the filtered list of files to `Add-ZipArchiveEntry` and use the `BasePath` parameter to specify the base path of the incoming files. `Add-ZipArchiveEntry` removes the base path from each file and uses the remaining path as the file's name in the archive.
+
+    If you want to change an item's parent directory structure in the archive, pass the parent path you want to the `EntryParentPath` parameter. For example, if you passed `package` as the `EntryParentPath`, every item added will be put in a `package` directory in the archive.
 
     You can control the compression level of items getting added with the `CompressionLevel` parameter. The default is `Optimal`. Other options are `Fastest` (larger files, compresses faster) and `None`.
 
@@ -21,31 +25,26 @@ function Add-ZipArchiveEntry
     This function uses the native .NET `System.IO.Compression` namespace/classes to do its work.
 
     .EXAMPLE
-    Get-ChildItem 'C:\Projects\Zip' -File | Add-ZipArchiveEntry -ZipArchivePath 'zip.zip'
+    Get-ChildItem 'C:\Projects\Zip' | Add-ZipArchiveEntry -ZipArchivePath 'zip.zip'
 
-    Demonstrates how to pipe the files you want to add to your ZIP into `Add-ZipArchiveEntry`. In this case, all the files in the `C:\Projects\Zip` directory (but none of its sub-directories) will be added. Items in the ZIP file will begin with `Projects\Zip`.
-
-    .EXAMPLE
-    Get-ChildItem 'C:\Projects\Zip' -File | Add-ZipArchiveEntry -ZipArchivePath 'zip.zip' -BasePath 'C:\Projects\Zip'
-
-    Demonstrates how to control the paths of files in the ZIP archive. In this case, files will *not* start with `Projects\Zip`. `Add-ZipArchiveEntry` removes the `BasePath` from the start of each file's path when determining its path in the ZIP file.
+    Demonstrates how to pipe the files you want to add to your ZIP into `Add-ZipArchiveEntry`. In this case, all the files and directories in the  `C:\Projects\Zip` directory are added to the archive in the root.
 
     .EXAMPLE
-    Add-ZipArchiveEntry -ZipArchivePath 'zip.zip' -InputObject 'Zip' -BasePath (Get-Location).Path
+    Get-ChildItem -Path 'C:\Projects\Zip' -Filter '*.ps1' -Recurse | Add-ZipArchiveEntry -ZipArchivePath 'zip.zip' -BasePath 'C:\Projects\Zip'
 
-    Demonstrates how to pass a path to add that directory/file to a ZIP file. In this example, the contents of the `Zip` directory in the current directory will be added to the ZIP file. Because the `BasePath` parameter is used, the files in the file will begin with `Zip` instead of the full path to the Zip directory.
+    This is like the previous example, but instead of adding every file under `C:\Projects\Zip`, we're only adding files with a `.ps1` extension. Since we're piping all the files to the `Add-ZipArchiveEntry` function, we need to pass the base path of our search to the `BasePath` parameter. Otherwise, every file would get added to the root. Instead, the `BasePath` is removed from every file's path and the remaining path is used as the item's path in the archive.
 
     .EXAMPLE
-    Get-Item -Path '.\Zip' | Add-ZipArchiveEntry -ZipArchivePath 'zip.zip' -BasePath (Get-Location).Path -EntryParentPath 'package'
+    Get-Item -Path '.\Zip' | Add-ZipArchiveEntry -ZipArchivePath 'zip.zip' -EntryParentPath 'package'
 
     Demonstrates how to customize the directory in the ZIP file files will be added at. In this case, all the files under the `Zip` directory will be put in a `packages` directory, e.g. `packages\Zip`.
 
     .EXAMPLE
-    Get-ChildItem 'C:\Projects\Zip' | Add-ZipArchiveEntry -ZipArchivePath 'zip.zip' -BasePath 'C:\Projects\Zip' -EntryParentPath 'Zip2'
+    Get-ChildItem 'C:\Projects\Zip' | Add-ZipArchiveEntry -ZipArchivePath 'zip.zip' -EntryName 'package\ZipModule'
 
-    Demonstrates how to give a directory a different name when adding it to the zip file. In this case, we're adding all the items in `C:\Projects\Zip`. Because the `BasePath` parameter is also set to `C:\Projects\Zip`, normally all the files/directories in `C:\Projects\Zip` would be in the root of the ZIP file, but because the `EntryParentPath` parameter is set to `Zip2`, all the files/directories will be put in a `Zip2` directory.
+    Demonstrates how to change the name of an item. In this case, the `C:\Projects\Zip` directory will be added to the archive with a path of `package\ZipModule` instead of `Zip`.
     #>
-    [CmdletBinding()]
+    [CmdletBinding(DefaultParameterSetName='ItemName')]
     param(
         [Parameter(Mandatory)]
         [string]
@@ -61,12 +60,20 @@ function Add-ZipArchiveEntry
         # If you pass a directory object or path to a directory, all files in that directory and all its sub-directories will be added to the archive.
         $InputObject,
 
+        [Parameter(ParameterSetName='BasePath')]
         [string]
-        # By default, items are added to the ZIP archive using their full paths (minus any drives/qualifiers). The `BasePath` parameter controls what portion of the source file's path is removed when determining its name in the ZIP archive.
+        # When determining a file's path/name in the ZIP archive, the value of this parameter is removed from the beginning of each file's path. Use this parameter if you are piping in a filtered list of files from a directory instead of the directory itself.
         $BasePath,
 
+        [Parameter(ParameterSetName='ItemName')]
+        [ValidatePattern('^[^\\/]')]
+        [ValidatePattern('[^\\/]$')]
         [string]
-        # A parent path to add to each file in the ZIP archive. If you pass 'package' to this parameter, and you're adding an item at 'file.txt', the file will be added to the archive as `package\file.txt`.
+        # By default, items are added to the ZIP archive using their name. You can change the name with this parameter. For example, if you added file `Zip.psd1` and passed `NewZip.psd1` as the value to the parameter, the file would get added as `NewZip.psd1`.
+        $EntryName,
+
+        [ValidatePattern('^[^\\/]')]
+        [string]
         $EntryParentPath,
 
         [IO.Compression.CompressionLevel]
@@ -97,34 +104,19 @@ function Add-ZipArchiveEntry
 
     process
     {
-        $filePaths = $InputObject |
-                        Resolve-Path |
-                        Select-Object -ExpandProperty 'ProviderPath' |
-                        ForEach-Object {
-                            if( (Test-Path -Path $_ -PathType Container) )
-                            {
-                                Get-ChildItem -Path $_ -Recurse -File | Select-Object -ExpandProperty 'FullName'
-                            }
-                            else
-                            {
-                                $_
-                            }
-                        }
-
-        foreach( $filePath in $filePaths )
+        function Add
         {
-            $fileEntryName = $filePath | Split-Path -NoQualifier
-            $fileEntryName = $fileEntryName.TrimStart([IO.Path]::DirectorySeparatorChar)
-            if( $BasePath )
-            {
-                $fileEntryName = $filePath -replace $basePathRegex,''
-            }
+            param(
+                [Parameter(Mandatory)]
+                [string]
+                $EntryName,
 
-            if( $EntryParentPath )
-            {
-                $fileEntryName = Join-Path -Path $EntryParentPath -ChildPath $fileEntryName
-            }
-            $entry = $zipFile.GetEntry($fileEntryName)
+                [Parameter(Mandatory)]
+                [string]
+                $FilePath
+            )
+
+            $entry = $zipFile.GetEntry($EntryName)
             if( $entry )
             {
                 if( $Force )
@@ -133,18 +125,20 @@ function Add-ZipArchiveEntry
                 }
                 else
                 {
-                    Write-Error -Message ('Unable to add file "{0}" to ZIP archive "{1}": the archive already has a file named "{2}". To overwrite existing entries, use the -Force switch.' -f $filePath,$ZipArchivePath,$fileEntryName)
+                    Write-Error -Message ('Unable to add file "{0}" to ZIP archive "{1}": the archive already has a file named "{2}". To overwrite existing entries, use the -Force switch.' -f $FilePath,$ZipArchivePath,$EntryName)
                     continue
                 }
             }
-            $entry = $zipFile.CreateEntry($fileEntryName,$CompressionLevel)
+
+            Write-Debug -Message ('{0} -> {1}' -f $FilePath,$EntryName)
+            $entry = $zipFile.CreateEntry($EntryName,$CompressionLevel)
             $stream = $entry.Open()
             try
             {
                 $writer = New-Object 'IO.StreamWriter' ($stream)
                 try
                 {
-                    [byte[]]$bytes = [IO.File]::ReadAllBytes($filePath)
+                    [byte[]]$bytes = [IO.File]::ReadAllBytes($FilePath)
                     $writer.Write($bytes,0,$bytes.Count)
                 }
                 finally
@@ -157,6 +151,53 @@ function Add-ZipArchiveEntry
             {
                 $stream.Close()
                 $stream.Dispose()
+            }
+        }
+
+        $filePaths = $InputObject | Resolve-Path | Select-Object -ExpandProperty 'ProviderPath'
+        foreach( $filePath in $filePaths )
+        {
+            Write-Debug -Message $filePath
+
+            if( $BasePath )
+            {
+                $baseEntryName = $filePath -replace $basePathRegex,''
+                if( $baseEntryName -eq $filePath )
+                {
+                    Write-Error -Message ('Path "{0}" is not in base path "{1}". When using the BasePath parameter, all items passed in must be under that path.' -f $filePath,$BasePath)
+                    continue
+                }
+            }
+            else
+            {
+                $baseEntryName = $filePath | Split-Path -Leaf
+                if( $EntryName )
+                {
+                    $baseEntryName = $EntryName
+                }
+            }
+
+            $baseEntryName = $baseEntryName.TrimStart([IO.Path]::DirectorySeparatorChar)
+
+            if( $EntryParentPath )
+            {
+                $baseEntryName = Join-Path -Path $EntryParentPath -ChildPath $baseEntryName
+            }
+
+            # Add the file.
+            if( (Test-Path -Path $filePath -PathType Leaf) )
+            {
+                Add -EntryName $baseEntryName -FilePath $filePath
+                continue
+            }
+
+            # Now, handle directories
+            $dirEntryBasePathRegex = '^{0}' -f [regex]::Escape($filePath)
+            foreach( $filePath in (Get-ChildItem -Path $filePath -Recurse -File | Select-Object -ExpandProperty 'FullName') )
+            {
+                $fileEntryName = $filePath -replace $dirEntryBasePathRegex,''
+                $fileEntryName = Join-Path -Path $baseEntryName -ChildPath $fileEntryName
+                Add -EntryName $fileEntryName -FilePath $filePath
             }
         }
     }
