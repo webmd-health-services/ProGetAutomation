@@ -1,6 +1,6 @@
 
 $apiKey = 'HKgaAKWjjgB9YRrTbTpHzw=='
-$credential = New-Credential -UserName 'Admin' -Password 'Admin'
+$credential = New-Object 'pscredential' ('Admin',(ConvertTo-SecureString 'Admin' -AsPlainText -Force))
 
 $pgNotInstalledMsg = 'It looks like ProGet isn''t installed. Please run init.ps1 to install and configure a local ProGet instance so we can run automated tests against it.'
 $svcRoot = Get-ItemProperty -Path 'hklm:\SOFTWARE\Inedo\ProGet' -Name 'ServicePath' | Select-Object -ExpandProperty 'ServicePath'
