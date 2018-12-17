@@ -74,6 +74,7 @@ function Add-ZipArchiveEntry
 
         [ValidatePattern('^[^\\/]')]
         [string]
+        # A parent path to add to each file in the ZIP archive. If you pass 'package' to this parameter, and you're adding an item named 'file.txt', the file will be added to the archive as `package\file.txt`.
         $EntryParentPath,
 
         [IO.Compression.CompressionLevel]
@@ -96,9 +97,14 @@ function Add-ZipArchiveEntry
 
         [IO.Compression.ZipArchive]$zipFile = [IO.Compression.ZipFile]::Open($ZipArchivePath, [IO.Compression.ZipArchiveMode]::Update, $EntryNameEncoding)
 
+        $directorySeparators = @( [IO.Path]::AltDirectorySeparatorChar, [IO.Path]::DirectorySeparatorChar )
+        $directorySeparatorsRegex = $directorySeparators | ForEach-Object { [regex]::Escape($_) }
+        $directorySeparatorsRegex = '({0})?' -f ($directorySeparatorsRegex -join '|')
+
         if( $BasePath )
         {
-            $basePathRegex = '^{0}{1}?' -f [regex]::Escape($BasePath),[regex]::Escape([IO.Path]::DirectorySeparatorChar)
+            $BasePath = $BasePath.TrimEnd($directorySeparators)
+            $basePathRegex = '^{0}{1}' -f [regex]::Escape($BasePath),$directorySeparatorsRegex
         }
     }
 
@@ -177,7 +183,7 @@ function Add-ZipArchiveEntry
                 }
             }
 
-            $baseEntryName = $baseEntryName.TrimStart([IO.Path]::DirectorySeparatorChar)
+            $baseEntryName = $baseEntryName.TrimStart($directorySeparators)
 
             if( $EntryParentPath )
             {
@@ -192,11 +198,14 @@ function Add-ZipArchiveEntry
             }
 
             # Now, handle directories
-            $dirEntryBasePathRegex = '^{0}' -f [regex]::Escape($filePath)
+            $dirEntryBasePathRegex = '^{0}{1}' -f [regex]::Escape($filePath),$directorySeparatorsRegex
             foreach( $filePath in (Get-ChildItem -Path $filePath -Recurse -File | Select-Object -ExpandProperty 'FullName') )
             {
                 $fileEntryName = $filePath -replace $dirEntryBasePathRegex,''
-                $fileEntryName = Join-Path -Path $baseEntryName -ChildPath $fileEntryName
+                if( $baseEntryName )
+                {
+                    $fileEntryName = Join-Path -Path $baseEntryName -ChildPath $fileEntryName
+                }
                 Add -EntryName $fileEntryName -FilePath $filePath
             }
         }
