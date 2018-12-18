@@ -13,11 +13,11 @@ Build:
 - Exec: .whiskey\bin\7-Zip\7z.exe a $(WHISKEY_OUTPUT_DIRECTORY)\ProGetAutomation.zip .\ProGetAutomation '-xr!*.pdb'
 
 Publish:
-#- PublishPowerShellModule:
-#    Path: ProGetAutomation
-#    RepositoryName: PSGallery
-#    RepositoryUri: https://www.powershellgallery.com/api/v2/ 
-#    ApiKeyID: powershellgallery.com
+- PublishPowerShellModule:
+    Path: ProGetAutomation
+    RepositoryName: PSGallery
+    RepositoryUri: https://www.powershellgallery.com/api/v2/ 
+    ApiKeyID: powershellgallery.com
 - SetVariableFromPowerShellDataFile:
     Path: ProGetAutomation\ProGetAutomation.psd1
     Variables:
