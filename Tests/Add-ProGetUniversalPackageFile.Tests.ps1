@@ -149,7 +149,10 @@ function WhenAddingFiles
 
         $WithBasePath,
 
-        $WithName
+        $WithName,
+
+        [Switch]
+        $AsString
     )
 
     $packagePath = Join-Path -Path $TestDrive.FullName -ChildPath 'package.upack.zip'
@@ -186,7 +189,16 @@ function WhenAddingFiles
 
     $Path | 
         ForEach-Object { Join-Path -Path $TestDrive.FullName -ChildPath $_ } |
-        Get-Item |
+        ForEach-Object {
+            if( $AsString )
+            {
+                $_
+            }
+            else
+            {
+                Get-Item -Path $_
+            }
+        } |
         Add-ProGetUniversalPackageFile @params
 }
 
@@ -227,7 +239,7 @@ Describe 'Add-ProGetUniversalPackageFile.when adding package root' {
 Describe 'Add-ProGetUniversalPackageFile.when passing path instead of file objects' {
     Init
     GivenFile 'one.cs','two.cs'
-    WhenAddingFiles '*.cs'
+    WhenAddingFiles '*.cs' -AsString
     ThenPackageContains 'one.cs','two.cs'
 }
 
@@ -257,8 +269,8 @@ Describe 'Add-ZipArchiveEntry.when customizing a directory name' {
 Describe 'Add-ZipArchiveEntry.when passing a directory with a custom base path' {
     Init
     GivenFile 'dir1\one.cs','dir1\two.cs', 'dir1\three\four.cs'
-    WhenAddingFiles 'dir1'
-    ThenPackageContains 'dir1\one.cs','dir1\two.cs','dir1\three\four.cs'
+    WhenAddingFiles 'dir1' -WithBasePath (Join-Path -Path $TestDrive.FullName -ChildPath 'dir1')
+    ThenPackageContains 'one.cs','two.cs','three\four.cs'
 }
 
 Describe 'Add-ZipArchiveEntry.when piping filtered list of files' {
@@ -272,7 +284,6 @@ Describe 'Add-ZipArchiveEntry.when piping filtered list of files' {
 Describe 'Add-ZipArchiveEntry.when giving a direcotry a new root name' {
     Init
     GivenFile 'dir1\one.cs','dir1\two.cs'
-    $root = Join-Path -Path $TestDrive.FullName -ChildPath 'dir1'
     WhenAddingFiles 'dir1\*.cs' -AtPackageRoot 'dir2'
     ThenPackageContains 'dir2\one.cs','dir2\two.cs'
 }

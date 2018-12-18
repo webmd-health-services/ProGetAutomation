@@ -35,7 +35,7 @@ function Add-ProGetUniversalPackageFile
     .EXAMPLE
     Get-Item -Path '.\Zip' | Add-ProGetUniversalPackageFile -PackagePath 'zip.upack' -PackageParentPath 'tools'
 
-    Demonstrates how to customize the directory in the package files will be added at. In this case, all the files under the `Zip` directory will be put in a `package\tools` directory, e.g. `package\tools\Zip`.
+    Demonstrates how to customize the directory in the package files will be added at. In this case, the `.\Zip` directory will be put in a `package\tools` directory, e.g. `package\tools\Zip`.
 
     .EXAMPLE
     Get-ChildItem 'C:\Projects\Zip' | Add-ProGetUniversalPackageFile -PackagePath 'zip.upack' -EntryName 'tools\ZipModule'
@@ -55,9 +55,9 @@ function Add-ProGetUniversalPackageFile
         [string]
         # The files/directories to add to the upack file. Normally, you would pipe file/directory objects to `Add-ProGetUniversalPackageFile`. You may also pass any object that has a `FullName` or `Path property. You may also pass the path as a string.
         #
-        # If you pass a directory object or path to a directory, all files in that directory and all its sub-directories will be added to the upack file.
+        # If you pass a directory object or path to a directory, that directory and all its sub-directories will be added to the upack file.
         #
-        # All files are added to the `packages` directory in the upack file.
+        # All files/directories are added to the `packages` directory in the upack file.
         $InputObject,
 
         [Parameter(ParameterSetName='BasePath')]

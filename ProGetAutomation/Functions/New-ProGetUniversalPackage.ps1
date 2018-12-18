@@ -137,7 +137,7 @@ function New-ProGetUniversalPackage
     Set-StrictMode -Version 'Latest'
     Use-CallerPreference -Cmdlet $PSCmdlet -SessionState $ExecutionContext.SessionState
 
-    $tempDir = Join-Path -Path $env:TEMP -ChildPath ('{0}.{1}' -f ($OutFile | Split-Path -Leaf),([IO.Path]::GetRandomFileName()))
+    $tempDir = Join-Path -Path ([IO.Path]::GetTempPath()) -ChildPath ('{0}.{1}' -f ($OutFile | Split-Path -Leaf),([IO.Path]::GetRandomFileName()))
     New-Item -Path $tempDir -ItemType 'Directory' | Out-Null
 
     try
@@ -146,8 +146,8 @@ function New-ProGetUniversalPackage
 
         [hashtable]$upackJson = $AdditionalMetadata.Clone()
 
-        $upackJson['name'] =  $Name;
-        $upackJson['version'] = $Version;
+        $upackJson['name'] =  $Name
+        $upackJson['version'] = $Version
 
         if( -not $upackJson.ContainsKey('createdUsing') )
         {
@@ -192,7 +192,7 @@ function New-ProGetUniversalPackage
             Set-Content -Path $upackJsonPath
 
         $archive = New-ZipArchive -Path $OutFile -CompressionLevel $CompressionLevel
-        $upackJsonPath | Add-ZipArchiveEntry -ZipArchivePath $archive.FullName -BasePath $tempDir -CompressionLevel $CompressionLevel
+        $upackJsonPath | Add-ZipArchiveEntry -ZipArchivePath $archive.FullName -CompressionLevel $CompressionLevel
         $archive
     }
     finally

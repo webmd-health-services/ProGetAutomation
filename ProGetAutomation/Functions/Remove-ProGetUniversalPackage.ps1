@@ -6,7 +6,7 @@ function Remove-ProGetUniversalPackage
     Removes a package from a ProGet universal feed.
 
     .DESCRIPTION
-    The `Remove-ProGetUniversalPackage` function removes a package from a ProGet universal feed. Pass the session to the ProGet instnace from which the package should get deleted to the `Session` parmeter (use `New-ProGetSession` to create a session). Pass the feed from which the package should get deleted to the `FeedName` parameter. Pass the name of the package to the `Name` parameter. Pass the package version to delete to the `Version` parameter. If the package is in a group, pass the group name to the `GroupName` parameter.
+    The `Remove-ProGetUniversalPackage` function removes a package from a ProGet universal feed. Pass the session to the ProGet instance from which the package should get deleted to the `Session` parmeter (use `New-ProGetSession` to create a session). Pass the feed from which the package should get deleted to the `FeedName` parameter. Pass the name of the package to the `Name` parameter. Pass the package version to delete to the `Version` parameter. If the package is in a group, pass the group name to the `GroupName` parameter.
 
     If the package doesn't exist, you'll get an error.
 
