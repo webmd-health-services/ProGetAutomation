@@ -1,6 +1,6 @@
 
 $apiKey = 'HKgaAKWjjgB9YRrTbTpHzw=='
-$credential = New-Credential -UserName 'Admin' -Password 'Admin'
+$credential = New-Object 'pscredential' ('Admin',(ConvertTo-SecureString 'Admin' -AsPlainText -Force))
 
 $pgNotInstalledMsg = 'It looks like ProGet isn''t installed. Please run init.ps1 to install and configure a local ProGet instance so we can run automated tests against it.'
 $svcRoot = Get-ItemProperty -Path 'hklm:\SOFTWARE\Inedo\ProGet' -Name 'ServicePath' | Select-Object -ExpandProperty 'ServicePath'
@@ -97,7 +97,7 @@ do
 
     New-ProGetFeed -Session $ProGetSession -FeedName 'ProGetAutomationTest' -FeedType 'ProGet' -ErrorAction Ignore
     Invoke-WebRequest -UseBasicParsing -Uri (New-Object 'Uri' ($uri,'/log-in?ReturnUrl=%2F')) -ErrorAction Ignore | Out-Null
-    $feed = Invoke-ProGetNativeApiMethod -Session $ProGetSession -Name 'Feeds_GetFeeds' -Parameter @{ IncludeInactive_Indicator = $true }
+    $feed = Get-ProGetFeed -Session $progetSession -Force
     if( $feed -and ($feed | Select-Object -First 1 | Get-Member -Name 'Feed_Id') )
     {
         $readyToGo = $true

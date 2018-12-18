@@ -5,7 +5,7 @@ $uri = 'https://proget.test.uri'
 $uName = 'Test'
 $PWord = 'User'
 $apiKey = '==TestAPIKey'
-$credential = New-Credential -UserName 'Test' -Password 'User'
+$credential = New-Object 'pscredential' ('Test',(ConvertTo-SecureString 'User' -AsPlainText -Force))
 
 Describe 'New-ProGetSession.when passed credentials and an API key' {
         

@@ -39,7 +39,7 @@ Describe 'Invoke-ProGetRestMethod.when making a POST request with defined body c
 
 Describe 'Invoke-ProGetRestMethod.when using credential in session' {
     $session = New-ProGetTestSession
-    $session.Credential = New-Credential -UserName 'fubar' -Password 'snafu'
+    $session.Credential = New-Object 'pscredential' ('fubar',(ConvertTo-SecureString 'snafu' -AsPlainText -Force))
 
     Mock -CommandName 'Invoke-RestMethod' -ModuleName 'ProGetAutomation'
 
@@ -63,4 +63,18 @@ Describe 'Invoke-ProGetRestMethod.when not using a credential' {
     It 'should not write any errors' {
         $Global:Error | Should -BeNullOrEmpty
     }
+}
+
+Describe 'Invoke-ProGetRestMethod.when using WhatIf' {
+    $feedName = 'Invoke-ProGetRestMethod.Tests.ps1.WhatIf'
+    Get-ProGetFeed -Session $session -Name $feedName | Remove-ProGetFeed -Session $session -Force
+    New-ProGetFeed -Session $session -FeedName $feedName -FeedType 'ProGet'
+    $package = New-ProGetUniversalPackage -OutFile (Join-Path -Path $TestDrive.FullName -ChildPath 'package.upack') -Version '0.0.0' -Name 'WhatIf'
+    Publish-ProGetUniversalPackage -Session $session -FeedName $feedName -PackagePath $package.FullName
+    Invoke-ProGetRestMethod -Session $Session -Path ('/upack/{0}/delete/WhatIf/0.0.0' -f $feedName) -Method Delete -WhatIf
+    It ('should not make web request') {
+        Get-ProGetUniversalPackage -Session $session -FeedName $feedName -Name 'WhatIf' | Should -Not -BeNullOrEmpty
+    }
+
+    
 }

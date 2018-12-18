@@ -10,14 +10,14 @@ function Invoke-ProGetRestMethod
 
     You also need to pass an object that represents the ProGet instance and API key to use when connecting via the `Session` parameter. Use the `New-ProGetSession` function to create a session object.
     #>
-    [CmdletBinding(DefaultParameterSetName='None')]
+    [CmdletBinding(SupportsShouldProcess,DefaultParameterSetName='None')]
     param(
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory)]
         [object]
         # A session object that represents the ProGet instance to use. Use the `New-ProGetSession` function to create session objects.
         $Session,
 
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory)]
         [String]
         # The path to the API endpoint.
         $Path,
@@ -26,23 +26,23 @@ function Invoke-ProGetRestMethod
         # The HTTP/web method to use. The default is `POST`.
         $Method = [Microsoft.PowerShell.Commands.WebRequestMethod]::Post,
 
-        [Parameter(ParameterSetName = 'ByParameter')]
+        [Parameter(ParameterSetName='ByParameter')]
         [hashtable]
         # The parameters to pass to the method.
         $Parameter,
 
-        [Parameter(ParameterSetName = 'ByParameter')]
+        [Parameter(ParameterSetName='ByParameter')]
         [string]
         [ValidateSet('Form','Json')]
         # Controls how the parameters are sent to the API. The default is `Form`, which sends them as URL-encoded name/value pairs (i.e. like a HTML form submission). The other options is `Json`, which converts the parameters to JSON and sends that JSON text as the content/body of the request. This parameter is ignored if there are no parmaeters to send or if the `InFile` parameter is used.
         $ContentType,
 
-        [Parameter(ParameterSetName = 'ByFile')]
+        [Parameter(ParameterSetName='ByFile')]
         [String]
         # Send the contents of the file at this path as the body of the web request.
         $InFile,
 
-        [Parameter(ParameterSetName = 'ByContent')]
+        [Parameter(ParameterSetName='ByContent')]
         [String]
         # Send the content of this string as the body of the web request.
         $Body,
@@ -154,8 +154,11 @@ function Invoke-ProGetRestMethod
             $optionalParams['UseBasicParsing'] = $true
         }
 
-        & $cmdName -Method $Method -Uri $uri @optionalParams -Headers $headers | 
-            ForEach-Object { $_ } 
+        if( $Method -eq [Microsoft.PowerShell.Commands.WebRequestMethod]::Get -or $PSCmdlet.ShouldProcess($uri,$Method) )
+        {
+            & $cmdName -Method $Method -Uri $uri @optionalParams -Headers $headers | 
+                ForEach-Object { $_ } 
+        }
     }
     catch [Net.WebException]
     {

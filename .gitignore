@@ -1,5 +1,7 @@
-Modules
-.output/**
+/PSModules/**
+/.output/**
 *.log
 *.orig
 .psgallerykey
+/.whiskey/**/*_HelpInfo.xml
+/.whiskey/**/en-US/**

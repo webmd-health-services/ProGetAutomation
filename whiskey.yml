@@ -10,6 +10,7 @@ Build:
     Path: init.ps1
 - Pester4:
     Path: Tests\*.Tests.ps1
+- Exec: .whiskey\bin\7-Zip\7z.exe a $(WHISKEY_OUTPUT_DIRECTORY)\ProGetAutomation.zip .\ProGetAutomation '-xr!*.pdb'
 
 Publish:
 - PublishPowerShellModule:
@@ -17,3 +18,20 @@ Publish:
     RepositoryName: PSGallery
     RepositoryUri: https://www.powershellgallery.com/api/v2/ 
     ApiKeyID: PowerShellGalleryApiKey
+- SetVariableFromPowerShellDataFile:
+    Path: ProGetAutomation\ProGetAutomation.psd1
+    Variables:
+        PrivateData:
+            PSData:
+                ReleaseNotes: RELEASE_NOTES
+- GitHubRelease:
+    RepositoryName: webmd-health-services/ProGetAutomation
+    ApiKeyID: github.com
+    Tag: $(WHISKEY_SEMVER2_NO_BUILD_METADATA)
+    Commitish: $(WHISKEY_SCM_COMMIT_ID)
+    Name: $(WHISKEY_SEMVER2_NO_BUILD_METADATA)
+    Description: $(RELEASE_NOTES)
+    Assets:
+    - Path: .output\ProGetAutomation.zip
+      ContentType: application/zip
+      Name: ProGetAutomation-$(WHISKEY_SEMVER2_NO_BUILD_METADATA).zip

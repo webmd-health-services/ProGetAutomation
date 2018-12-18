@@ -12,7 +12,7 @@
     RootModule = 'ProGetAutomation.psm1'
 
     # Version number of this module.
-    ModuleVersion = '0.6.1'
+    ModuleVersion = '0.7.0'
 
     # ID used to uniquely identify this module
     GUID = 'b7139a9b-572b-48cf-b08c-82a96cdab454'
@@ -24,7 +24,7 @@
     CompanyName = 'WebMD Health Services'
 
     # Copyright statement for this module
-    Copyright = '(c) 2017 WebMD Health Services. All rights reserved.'
+    Copyright = '(c) 2017 - 2018 WebMD Health Services. All rights reserved.'
 
     # Description of the functionality provided by this module
     Description = 'The ProGetAutomation module is used to automate Inedo''s ProGet, a universal package manager. It can host your own NuGet, Docker, PowerShell, Ruby Gems, Visual Studio Extensions, Maven, NPM, Bower, and Chocolatey repositories. It has its own proprietary universal package repositories.'
@@ -51,7 +51,7 @@
     # RequiredModules = @()
 
     # Assemblies that must be loaded prior to importing this module
-    # RequiredAssemblies = @()
+    RequiredAssemblies = @( )
 
     # Script files (.ps1) that are run in the caller's environment prior to importing this module.
     # ScriptsToProcess = @()
@@ -60,22 +60,30 @@
     # TypesToProcess = @()
 
     # Format files (.ps1xml) to be loaded when importing this module
-    # FormatsToProcess = @()
+    FormatsToProcess = @( 
+                            'Formats\Inedo.ProGet.Native.Feed.ps1xml' 
+                            'Formats\Inedo.ProGet.PackageInfo.ps1xml' 
+                        )
 
     # Modules to import as nested modules of the module specified in RootModule/ModuleToProcess
-    # NestedModules = @()
+    NestedModules = @( 'Zip' )
 
     # Functions to export from this module
     FunctionsToExport = @(
+                            'Add-ProGetUniversalPackageFile',
                             'Get-ProGetAsset',
                             'Get-ProGetAssetContent',
+                            'Get-ProGetFeed',
+                            'Get-ProGetUniversalPackage',
                             'Invoke-ProGetNativeApiMethod',
                             'Invoke-ProGetRestMethod',
                             'New-ProGetFeed',
                             'New-ProGetSession',
+                            'New-ProGetUniversalPackage',
                             'Publish-ProGetUniversalPackage',
                             'Read-ProGetUniversalPackageFile',
                             'Remove-ProGetAsset',
+                            'Remove-ProGetFeed',
                             'Remove-ProGetUniversalPackage',
                             'Set-ProGetAsset',
                             'Test-ProGetFeed'
@@ -118,7 +126,13 @@
 
             # ReleaseNotes of this module
             ReleaseNotes = @'
-* Fixed: calling APIs fails on servers where Internet Explorer's first-launch configuration hasn't run.
+* Created `New-ProGetUniversalPackage` function to create a new upack file with a correctly formatted upack.json file.
+* Created `Add-ProGetUniversalPackageFile` function for adding files a upack file.
+* Created `Get-ProGetUniversalPackage` function to read packages from a ProGet universal feed.
+* Created `Get-ProGetFeed` function that gets a list of feeds from ProGet.
+* Created `Remove-ProGetFeed` function for removing ProGet feeds.
+* Adding `WhatIf` support to `Invoke-ProGetRestMethod` and `Invoke-ProGetNativeApiMethod`. When using `-WhatIf` switch, only GET requests will actually be made.
+* Created `Remove-ProGetUniversalPackage` function to remove packages from a universal feed.
 '@
 
         } # End of PSData hashtable

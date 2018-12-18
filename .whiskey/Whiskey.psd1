@@ -12,7 +12,7 @@
     RootModule = 'Whiskey.psm1'
 
     # Version number of this module.
-    ModuleVersion = '0.34.0'
+    ModuleVersion = '0.38.5'
 
     # ID used to uniquely identify this module
     GUID = '93bd40f1-dee5-45f7-ba98-cb38b7f5b897'
@@ -24,7 +24,7 @@
     CompanyName = 'WebMD Health Services'
 
     # Copyright statement for this module
-    Copyright = '(c) 2016 WebMD Health Services. All rights reserved.'
+    Copyright = '(c) 2016 - 2018 WebMD Health Services. All rights reserved.'
 
     # Description of the functionality provided by this module
     Description = 'Continuous Integration/Continuous Delivery module.'
@@ -68,12 +68,7 @@
                         )
 
     # Modules to import as nested modules of the module specified in RootModule/ModuleToProcess
-    NestedModules = @(
-                        'BitbucketServerAutomation',
-                        'BuildMasterAutomation',
-                        'ProGetAutomation',
-                        'VSSetup'
-                     )
+    NestedModules = @( )
 
     # Functions to export from this module
     FunctionsToExport = @(
@@ -88,6 +83,8 @@
                             'Get-WhiskeyApiKey',
                             'Get-WhiskeyTask',
                             'Get-WhiskeyCredential',
+                            'Get-WhiskeyMSBuildConfiguration',
+                            'Import-WhiskeyPowerShellModule',
                             'Install-WhiskeyTool',
                             'Invoke-WhiskeyNodeTask',
                             'Invoke-WhiskeyNpmCommand',
@@ -101,10 +98,10 @@
                             'Publish-WhiskeyBBServerTag',
                             'Register-WhiskeyEvent',
                             'Resolve-WhiskeyNuGetPackageVersion',
-                            'Resolve-WhiskeyPowerShellModule',
                             'Resolve-WhiskeyTaskPath',
                             'Resolve-WhiskeyVariable',
                             'Set-WhiskeyBuildStatus',
+                            'Set-WhiskeyMSBuildConfiguration',
                             'Stop-WhiskeyTask',
                             'Uninstall-WhiskeyTool',
                             'Unregister-WhiskeyEvent'
@@ -147,14 +144,8 @@
 
             # ReleaseNotes of this module
             ReleaseNotes = @'
-# 0.34.0
-
-* Fixed: "Pester3" and "Pester4" tasks overwrite test results when run in parallel.
-* ***Breaking Change***: "Pester4" and "Pester3" tasks XML output file names changed. They used to be named "pester-NUMBER.xml". They now use the pattern "pester+RANDOM_STRING.xml", where "RANDOM_STRING" is a random string of ASCII characters.
-* Added "Exclude" property to "Pester4" task for filtering out tests that match any wildcards in the task's "Path" property.
-* Default "BuildTasks" and "PublishTasks" pipelines have been renamed to "Build" and "Publish". Backwards compatibility with the deprecated "BuildTasks" and "PublishTasks" pipelines will be removed in the next major version of Whiskey.
-* Added "SetVariableFromXML" task that creates Whiskey variables from values in XML files.
-* Added "ManifestProperties" property to "ProGetUniversalPackageTask" for setting custom upack.json metadata.
+* Fixed: `GetPowerShellModule` task assumes that a module is already installed if an empty directory for that module exists in the `PSModules` directory.
+* Fixed: `PSModules` directory isn't removed removed during `Clean` mode after all contained modules have been deleted.
 '@
         } # End of PSData hashtable
 

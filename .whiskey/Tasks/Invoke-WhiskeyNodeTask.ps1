@@ -1,13 +1,6 @@
 
 function Invoke-WhiskeyNodeTask
 {
-    <#
-    .SYNOPSIS
-    ** OBSOLETE ** Use the `NpmInstall`, `NpmRunScript`, `NodeNspCheck`, and `NodeLicenseChecker` tasks instead.
-    
-    .DESCRIPTION
-    ** OBSOLETE ** Use the `NpmInstall`, `NpmRunScript`, `NodeNspCheck`, and `NodeLicenseChecker` tasks instead.
-    #>
     [Whiskey.Task('Node',SupportsClean=$true,SupportsInitialize=$true)]
     [Whiskey.RequiresTool('Node','NodePath')]
     [Whiskey.RequiresTool('NodeModule::license-checker','LicenseCheckerPath',VersionParameterName='LicenseCheckerVersion')]
@@ -31,7 +24,7 @@ function Invoke-WhiskeyNodeTask
     Set-StrictMode -Version 'Latest'
     Use-CallerPreference -Cmdlet $PSCmdlet -SessionState $ExecutionContext.SessionState
 
-    Write-Warning -Message ('The ''Node'' task has been deprecated and will be removed in a future version of Whiskey. It''s functionality has been broken up into individual smaller tasks, ''NpmInstall'', ''NpmRunScript'', ''NodeNspCheck'', and ''NodeLicenseChecker''. Update the build configuration in ''{0}'' to use the new tasks.' -f $TaskContext.ConfigurationPath)
+    Write-Warning -Message ('The "Node" task is obsolete and will be removed in a future version of Whiskey. It''s functionality has been broken up into the "Npm" and "NodeLicenseChecker" tasks. Update the build configuration in "{0}" to use the new tasks.' -f $TaskContext.ConfigurationPath)
 
     if( $TaskContext.ShouldClean )
     {
@@ -93,7 +86,7 @@ Build:
 - Node:
   NpmScript:
   - build
-  - test           
+  - test
 '@)
         }
 
@@ -116,6 +109,7 @@ Build:
         {
             $summary = $results | Format-List | Out-String
             Stop-WhiskeyTask -TaskContext $TaskContext -Message ('NSP, the Node Security Platform, found the following security vulnerabilities in your dependencies (exit code: {0}):{1}{2}' -f $LASTEXITCODE,[Environment]::NewLine,$summary)
+            return
         }
 
         Update-Progress -Status ('license-checker') -Step ($stepNum++)
@@ -129,14 +123,15 @@ Build:
         if( -not $report )
         {
             Stop-WhiskeyTask -TaskContext $TaskContext -Message ('License Checker failed to output a valid JSON report.')
+            return
         }
 
         Write-WhiskeyTiming -Message ('Converting license report.')
         # The default license checker report has a crazy format. It is an object with properties for each module.
         # Let's transform it to a more sane format: an array of objects.
-        [object[]]$newReport = $report | 
-                                    Get-Member -MemberType NoteProperty | 
-                                    Select-Object -ExpandProperty 'Name' | 
+        [object[]]$newReport = $report |
+                                    Get-Member -MemberType NoteProperty |
+                                    Select-Object -ExpandProperty 'Name' |
                                     ForEach-Object { $report.$_ | Add-Member -MemberType NoteProperty -Name 'name' -Value $_ -PassThru }
 
         # show the report

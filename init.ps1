@@ -2,10 +2,11 @@
 param(
 )
 
-#Requires -Version 4
+#Requires -Version 5.1
+#Requires -RunAsAdministrator
 Set-StrictMode -Version 'Latest'
 
-Import-Module (Join-Path -Path $PSScriptRoot -ChildPath 'Modules\Carbon') -Force
+Import-Module (Join-Path -Path $PSScriptRoot -ChildPath 'PSModules\Carbon') -Force
 
 $runningUnderAppVeyor = (Test-Path -Path 'env:APPVEYOR')
 
@@ -19,12 +20,12 @@ if( -not (Test-Path -Path $installerPath -PathType Leaf) )
     Invoke-WebRequest -Uri $uri -OutFile $installerPath
 }
 
-$pgInstallInfo = Get-ProgramInstallInfo -Name 'ProGet'
+$pgInstallInfo = Get-CProgramInstallInfo -Name 'ProGet'
 if( -not $pgInstallInfo )
 {
     $installSqlParam = '/InstallSqlExpress'
     $connString = '/S'
-    $bmInstallInfo = Get-ProgramInstallInfo -Name 'BuildMaster'
+    $bmInstallInfo = Get-CProgramInstallInfo -Name 'BuildMaster'
     if ($bmInstallInfo)
     {
         Write-Verbose -Message 'BuildMaster is installed. ProGet will join existing SQL Server instance.'
@@ -66,7 +67,7 @@ if( -not $pgInstallInfo )
 
     Write-Verbose -Message ('{0} exited with code {1}' -f $installerFileName, $process.ExitCode)
 
-    if( -not (Get-ProgramInstallInfo -Name 'ProGet') )
+    if( -not (Get-CProgramInstallInfo -Name 'ProGet') )
     {
         if( $runningUnderAppVeyor )
         {
@@ -83,3 +84,5 @@ elseif( $pgInstallInfo.DisplayVersion -notmatch ('^{0}\b' -f [regex]::Escape($ve
 {
     Write-Warning -Message ('You''ve got an old version of ProGet installed. You''re on version {0}, but we expected version {1}. Please *completely* uninstall version {0} using the Programs and Features control panel, then re-run this script.' -f $pgInstallInfo.DisplayVersion, $version)
 }
+
+Get-Service -Name 'InedoProget*' | Start-Service
