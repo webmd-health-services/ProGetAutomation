@@ -31,8 +31,20 @@ if( $Initialize )
 }
 
 $context = New-WhiskeyContext -Environment 'Dev' -ConfigurationPath $configPath
-if( (Test-Path -Path 'env:PowerShellGalleryApiKey') )
+$apiKeys = @{
+                'powershellgallery.com' = 'POWERSHELL_GALLERY_API_KEY';
+                'github.com' = 'GITHUB_ACCESS_TOKEN'
+            }
+foreach( $apiKeyID in $apiKeys.Keys )
 {
-    Add-WhiskeyApiKey -Context $context -ID 'PowerShellGalleryApiKey' -Value $env:PowerShellGalleryApiKey
+    $envVarName = $apiKeys[$apiKeyID]
+    $envVarPath = 'env:{0}' -f $envVarName
+    if( -not (Test-Path -Path $envVarPath) )
+    {
+        continue
+    }
+
+    Write-Verbose ('Adding API key "{0}" from environment variable "{1}".' -f $apiKeyID,$envVarName)
+    Add-WhiskeyApiKey -Context $context -ID $apiKeyID -Value (Get-Item -Path $envVarPath).Value
 }
 Invoke-WhiskeyBuild -Context $context @optionalArgs
