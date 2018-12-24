@@ -95,8 +95,6 @@ function Add-ZipArchiveEntry
         Set-StrictMode -Version 'Latest'
         Use-CallerPreference -Cmdlet $PSCmdlet -SessionState $ExecutionContext.SessionState
 
-        [IO.Compression.ZipArchive]$zipFile = [IO.Compression.ZipFile]::Open($ZipArchivePath, [IO.Compression.ZipArchiveMode]::Update, $EntryNameEncoding)
-
         $directorySeparators = @( [IO.Path]::AltDirectorySeparatorChar, [IO.Path]::DirectorySeparatorChar )
         $directorySeparatorsRegex = $directorySeparators | ForEach-Object { [regex]::Escape($_) }
         $directorySeparatorsRegex = '({0})?' -f ($directorySeparatorsRegex -join '|')
@@ -106,65 +104,15 @@ function Add-ZipArchiveEntry
             $BasePath = $BasePath.TrimEnd($directorySeparators)
             $basePathRegex = '^{0}{1}' -f [regex]::Escape($BasePath),$directorySeparatorsRegex
         }
+
+        $entries = @{}
     }
 
     process
     {
-        function Add
-        {
-            param(
-                [Parameter(Mandatory)]
-                [string]
-                $EntryName,
-
-                [Parameter(Mandatory)]
-                [string]
-                $FilePath
-            )
-
-            $entry = $zipFile.GetEntry($EntryName)
-            if( $entry )
-            {
-                if( $Force )
-                {
-                    $entry.Delete()
-                }
-                else
-                {
-                    Write-Error -Message ('Unable to add file "{0}" to ZIP archive "{1}": the archive already has a file named "{2}". To overwrite existing entries, use the -Force switch.' -f $FilePath,$ZipArchivePath,$EntryName)
-                    continue
-                }
-            }
-
-            Write-Debug -Message ('{0} -> {1}' -f $FilePath,$EntryName)
-            $entry = $zipFile.CreateEntry($EntryName,$CompressionLevel)
-            $stream = $entry.Open()
-            try
-            {
-                $writer = New-Object 'IO.StreamWriter' ($stream)
-                try
-                {
-                    [byte[]]$bytes = [IO.File]::ReadAllBytes($FilePath)
-                    $writer.Write($bytes,0,$bytes.Count)
-                }
-                finally
-                {
-                    $writer.Close()
-                    $writer.Dispose()
-                }
-            }
-            finally
-            {
-                $stream.Close()
-                $stream.Dispose()
-            }
-        }
-
         $filePaths = $InputObject | Resolve-Path | Select-Object -ExpandProperty 'ProviderPath'
         foreach( $filePath in $filePaths )
         {
-            Write-Debug -Message $filePath
-
             if( $BasePath )
             {
                 $baseEntryName = $filePath -replace $basePathRegex,''
@@ -193,7 +141,7 @@ function Add-ZipArchiveEntry
             # Add the file.
             if( (Test-Path -Path $filePath -PathType Leaf) )
             {
-                Add -EntryName $baseEntryName -FilePath $filePath
+                $entries[$baseEntryName] = $filePath
                 continue
             }
 
@@ -206,13 +154,85 @@ function Add-ZipArchiveEntry
                 {
                     $fileEntryName = Join-Path -Path $baseEntryName -ChildPath $fileEntryName
                 }
-                Add -EntryName $fileEntryName -FilePath $filePath
+                $entries[$fileEntryName] = $filePath
             }
         }
     }
 
     end
     {
-        $zipFile.Dispose()
+        $bufferSize = 4kb
+        [byte[]]$buffer = New-Object 'byte[]' ($bufferSize)
+        $activity = 'Compressing files into ZIP archive {0}' -f $ZipArchivePath
+        Write-Progress -Activity $activity 
+        [IO.Compression.ZipArchive]$zipFile = [IO.Compression.ZipFile]::Open($ZipArchivePath, [IO.Compression.ZipArchiveMode]::Update, $EntryNameEncoding)
+        try
+        {
+            $processedCount = 1
+            foreach( $entryName in $entries.Keys )
+            {
+                $filePath = $entries[$entryName]
+                Write-Progress -Activity $activity -Status $filePath -CurrentOperation $entryName -PercentComplete (($processedCount++/$entries.Count) * 100)
+                Write-Debug -Message ('{0} -> {1}' -f $FilePath,$EntryName)
+                $entry = $zipFile.GetEntry($EntryName)
+                if( $entry )
+                {
+                    if( $Force )
+                    {
+                        $entry.Delete()
+                    }
+                    else
+                    {
+                        Write-Error -Message ('Unable to add file "{0}" to ZIP archive "{1}": the archive already has a file named "{2}". To overwrite existing entries, use the -Force switch.' -f $FilePath,$ZipArchivePath,$EntryName)
+                        continue
+                    }
+                }
+
+                $entry = $zipFile.CreateEntry($EntryName,$CompressionLevel)
+                $stream = $entry.Open()
+                try
+                {
+                    $writer = New-Object 'IO.BinaryWriter' ($stream)
+                    try
+                    {
+                        [Array]::Clear($buffer,0,$bufferSize)
+                        $fileReader = New-Object 'IO.FileStream' ($filePath,[IO.FileMode]::Open,[IO.FileAccess]::Read,[IO.FileShare]::Read,$bufferSize,[IO.FileOptions]::SequentialScan)
+                        try
+                        {
+                            while( $true )
+                            {
+                                [int]$bytesRead = $fileReader.Read($buffer, 0, $bufferSize)
+                                if( -not $bytesRead )
+                                {
+                                    break
+                                }
+                                $writer.Write($buffer,0,$bytesRead)
+                            }
+                        }
+                        finally
+                        {
+                            $fileReader.Close()
+                            $fileREader.Dispose()
+                        }
+                    }
+                    finally
+                    {
+                        $writer.Close()
+                        $writer.Dispose()
+                    }
+                }
+                finally
+                {
+                    $stream.Close()
+                    $stream.Dispose()
+                }
+            }
+        }
+        finally
+        {
+            Write-Progress -Activity $activity -Status 'Writing File' -PercentComplete 99
+            $zipFile.Dispose()
+            Write-Progress -Activity $activity -Completed
+        }
     }
 }
