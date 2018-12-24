@@ -128,6 +128,7 @@
             ReleaseNotes = @'
 * `Add-ProGetUniversalPackageFile` is now an order of magnitude faster, thanks to performance improvements to the underlying Zip module used to add files to a universal package.
 * `Add-ProGetUniversalPackageFile` now preserves file last write/modified date/times.
+* Fixed: `Add-ProGetUniversalPackageFile` function behaves improperly when part of a pipeline, causing a major performance problem.
 '@
 
         } # End of PSData hashtable
