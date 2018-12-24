@@ -189,6 +189,7 @@ function Add-ZipArchiveEntry
                 }
 
                 $entry = $zipFile.CreateEntry($EntryName,$CompressionLevel)
+                $entry.LastWriteTime = (Get-Item -Path $filePath).LastWriteTime
                 $stream = $entry.Open()
                 try
                 {

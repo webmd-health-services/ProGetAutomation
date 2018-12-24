@@ -12,7 +12,7 @@
     RootModule = 'ProGetAutomation.psm1'
 
     # Version number of this module.
-    ModuleVersion = '0.7.1'
+    ModuleVersion = '0.8.0'
 
     # ID used to uniquely identify this module
     GUID = 'b7139a9b-572b-48cf-b08c-82a96cdab454'
@@ -127,6 +127,7 @@
             # ReleaseNotes of this module
             ReleaseNotes = @'
 * `Add-ProGetUniversalPackageFile` is now an order of magnitude faster, thanks to performance improvements to the underlying Zip module used to add files to a universal package.
+* `Add-ProGetUniversalPackageFile` now preserves file last write/modified date/times.
 '@
 
         } # End of PSData hashtable
