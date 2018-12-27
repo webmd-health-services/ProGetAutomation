@@ -40,7 +40,7 @@ function Init
     $script:upackFile = $null
 
     Get-ProGetFeed -Session $Session -Name $feedName | Remove-ProGetFeed -Session $Session -Force
-    New-ProGetFeed -Session $session -FeedName $feedName -FeedType ProGet
+    New-ProGetFeed -Session $session -Name $feedName -Type ProGet
 }
 
 function ThenContentIs

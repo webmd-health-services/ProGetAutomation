@@ -95,7 +95,7 @@ do
 {
     Write-Verbose -Message ('Making attempt {0,3} to see if ProGet is activated.' -f $numAttempts) -Verbose
 
-    New-ProGetFeed -Session $ProGetSession -FeedName 'ProGetAutomationTest' -FeedType 'ProGet' -ErrorAction Ignore
+    New-ProGetFeed -Session $ProGetSession -Name 'ProGetAutomationTest' -Type 'ProGet' -ErrorAction Ignore
     Invoke-WebRequest -UseBasicParsing -Uri (New-Object 'Uri' ($uri,'/log-in?ReturnUrl=%2F')) -ErrorAction Ignore | Out-Null
     $feed = Get-ProGetFeed -Session $progetSession -Force
     if( $feed -and ($feed | Select-Object -First 1 | Get-Member -Name 'Feed_Id') )
