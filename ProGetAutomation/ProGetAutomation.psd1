@@ -12,7 +12,10 @@
     RootModule = 'ProGetAutomation.psm1'
 
     # Version number of this module.
-    ModuleVersion = '0.7.0'
+    ModuleVersion = '0.8.0'
+
+    # Supported PSEditions
+    CompatiblePSEditions = @( 'Desktop', 'Core' )
 
     # ID used to uniquely identify this module
     GUID = 'b7139a9b-572b-48cf-b08c-82a96cdab454'
@@ -30,7 +33,7 @@
     Description = 'The ProGetAutomation module is used to automate Inedo''s ProGet, a universal package manager. It can host your own NuGet, Docker, PowerShell, Ruby Gems, Visual Studio Extensions, Maven, NPM, Bower, and Chocolatey repositories. It has its own proprietary universal package repositories.'
 
     # Minimum version of the Windows PowerShell engine required by this module
-    # PowerShellVersion = ''
+    PowerShellVersion = '5.1'
 
     # Name of the Windows PowerShell host required by this module
     # PowerShellHostName = ''
@@ -126,13 +129,11 @@
 
             # ReleaseNotes of this module
             ReleaseNotes = @'
-* Created `New-ProGetUniversalPackage` function to create a new upack file with a correctly formatted upack.json file.
-* Created `Add-ProGetUniversalPackageFile` function for adding files a upack file.
-* Created `Get-ProGetUniversalPackage` function to read packages from a ProGet universal feed.
-* Created `Get-ProGetFeed` function that gets a list of feeds from ProGet.
-* Created `Remove-ProGetFeed` function for removing ProGet feeds.
-* Adding `WhatIf` support to `Invoke-ProGetRestMethod` and `Invoke-ProGetNativeApiMethod`. When using `-WhatIf` switch, only GET requests will actually be made.
-* Created `Remove-ProGetUniversalPackage` function to remove packages from a universal feed.
+* `Add-ProGetUniversalPackageFile` is now an order of magnitude faster, thanks to performance improvements to the underlying Zip module used to add files to a universal package.
+* `Add-ProGetUniversalPackageFile` now preserves file last write/modified date/times.
+* Fixed: `Add-ProGetUniversalPackageFile` function behaves improperly when part of a pipeline, causing a major performance problem.
+* Fix issue #7: the `Test-ProGetFeed` function ignores the feed's type, i.e. it always returns true if there is any feed with a given name, regardless of its type.
+* Renamed the `New-ProGetFeed` and `Test-ProGetFeed` function's `FeedName` and `FeedType` parameters to `Name` and `Type`.
 '@
 
         } # End of PSData hashtable

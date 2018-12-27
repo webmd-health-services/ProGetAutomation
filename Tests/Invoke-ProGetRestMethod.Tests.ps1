@@ -5,7 +5,7 @@ Set-StrictMode -Version 'Latest'
 & (Join-Path -Path $PSScriptRoot -ChildPath 'Initialize-Tests.ps1' -Resolve)
 
 $session = New-ProGetTestSession
-New-ProGetFeed -Session $session -FeedName 'Fubar' -FeedType 'ProGet' -ErrorAction Ignore
+New-ProGetFeed -Session $session -Name 'Fubar' -Type 'ProGet' -ErrorAction Ignore
 
 Describe 'Invoke-ProGetRestMethod.when making a GET request' {
     $Global:Error.Clear()
@@ -68,7 +68,7 @@ Describe 'Invoke-ProGetRestMethod.when not using a credential' {
 Describe 'Invoke-ProGetRestMethod.when using WhatIf' {
     $feedName = 'Invoke-ProGetRestMethod.Tests.ps1.WhatIf'
     Get-ProGetFeed -Session $session -Name $feedName | Remove-ProGetFeed -Session $session -Force
-    New-ProGetFeed -Session $session -FeedName $feedName -FeedType 'ProGet'
+    New-ProGetFeed -Session $session -Name $feedName -Type 'ProGet'
     $package = New-ProGetUniversalPackage -OutFile (Join-Path -Path $TestDrive.FullName -ChildPath 'package.upack') -Version '0.0.0' -Name 'WhatIf'
     Publish-ProGetUniversalPackage -Session $session -FeedName $feedName -PackagePath $package.FullName
     Invoke-ProGetRestMethod -Session $Session -Path ('/upack/{0}/delete/WhatIf/0.0.0' -f $feedName) -Method Delete -WhatIf

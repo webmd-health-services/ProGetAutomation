@@ -4,10 +4,10 @@ function GivenSession
 {
     $script:session = New-ProGetTestSession
     $script:baseDirectory = (split-path -Path $TestDrive.FullName -leaf)
-    $feed = Test-ProGetFeed -Session $session -FeedName $baseDirectory -FeedType 'Asset'
+    $feed = Test-ProGetFeed -Session $session -Name $baseDirectory -Type 'Asset'
     if( !$feed )
     {
-        New-ProGetFeed -Session $session -FeedName $baseDirectory -FeedType 'Asset'
+        New-ProGetFeed -Session $session -Name $baseDirectory -Type 'Asset'
     }
 }
 

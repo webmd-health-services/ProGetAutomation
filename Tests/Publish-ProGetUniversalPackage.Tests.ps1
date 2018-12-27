@@ -22,7 +22,7 @@ function Initialize-PublishProGetPackageTests
     # Remove all feeds from target ProGet instance
     Get-ProGetFeed -Session $ProGetSession -Force | Remove-ProGetFeed -Session $ProGetSession -Force
     
-    New-ProGetFeed -Session $ProGetSession -FeedType 'ProGet' -FeedName $feedName
+    New-ProGetFeed -Session $ProGetSession -Type 'ProGet' -Name $feedName
     $feedId = (Get-ProGetFeed -Session $ProGetSession -Name $feedName).Feed_Id
     
     return $feedId

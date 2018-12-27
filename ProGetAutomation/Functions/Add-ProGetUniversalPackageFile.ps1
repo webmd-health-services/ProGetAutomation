@@ -90,6 +90,8 @@ function Add-ProGetUniversalPackageFile
         Set-StrictMode -Version 'Latest'
         Use-CallerPreference -Cmdlet $PSCmdlet -SessionState $ExecutionContext.SessionState
 
+        Write-Debug -Message ('ProGetAutomation\Add-ProGetUniversalPackageFile BEGIN')
+
         $parentPath = 'package'
         if( $PackageParentPath )
         {
@@ -111,10 +113,18 @@ function Add-ProGetUniversalPackageFile
         {
             $params['Force'] = $true
         }
+
+        $items = New-Object 'Collections.Generic.List[string]'
     }
 
     process
     {
-        $InputObject | Add-ZipArchiveEntry -ZipArchivePath $PackagePath -EntryParentPath $parentPath -CompressionLevel $CompressionLevel @params
+        $items.Add($InputObject)
+    }
+    
+    end
+    {
+        $items | Add-ZipArchiveEntry -ZipArchivePath $PackagePath -EntryParentPath $parentPath -CompressionLevel $CompressionLevel @params
+        Write-Debug -Message ('ProGetAutomation\Add-ProGetUniversalPackageFile END')
     }
 }
