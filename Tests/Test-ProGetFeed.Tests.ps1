@@ -33,7 +33,7 @@ function ThenFeedExists
 
 function ThenFeedDoesNotExist
 {
-    It ('should exist') {
+    It ('should not exist') {
         $result | Should -BeFalse
     }
 }
