@@ -97,7 +97,7 @@ function ThenPackageEmpty
     finally
     {
         $file.Dispose()
-    }    
+    }
 }
 
 function ThenPackageNotContains
@@ -152,7 +152,13 @@ function WhenAddingFiles
         $WithName,
 
         [Switch]
-        $AsString
+        $AsString,
+
+        [switch]
+        $Quiet,
+
+        [switch]
+        $NonPipeline
     )
 
     $packagePath = Join-Path -Path $TestDrive.FullName -ChildPath 'package.upack.zip'
@@ -162,8 +168,9 @@ function WhenAddingFiles
     }
 
     $params = @{
-                    PackagePath = $package.FullName;
-                }
+        PackagePath = $package.FullName
+        Quiet = $Quiet
+    }
 
     if( $AtPackageRoot )
     {
@@ -187,7 +194,8 @@ function WhenAddingFiles
 
     $Global:Error.Clear()
 
-    $Path | 
+    $pathsToPackage =
+        $Path |
         ForEach-Object { Join-Path -Path $TestDrive.FullName -ChildPath $_ } |
         ForEach-Object {
             if( $AsString )
@@ -198,8 +206,16 @@ function WhenAddingFiles
             {
                 Get-Item -Path $_
             }
-        } |
-        Add-ProGetUniversalPackageFile @params
+        }
+
+    if( $NonPipeline )
+    {
+        Add-ProGetUniversalPackageFile -InputObject $pathsToPackage @params
+    }
+    else
+    {
+        $pathsToPackage | Add-ProGetUniversalPackageFile @params
+    }
 }
 
 Describe 'Add-ProGetUniversalPackageFile' {
@@ -239,7 +255,7 @@ Describe 'Add-ProGetUniversalPackageFile.when adding package root' {
 Describe 'Add-ProGetUniversalPackageFile.when passing path instead of file objects' {
     Init
     GivenFile 'one.cs','two.cs'
-    WhenAddingFiles '*.cs' -AsString
+    WhenAddingFiles 'one.cs', 'two.cs' -AsString
     ThenPackageContains 'one.cs','two.cs'
 }
 
@@ -292,4 +308,22 @@ Describe 'Add-ZipArchiveEntry.when base path doesn''t match files' {
     GivenFile 'one.cs'
     WhenAddingFiles 'one.cs' -WithBasePath 'C:\Windows\System32' -ErrorAction SilentlyContinue
     ThenError -Matches 'is\ not\ in'
+}
+
+Describe 'Add-ZipArchiveEntry.when given Quiet switch' {
+    Init
+    Mock -CommandName 'Add-ZipArchiveEntry' -ModuleName 'ProGetAutomation'
+    GivenFile 'one.cs'
+    WhenAddingFiles 'one.cs' -Quiet
+
+    It 'should call Add-ZipArchiveEntry with Quiet switch' {
+        Assert-MockCalled -CommandName 'Add-ZipArchiveEntry' -ModuleName 'ProGetAutomation' -ParameterFilter { $Quiet.IsPresent }
+    }
+}
+
+Describe 'Add-ZipArchiveEntry.when passes files directly, in a non-pipeline manner' {
+    Init
+    GivenFile 'one.cs', 'two.cs'
+    WhenAddingFiles 'one.cs', 'two.cs' -NonPipeline
+    ThenPackageContains 'one.cs', 'two.cs'
 }
