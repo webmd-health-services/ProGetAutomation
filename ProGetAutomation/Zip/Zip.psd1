@@ -12,7 +12,7 @@
     RootModule = 'Zip.psm1'
 
     # Version number of this module.
-    ModuleVersion = '0.2.0'
+    ModuleVersion = '0.3.0'
 
     # Supported PSEditions
     CompatiblePSEditions = @( 'Desktop', 'Core' )
@@ -111,7 +111,11 @@
 
             # ReleaseNotes of this module
             ReleaseNotes = '
-* `Add-ZipArchiveEntry` now preserves a file''s last write/modified date/time.
+* Fixed: `Add-ZipArchiveEntry` fails when passed multiple paths directly, in a non-pipeline manner.
+* `Add-ZipArchiveEntry` no longer supports resolving wildcard expressions in paths.
+* Fixed: `New-ZipArchive` fails if archive name contains `[]` characters.
+* Improved the performance of `Add-ZipArchiveEntry` when zipping a large number of files by reducing the number of progress messages that are written during the operation. Progress messages are now only written every 100ms as opposed for every file added to the ZIP archive.
+* Added a `-Quiet` switch to `Add-ZipArchiveEntry` that will suppress progress messages during the operation.
 '
 
         } # End of PSData hashtable

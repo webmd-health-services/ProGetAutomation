@@ -6,10 +6,10 @@ function Add-ZipArchiveEntry
     Adds files and directories to a ZIP archive.
 
     .DESCRIPTION
-    The `Add-ZipArchiveEntry` function adds files and directories to a ZIP archive. The archive must exist. Use the `New-ZipArchive` function to create a new ZIP file. Pipe file or directory objects that you want to add to the pipeline. You may also pass paths directly to the `InputObject` parameter. Relative paths are resolved from the current directory. If you pass a directory or path to a directory, the entire directory and all its sub-directories/files are added to the archive.
-    
+    The `Add-ZipArchiveEntry` function adds files and directories to a ZIP archive. The archive must exist. Use the `New-ZipArchive` function to create a new ZIP file. Pipe file or directory objects that you want to add to the pipeline. You may also pass paths directly to the `InputObject` parameter (wildcards are **NOT** supported). Relative paths are resolved from the current directory. If you pass a directory or path to a directory, the entire directory and all its sub-directories/files are added to the archive.
+
     Files are added to the ZIP archive using their names. They are always added to the root of the archive. For example, if you added `C:\Projects\Zip\Zip\Zip.psd1` to an archive, it would get added at `Zip.psd1`.
-    
+
     Directories are added into a directory in the root of the archive with the source directory's name. For example, if you add 'C:\Projects\Zip', all items will be added to the ZIP archive at `Zip`.
 
     You can change the name an item will have in the archive with the `EntryName` parameter. Path separators are allowed, so you can put any item into any directory.
@@ -54,7 +54,7 @@ function Add-ZipArchiveEntry
         [Parameter(Mandatory,ValueFromPipeline,ValueFromPipelineByPropertyName)]
         [Alias('FullName')]
         [Alias('Path')]
-        [string]
+        [string[]]
         # The files/directories to add to the archive. Normally, you would pipe file/directory objects to `Add-ZipArchiveEntry`. You may also pass any object that has a `FullName` or `Path property. You may also pass the path as a string.
         #
         # If you pass a directory object or path to a directory, all files in that directory and all its sub-directories will be added to the archive.
@@ -87,7 +87,11 @@ function Add-ZipArchiveEntry
 
         [Switch]
         # By default, if a file already exists in the ZIP file, you'll get an error. Use this switch to replace any existing entries.
-        $Force
+        $Force,
+
+        [switch]
+        # Suppress progress messages while adding files to the ZIP archive.
+        $Quiet
     )
 
     begin
@@ -110,7 +114,24 @@ function Add-ZipArchiveEntry
 
     process
     {
-        $filePaths = $InputObject | Resolve-Path | Select-Object -ExpandProperty 'ProviderPath'
+        $filePaths =
+            $InputObject |
+            ForEach-Object {
+                $path = Resolve-Path -LiteralPath $_ -ErrorAction Ignore
+                if( -not $path )
+                {
+                    $errorSuffix = ''
+                    if( $_ -match '\*|\?|\[.*\]' )
+                    {
+                        $errorSuffix = ' Wildcard expressions are not supported.'
+                    }
+
+                    Write-Error -Message ('Cannot find path "{0}" because it does not exist.{1}' -f $_, $errorSuffix) -ErrorAction $ErrorActionPreference
+                    return
+                }
+                $path | Select-Object -ExpandProperty 'ProviderPath'
+            }
+
         foreach( $filePath in $filePaths )
         {
             if( $BasePath )
@@ -139,7 +160,7 @@ function Add-ZipArchiveEntry
             }
 
             # Add the file.
-            if( (Test-Path -Path $filePath -PathType Leaf) )
+            if( (Test-Path -LiteralPath $filePath -PathType Leaf) )
             {
                 $entries[$baseEntryName] = $filePath
                 continue
@@ -147,7 +168,7 @@ function Add-ZipArchiveEntry
 
             # Now, handle directories
             $dirEntryBasePathRegex = '^{0}{1}' -f [regex]::Escape($filePath),$directorySeparatorsRegex
-            foreach( $filePath in (Get-ChildItem -Path $filePath -Recurse -File | Select-Object -ExpandProperty 'FullName') )
+            foreach( $filePath in (Get-ChildItem -LiteralPath $filePath -Recurse -File | Select-Object -ExpandProperty 'FullName') )
             {
                 $fileEntryName = $filePath -replace $dirEntryBasePathRegex,''
                 if( $baseEntryName )
@@ -161,18 +182,47 @@ function Add-ZipArchiveEntry
 
     end
     {
+        $activity = 'Compressing files into ZIP archive {0}' -f $ZipArchivePath
+        $writeProgress = [Environment]::UserInteractive -and -not $Quiet
+        if( $writeProgress )
+        {
+            Write-Progress -Activity $activity
+        }
+
         $bufferSize = 4kb
         [byte[]]$buffer = New-Object 'byte[]' ($bufferSize)
-        $activity = 'Compressing files into ZIP archive {0}' -f $ZipArchivePath
-        Write-Progress -Activity $activity 
         [IO.Compression.ZipArchive]$zipFile = [IO.Compression.ZipFile]::Open($ZipArchivePath, [IO.Compression.ZipArchiveMode]::Update, $EntryNameEncoding)
+
+        $timer = New-Object 'Timers.Timer' 100
+        $timer |
+            Add-Member -Name 'ProcessedCount' -Value 0 -MemberType NoteProperty -PassThru |
+            Add-Member -MemberType NoteProperty -Name 'Activity' -Value $activity -PassThru |
+            Add-Member -MemberType NoteProperty -Name 'FilePath' -Value '' -PassThru|
+            Add-Member -MemberType NoteProperty -Name 'EntryName' -Value '' -PassThru |
+            Add-Member -MemberType NoteProperty -Name 'TotalCount' -Value $entries.Count
+
+        if( $writeProgress )
+        {
+            # Write-Progress is *expensive*. Only do it if the user is interactive and only every 1/10th of a second.
+            Register-ObjectEvent -InputObject $timer -EventName 'Elapsed' -Action {
+                param(
+                    $Timer,
+                    $EventArgs
+                )
+                Write-Progress -Activity $Timer.Activity -Status $Timer.FilePath -CurrentOperation $Timer.EntryName -PercentComplete (($Timer.ProcessedCount/$Timer.TotalCount) * 100)
+            } | Out-Null
+            $timer.Enabled = $true
+            $timer.Start()
+        }
+
         try
         {
-            $processedCount = 1
             foreach( $entryName in $entries.Keys )
             {
-                $filePath = $entries[$entryName]
-                Write-Progress -Activity $activity -Status $filePath -CurrentOperation $entryName -PercentComplete (($processedCount++/$entries.Count) * 100)
+                $timer.FilePath = $filePath = $entries[$entryName]
+                $timer.ProcessedCount += 1
+                $timer.EntryName = $entryName
+
                 Write-Debug -Message ('{0} -> {1}' -f $FilePath,$EntryName)
                 $entry = $zipFile.GetEntry($EntryName)
                 if( $entry )
@@ -183,13 +233,13 @@ function Add-ZipArchiveEntry
                     }
                     else
                     {
-                        Write-Error -Message ('Unable to add file "{0}" to ZIP archive "{1}": the archive already has a file named "{2}". To overwrite existing entries, use the -Force switch.' -f $FilePath,$ZipArchivePath,$EntryName)
+                        Write-Error -Message ('Unable to add file "{0}" to ZIP archive "{1}": the archive already has a file named "{2}".' -f $FilePath,$ZipArchivePath,$EntryName)
                         continue
                     }
                 }
 
                 $entry = $zipFile.CreateEntry($EntryName,$CompressionLevel)
-                $entry.LastWriteTime = (Get-Item -Path $filePath).LastWriteTime
+                $entry.LastWriteTime = (Get-Item -LiteralPath $filePath).LastWriteTime
                 $stream = $entry.Open()
                 try
                 {
@@ -231,9 +281,14 @@ function Add-ZipArchiveEntry
         }
         finally
         {
-            Write-Progress -Activity $activity -Status 'Writing File' -PercentComplete 99
+            $timer.Stop()
+            $timer.Dispose()
             $zipFile.Dispose()
-            Write-Progress -Activity $activity -Completed
+            if( $writeProgress )
+            {
+                Write-Progress -Activity $activity -Status 'Writing File' -PercentComplete 99
+                Write-Progress -Activity $activity -Completed
+            }
         }
     }
 }
