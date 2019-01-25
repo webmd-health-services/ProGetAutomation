@@ -155,7 +155,10 @@ function WhenAddingFiles
         $AsString,
 
         [switch]
-        $Quiet
+        $Quiet,
+
+        [switch]
+        $NonPipeline
     )
 
     $packagePath = Join-Path -Path $TestDrive.FullName -ChildPath 'package.upack.zip'
@@ -191,7 +194,8 @@ function WhenAddingFiles
 
     $Global:Error.Clear()
 
-    $Path |
+    $pathsToPackage =
+        $Path |
         ForEach-Object { Join-Path -Path $TestDrive.FullName -ChildPath $_ } |
         ForEach-Object {
             if( $AsString )
@@ -202,8 +206,16 @@ function WhenAddingFiles
             {
                 Get-Item -Path $_
             }
-        } |
-        Add-ProGetUniversalPackageFile @params
+        }
+
+    if( $NonPipeline )
+    {
+        Add-ProGetUniversalPackageFile -InputObject $pathsToPackage @params
+    }
+    else
+    {
+        $pathsToPackage | Add-ProGetUniversalPackageFile @params
+    }
 }
 
 Describe 'Add-ProGetUniversalPackageFile' {
@@ -243,7 +255,7 @@ Describe 'Add-ProGetUniversalPackageFile.when adding package root' {
 Describe 'Add-ProGetUniversalPackageFile.when passing path instead of file objects' {
     Init
     GivenFile 'one.cs','two.cs'
-    WhenAddingFiles '*.cs' -AsString
+    WhenAddingFiles 'one.cs', 'two.cs' -AsString
     ThenPackageContains 'one.cs','two.cs'
 }
 
@@ -307,4 +319,11 @@ Describe 'Add-ZipArchiveEntry.when given Quiet switch' {
     It 'should call Add-ZipArchiveEntry with Quiet switch' {
         Assert-MockCalled -CommandName 'Add-ZipArchiveEntry' -ModuleName 'ProGetAutomation' -ParameterFilter { $Quiet.IsPresent }
     }
+}
+
+Describe 'Add-ZipArchiveEntry.when passes files directly, in a non-pipeline manner' {
+    Init
+    GivenFile 'one.cs', 'two.cs'
+    WhenAddingFiles 'one.cs', 'two.cs' -NonPipeline
+    ThenPackageContains 'one.cs', 'two.cs'
 }

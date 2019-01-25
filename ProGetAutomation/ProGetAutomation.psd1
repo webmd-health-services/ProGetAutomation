@@ -130,6 +130,7 @@
             # ReleaseNotes of this module
             ReleaseNotes = @'
 * Added `-Quiet` switch to `Add-ProGetUniversalPackageFile` to suppress progress messages while adding files to the package.
+* Fixed: `Add-ProGetUniversalPackageFile` fails when passed multiple paths directly, in a non-pipeline manner.
 '@
 
         } # End of PSData hashtable

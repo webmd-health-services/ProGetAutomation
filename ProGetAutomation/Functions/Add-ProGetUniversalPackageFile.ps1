@@ -52,7 +52,7 @@ function Add-ProGetUniversalPackageFile
         [Parameter(Mandatory,ValueFromPipeline,ValueFromPipelineByPropertyName)]
         [Alias('FullName')]
         [Alias('Path')]
-        [string]
+        [string[]]
         # The files/directories to add to the upack file. Normally, you would pipe file/directory objects to `Add-ProGetUniversalPackageFile`. You may also pass any object that has a `FullName` or `Path property. You may also pass the path as a string.
         #
         # If you pass a directory object or path to a directory, that directory and all its sub-directories will be added to the upack file.
@@ -128,7 +128,10 @@ function Add-ProGetUniversalPackageFile
 
     process
     {
-        $items.Add($InputObject)
+        foreach( $item in $InputObject )
+        {
+            $items.Add($item)
+        }
     }
 
     end
