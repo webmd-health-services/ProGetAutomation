@@ -97,7 +97,7 @@ function ThenPackageEmpty
     finally
     {
         $file.Dispose()
-    }    
+    }
 }
 
 function ThenPackageNotContains
@@ -152,7 +152,10 @@ function WhenAddingFiles
         $WithName,
 
         [Switch]
-        $AsString
+        $AsString,
+
+        [switch]
+        $Quiet
     )
 
     $packagePath = Join-Path -Path $TestDrive.FullName -ChildPath 'package.upack.zip'
@@ -162,8 +165,9 @@ function WhenAddingFiles
     }
 
     $params = @{
-                    PackagePath = $package.FullName;
-                }
+        PackagePath = $package.FullName
+        Quiet = $Quiet
+    }
 
     if( $AtPackageRoot )
     {
@@ -187,7 +191,7 @@ function WhenAddingFiles
 
     $Global:Error.Clear()
 
-    $Path | 
+    $Path |
         ForEach-Object { Join-Path -Path $TestDrive.FullName -ChildPath $_ } |
         ForEach-Object {
             if( $AsString )
@@ -292,4 +296,15 @@ Describe 'Add-ZipArchiveEntry.when base path doesn''t match files' {
     GivenFile 'one.cs'
     WhenAddingFiles 'one.cs' -WithBasePath 'C:\Windows\System32' -ErrorAction SilentlyContinue
     ThenError -Matches 'is\ not\ in'
+}
+
+Describe 'Add-ZipArchiveEntry.when given Quiet switch' {
+    Init
+    Mock -CommandName 'Add-ZipArchiveEntry' -ModuleName 'ProGetAutomation'
+    GivenFile 'one.cs'
+    WhenAddingFiles 'one.cs' -Quiet
+
+    It 'should call Add-ZipArchiveEntry with Quiet switch' {
+        Assert-MockCalled -CommandName 'Add-ZipArchiveEntry' -ModuleName 'ProGetAutomation' -ParameterFilter { $Quiet.IsPresent }
+    }
 }

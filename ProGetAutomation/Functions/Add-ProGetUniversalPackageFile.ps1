@@ -9,7 +9,7 @@ function Add-ProGetUniversalPackageFile
     The `Add-ProGetUniversalPackageFile` function adds files and directories to a upack file (use `New-ProGetUniversalPackage` to create a upack file). All items are added under the `package` directory in the package, per the upack specification.
 
     Files are added to the package using their names. They are always added to the `package` directory in the package. For example, if you added `C:\Projects\Zip\Zip\Zip.psd1` to the package, it would get added at `package\Zip.psd1`.
-    
+
     Directories are added into a directory in the `package` directory. The directory in the package will use the name of the source directory. For example, if you add 'C:\Projects\Zip', all items will be added to the package at `package\Zip`.
 
     You can change the name an item will have in the package with the `PackageItemName` parameter. Path separators are allowed, so you can put any item into any directory in the package.
@@ -82,7 +82,11 @@ function Add-ProGetUniversalPackageFile
 
         [Switch]
         # By default, if a file already exists in the upack file, you'll get an error. Use this switch to replace any existing files.
-        $Force
+        $Force,
+
+        [switch]
+        # Suppress progress messages while adding files to the package.
+        $Quiet
     )
 
     begin
@@ -108,10 +112,15 @@ function Add-ProGetUniversalPackageFile
         {
             $params['EntryName'] = $PackageItemName
         }
-        
+
         if( $Force )
         {
             $params['Force'] = $true
+        }
+
+        if( $Quiet )
+        {
+            $params['Quiet'] = $true
         }
 
         $items = New-Object 'Collections.Generic.List[string]'
@@ -121,7 +130,7 @@ function Add-ProGetUniversalPackageFile
     {
         $items.Add($InputObject)
     }
-    
+
     end
     {
         $items | Add-ZipArchiveEntry -ZipArchivePath $PackagePath -EntryParentPath $parentPath -CompressionLevel $CompressionLevel @params
