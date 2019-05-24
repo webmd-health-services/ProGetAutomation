@@ -32,7 +32,7 @@ if( -not $connString )
     $connString = 'Server=.\INEDO;Database=ProGet;Trusted_Connection=True;'
     if( (Test-Path -Path 'env:APPVEYOR') )
     {
-        $connString = 'Server=(local)\SQL2016;Database=ProGet;User ID=sa;Password=Password12!"'
+        $connString = 'Server=(local)\SQL2016;Database=ProGet;User ID=sa;Password=Password12!'
     }
 }
 
