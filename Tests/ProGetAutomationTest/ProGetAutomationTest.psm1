@@ -9,15 +9,28 @@ if( -not $svcRoot )
     throw $pgNotInstalledMsg
 }
 
-$svcConfig = [xml](Get-Content -Path (Join-Path -Path $svcRoot -ChildPath 'ProGet.Service.exe.config' -Resolve) -Raw)
-if( -not $svcConfig )
+$uri = ('http://{0}:82/' -f [Environment]::MachineName)
+
+foreach( $filename in @( 'ProGet.Service.exe.config', 'App_appsettings.config' ) )
 {
-    throw $pgNotInstalledMsg
+    $svcConfig = [xml](Get-Content -Path (Join-Path -Path $svcRoot -ChildPath $filename -Resolve) -Raw)
+    if( -not $svcConfig )
+    {
+        throw $pgNotInstalledMsg
+    }
+
+    $connString = $svcConfig.SelectSingleNode("//add[@key = 'InedoLib.DbConnectionString']").Value
+    if( $connString )
+    {
+        $connString
+        break
+    }
 }
 
-$uri = ('http://{0}:82/' -f $env:COMPUTERNAME)
-$connString = $svcConfig.SelectSingleNode("//add[@key = 'InedoLib.DbConnectionString']").Value
-$connString
+if( -not $connString )
+{
+    $connString = 'Server=.\INEDO;Database=ProGet;Trusted_Connection=True;'
+}
 
 $conn = New-Object 'Data.SqlClient.SqlConnection'
 $conn.ConnectionString = $connString
