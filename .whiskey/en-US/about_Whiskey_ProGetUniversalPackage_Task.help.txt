@@ -5,11 +5,9 @@ SUMMARY
     Creates a ProGet universal package.
 
 DESCRIPTION
-    The `ProGetUniversalPackage` task creates a universal ProGet package of your application.
+    The `ProGetUniversalPackage` task creates a universal ProGet package (i.e. a .upack file). You must specify a package name and description with the Name and Description properties, respectively.
 
-    You must specify a package name and description with the Name and Description properties, respecitvely.
-
-    Specify the directories and files you want in the package with the `Path` property. The paths should be relative to the whiskey.yml file. Each item is added to your package at the same relative path. The contents directories are filtered by the `Include` property, which is a list of filenames and/or wildcard patterns. Only files that match at least one item in this list will be included in your package.  We use whitelists so we know what files are getting packaged and deployed. Without a whitelist, any file put into a directory that gets packaged would be included. This is a security risk. We can audit whitelists. Using whitelists also helps keep the size of our packages to a minimum.
+    Specify the directories and files you want in the package with the `Path` property. The paths should be relative to the whiskey.yml file. Each item is added to the package using its path relative to the whiskey.yml file. Directories are filtered by the `Include` property, which is a list of filenames and/or wildcard patterns. Only files that match at least one item in this list will be included in your package.
 
     This PowerShell command will create a YAML whitelist for all files under a path:
 
@@ -19,7 +17,7 @@ DESCRIPTION
             Sort-Object |
             ForEach-Object { '- "*{0}"' -f $_ }
 
-    The package is saved to the output directory as `$Name.upack` where `$Name is replaced with the name of your package.
+    The package is saved to the output directory as `$Name.upack` where `$Name` is replaced with the name of your package.
 
     A version.json file is put into the root of your package. It contains the version information for the current build. It looks like this:
 
@@ -44,13 +42,13 @@ DESCRIPTION
 PROPERTIES
     * `Name` (mandatory): the package's name.
     * `Description` (mandatory): the package's description. This shows in ProGet and helps people know about your application.
-    * `Path` (mandatory): the directories and filenames to include in the package. Each path must relative to the whiskey.yml file. You can change the root path the task uses to resolve these paths with the `SourceRoot` property. Each item is added to the package at the same relative path as its source item. If you have two paths with the same name, the second item will replace the first. You can customize the path of the item in the package by converting the value into a key/value pair, e.g. `source_dir\source_file.ps1`: `destination_dir\destination_file.ps1`.
+    * `Path` (mandatory): the directories and filenames to include in the package. Each path must relative to the whiskey.yml file. You can change the root path the task uses to resolve these paths with the `SourceRoot` property. Each item is added to the package at the same relative path as its source item. If you have two paths with the same name, the second item will replace the first. You can customize the path of the item in the package by converting the value into a key/value pair, e.g. `source_dir\source_file.ps1`: `destination_dir\destination_file.ps1`. To specify the package root as the custom destination path for an item use `.`, e.g. `source_dir\sub_dir: .` would place the contents of the `source_dir\sub_dir` directory in the package root.
     * `Include` (mandatory): a whitelist of wildcards and file names. All directories in the `Path` property are filtered with this list, i.e. only items under each directory in `Path` that matches an item in `Include` will be added to your package.
     * `Exclude`: a list of wildcards, file names, and directory names to exclude from the package. Sometimes a whitelist can be a little greedy and include some files or directories you might not want. Any file or directory that matches an item in this list will be excluded from the package.
     * `ManifestProperties`: name/value mappings to be set in the package's upack.json file. Mandatory upack.json properties are automatically added if they are not specified (e.g. `Name` and `Description`). This property gets converted to JSON and is added to the upack.json as-is. See the upack.json [Manifest Specification](https://inedo.com/support/documentation/upack/universal-packages/metacontent-guidance/manifest-specification) for required properties and format.
     * `ThirdPartyPath`: a list of directores and files that should be included in the package unfiltered. These are paths that are copied without using the Include or Exclude elements. This is useful to include items you depend on but have no control over, like Node.js applications' node_modules directory.
     * `SourceRoot`: this changes the root path used to resolve the relative paths in the Path property. Use this element when your application's root directory isn't the same directory your whiskey.yml file is in. This path should be relative to the whiskey.yml file.
-    * `CompressionLevel`: the compression level to use when creating the package. Can be a value from 1 (fastest but largest file) to 9 (slowest but smallest file). The default is `1`.
+    * `CompressionLevel`: the compression level to use when creating the package. The default is `Optimal`. Valid values are `Optimal` (smaller package but created slower), `Fastest` (larger package but created faster), and `NoCompression` (largest file, created fastest, no compression).
     * `Version`: the package version (MAJOR.MINOR.PATCH), without any prerelease or build metadata. Usually, the version for the current build is used. Prerelease and build metadata for the current build is added.
 
 EXAMPLES
@@ -142,7 +140,7 @@ EXAMPLES
             ThirdPartyPath:
             - node_modules
 
-    Thie example demonstrates how to use the `ThirdPartyPath` property. If the file system looks like this:
+    This example demonstrates how to use the `ThirdPartyPath` property. If the file system looks like this:
 
         dist\
             index.js
@@ -181,7 +179,7 @@ EXAMPLES
             Include:
             - "*.dll"
 
-    Thie example demonstrates how to use customize the path an item should have in the package. If this is the file system:
+    This example demonstrates how to customize the path an item should have in the package. If this is the file system:
 
         source\
             Assembly.dll
@@ -213,7 +211,7 @@ EXAMPLES
             ThirdPartyPath:
             - ProGetAutomation
 
-    Thie example demonstrates how to change the root directory the task uses to resolve the relative paths in the `Path`. If the file system is:
+    This example demonstrates how to change the root directory the task uses to resolve the relative paths in the `Path`. If the file system is:
 
         Whiskey\
             Functions\
@@ -269,3 +267,30 @@ EXAMPLES
                     "Tag2"
                 ]
     }
+
+    ## Example 7
+
+        Build:
+        - ProGetUniversalPackage:
+            Name: Example7
+            Description: This package demonstrates using the package root as a custom destination.
+            Path:
+            - .output\assembly: .
+            Include:
+            - "*.dll"
+
+    This example demonstrates how to specify the package root `.` when customizing the path an item should have in the package. If this is the file system:
+
+        .output\
+            assembly\
+                Assembly1.dll
+                Assembly2.dll
+        whiskey.yml
+
+    the package will look like this:
+
+        package\
+            Assembly1.dll
+            Assembly2.dll
+            version.json
+        upack.json
