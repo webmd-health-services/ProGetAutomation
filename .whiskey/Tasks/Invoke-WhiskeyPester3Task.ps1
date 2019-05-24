@@ -1,7 +1,7 @@
 
 function Invoke-WhiskeyPester3Task
 {
-    [Whiskey.Task('Pester3')]
+    [Whiskey.Task('Pester3',Platform='Windows')]
     [Whiskey.RequiresTool('PowerShellModule::Pester','PesterPath',Version='3.*',VersionParameterName='Version')]
     [CmdletBinding()]
     param(
@@ -32,6 +32,7 @@ function Invoke-WhiskeyPester3Task
     $path = $TaskParameter['Path'] | Resolve-WhiskeyTaskPath -TaskContext $TaskContext -PropertyName 'Path'
 
     $outputFile = Join-Path -Path $TaskContext.OutputDirectory -ChildPath ('pester+{0}.xml' -f [IO.Path]::GetRandomFileName())
+    $outputFile = [IO.Path]::GetFullPath($outputFile)
 
     # We do this in the background so we can test this with Pester.
     $job = Start-Job -ScriptBlock {
