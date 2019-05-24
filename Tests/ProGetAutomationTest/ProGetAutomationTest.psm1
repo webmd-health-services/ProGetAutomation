@@ -13,7 +13,14 @@ $uri = ('http://{0}:82/' -f [Environment]::MachineName)
 
 foreach( $filename in @( 'ProGet.Service.exe.config', 'App_appsettings.config' ) )
 {
-    $svcConfig = [xml](Get-Content -Path (Join-Path -Path $svcRoot -ChildPath $filename -Resolve) -Raw)
+    $configPath = Join-Path -Path $svcRoot -ChildPath $filename -Resolve
+    if( -not $configPath )
+    {
+        continue
+    }
+    $configContent = Get-Content -Raw -Path $configPath 
+    $configContent | Write-Verbose -Verbose
+    $svcConfig = [xml]$configContent
     if( -not $svcConfig )
     {
         throw $pgNotInstalledMsg
