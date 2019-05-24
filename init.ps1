@@ -7,6 +7,7 @@ param(
 Set-StrictMode -Version 'Latest'
 
 Import-Module (Join-Path -Path $PSScriptRoot -ChildPath 'PSModules\Carbon') -Force
+Import-Module (Join-Path -Path $PSScriptRoot -ChildPath 'PSModules\SqlServer') -Force
 
 $runningUnderAppVeyor = (Test-Path -Path 'env:APPVEYOR')
 
@@ -86,3 +87,5 @@ elseif( $pgInstallInfo.DisplayVersion -notmatch ('^{0}\b' -f [regex]::Escape($ve
 }
 
 Get-Service -Name 'InedoProget*' | Start-Service
+
+Get-ChildItem -Path ('SQLSERVER:\SQL\{0}' -f [Environment]::MachineName)
