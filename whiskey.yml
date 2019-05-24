@@ -10,10 +10,17 @@ Build:
     Path: init.ps1
 - Pester4:
     Path: Tests\*.Tests.ps1
-- Exec: .whiskey\bin\7-Zip\7z.exe a $(WHISKEY_OUTPUT_DIRECTORY)\ProGetAutomation.zip .\ProGetAutomation '-xr!*.pdb'
+- Zip:
+    ArchivePath: .output\ProGetAutomation.zip
+    Path: 
+    - ProGetAutomation
+    Exclude:
+    - "*.pdb"
+    - "*.orig"
 
 Publish:
 - PublishPowerShellModule:
+    UnlessExists: env:APPVEYOR_PULL_REQUEST_NUMBER
     Path: ProGetAutomation
     RepositoryName: PSGallery
     RepositoryUri: https://www.powershellgallery.com/api/v2/ 
@@ -25,6 +32,7 @@ Publish:
             PSData:
                 ReleaseNotes: RELEASE_NOTES
 - GitHubRelease:
+    UnlessExists: env:APPVEYOR_PULL_REQUEST_NUMBER
     RepositoryName: webmd-health-services/ProGetAutomation
     ApiKeyID: github.com
     Tag: $(WHISKEY_SEMVER2_NO_BUILD_METADATA)

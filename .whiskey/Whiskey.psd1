@@ -12,7 +12,7 @@
     RootModule = 'Whiskey.psm1'
 
     # Version number of this module.
-    ModuleVersion = '0.38.5'
+    ModuleVersion = '0.41.0'
 
     # ID used to uniquely identify this module
     GUID = '93bd40f1-dee5-45f7-ba98-cb38b7f5b897'
@@ -23,6 +23,8 @@
     # Company or vendor of this module
     CompanyName = 'WebMD Health Services'
 
+    CompatiblePSEditions = @( 'Desktop', 'Core' )
+
     # Copyright statement for this module
     Copyright = '(c) 2016 - 2018 WebMD Health Services. All rights reserved.'
 
@@ -30,7 +32,7 @@
     Description = 'Continuous Integration/Continuous Delivery module.'
 
     # Minimum version of the Windows PowerShell engine required by this module
-    # PowerShellVersion = ''
+    PowerShellVersion = '5.1'
 
     # Name of the Windows PowerShell host required by this module
     # PowerShellHostName = ''
@@ -54,7 +56,7 @@
     RequiredAssemblies = @( 'bin\SemanticVersion.dll', 'bin\Whiskey.dll', 'bin\YamlDotNet.dll' )
 
     # Script files (.ps1) that are run in the caller's environment prior to importing this module.
-    #ScriptsToProcess = @()
+    # ScriptsToProcess = @()
 
     # Type files (.ps1xml) to be loaded when importing this module
     # TypesToProcess = @()
@@ -78,7 +80,9 @@
                             'Add-WhiskeyVariable',
                             'Assert-WhiskeyNodePath',
                             'Assert-WhiskeyNodeModulePath',
+                            'ConvertFrom-WhiskeyContext'
                             'ConvertFrom-WhiskeyYamlScalar',
+                            'ConvertTo-WhiskeyContext',
                             'ConvertTo-WhiskeySemanticVersion',
                             'Get-WhiskeyApiKey',
                             'Get-WhiskeyTask',
@@ -97,6 +101,8 @@
                             'Publish-WhiskeyProGetUniversalPackage',
                             'Publish-WhiskeyBBServerTag',
                             'Register-WhiskeyEvent',
+                            'Resolve-WhiskeyNodePath',
+                            'Resolve-WhiskeyNodeModulePath',
                             'Resolve-WhiskeyNuGetPackageVersion',
                             'Resolve-WhiskeyTaskPath',
                             'Resolve-WhiskeyVariable',
@@ -142,10 +148,23 @@
             # A URL to an icon representing this module.
             # IconUri = ''
 
+            # Any prerelease to use when publishing to a repository.
+            Prerelease = ''
+
             # ReleaseNotes of this module
             ReleaseNotes = @'
-* Fixed: `GetPowerShellModule` task assumes that a module is already installed if an empty directory for that module exists in the `PSModules` directory.
-* Fixed: `PSModules` directory isn't removed removed during `Clean` mode after all contained modules have been deleted.
+* Adding Linux and MacOS support. Whiskey is now cross-platform!
+* Upgrading to PowerShellGet version 2.0.4.
+* Upgrading to PackageManagement version 1.3.0.
+* Updating BuildMaster tasks to use BuildMasterAutomation PowerShell module version 0.6.0 (from 0.5.0).
+* Updating Bitbucket Server tasks to use BitbucketServerAutomation PowerShell module version 0.9.0 (from 0.8.0).
+* Updating Ziptask to use Zip PowerShell module version 0.3.0 (from 0.2.0).
+* Fixed: PowerShell module import verbose messages appear when running the `Parallel` task.
+* Fixed: `ProGetUniversalPackage` places files in a `.` directory when using the `source_dir: .` syntax to specify the package root as the destination path for items in a package.
+* Fixed: Publishing a PowerShell module fails if old versions of PackageManagement and PowerShellGet are installed in a directory given by `PSModulePath`. See https://github.com/PowerShell/PowerShellGet/issues/446 .
+* The `PublishPowerShellModule` task now adds the current build's prerelease to the module manifest before publishing.
+* The `PublishPowerShellModule` task's `RepositoryUri` property is now only required if the task needs to register a new/custom repository (i.e. the repository given by the task's `RepositoryName` parameter doesn't exist).
+* The `PublishPowerShellModule` task can now register a repository that requires a credential. Use the `CredentialID` property to set the ID of the credential in your whiskey.yml file and `Add-WhiskeyCredential` in your build script to add the credential.
 '@
         } # End of PSData hashtable
 
