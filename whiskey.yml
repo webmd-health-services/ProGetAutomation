@@ -6,8 +6,6 @@ Build:
     Path: ProGetAutomation\ProGetAutomation.psd1
 - GetPowerShellModule:
     Name: Carbon
-- GetPowerShellModule:
-    Name: SqlServer
 - PowerShell:
     Path: init.ps1
 - Pester4:
