@@ -18,7 +18,6 @@ $configFiles = & {
                 } | 
                 Where-Object { Test-Path -Path $_ -PathType Leaf }
 
-$Global:DebugPreference = 'Continue'
 foreach( $configPath in $configFiles )
 {
     $configContent = Get-Content -Raw -Path $configPath 
