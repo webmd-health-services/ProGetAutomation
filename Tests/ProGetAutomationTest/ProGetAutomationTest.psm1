@@ -17,11 +17,12 @@ $configFiles = & {
                     Join-Path -Path $env:ProgramData -ChildPath 'Inedo\SharedConfig\ProGet.config'
                 } | 
                 Where-Object { Test-Path -Path $_ -PathType Leaf }
+
 $Global:DebugPreference = 'Continue'
 foreach( $configPath in $configFiles )
 {
     $configContent = Get-Content -Raw -Path $configPath 
-    $configContent | Write-Debug -Debug
+    $configContent | Write-Debug
     $svcConfig = [xml]$configContent
     if( -not $svcConfig )
     {
@@ -52,8 +53,9 @@ if( -not $connString )
     Write-Warning -Message ('Unable to read ProGet connection string from configuraion files. Using static connection string "{0}". This may or may not work.')
 }
 
-Write-Debug -Message $connString -Debug
-$Global:DebugPreference = 'Inquire'
+Write-Debug -Message $connString
+$Global:DebugPreference = 'SilentlyContinue'
+
 $conn = New-Object 'Data.SqlClient.SqlConnection'
 $conn.ConnectionString = $connString
 $conn.Open()
