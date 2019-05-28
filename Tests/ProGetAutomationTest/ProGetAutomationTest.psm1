@@ -11,15 +11,17 @@ if( -not $svcRoot )
 
 $uri = ('http://{0}:82/' -f [Environment]::MachineName)
 
-foreach( $filename in @( 'ProGet.Service.exe.config', 'App_appsettings.config' ) )
+$configFiles = & {
+                    Join-Path -Path $svcRoot -ChildPath 'ProGet.Service.exe.config'
+                    Join-Path -Path $svcRoot -ChildPath 'App_appsettings.config'
+                    Join-Path -Path $env:ProgramData -ChildPath 'Inedo\SharedConfig\ProGet.config'
+                } | 
+                Where-Object { Test-Path -Path $_ -PathType Leaf }
+
+foreach( $configPath in $configFiles )
 {
-    $configPath = Join-Path -Path $svcRoot -ChildPath $filename -Resolve
-    if( -not $configPath )
-    {
-        continue
-    }
     $configContent = Get-Content -Raw -Path $configPath 
-    $configContent | Write-Verbose -Verbose
+    $configContent | Write-Debug -Debug
     $svcConfig = [xml]$configContent
     if( -not $svcConfig )
     {
@@ -29,7 +31,13 @@ foreach( $filename in @( 'ProGet.Service.exe.config', 'App_appsettings.config' )
     $connString = $svcConfig.SelectSingleNode("//add[@key = 'InedoLib.DbConnectionString']").Value
     if( $connString )
     {
-        $connString
+        break
+    }
+
+
+    $connString = $svcConfig.SelectSingleNode("//ConnectionString").InnerText
+    if( $connString )
+    {
         break
     }
 }
@@ -41,9 +49,10 @@ if( -not $connString )
     {
         $connString = 'Server=(local)\SQL2016;Database=ProGet;User ID=sa;Password=Password12!'
     }
+    Write-Warning -Message ('Unable to read ProGet connection string from configuraion files. Using static connection string "{0}". This may or may not work.')
 }
 
-Write-Verbose -Message $connString -Verbose
+Write-Debug -Message $connString -Debug
 $conn = New-Object 'Data.SqlClient.SqlConnection'
 $conn.ConnectionString = $connString
 $conn.Open()
