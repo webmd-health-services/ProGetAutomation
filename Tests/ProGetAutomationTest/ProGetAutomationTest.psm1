@@ -17,7 +17,7 @@ $configFiles = & {
                     Join-Path -Path $env:ProgramData -ChildPath 'Inedo\SharedConfig\ProGet.config'
                 } | 
                 Where-Object { Test-Path -Path $_ -PathType Leaf }
-
+$Global:DebugPreference = 'Continue'
 foreach( $configPath in $configFiles )
 {
     $configContent = Get-Content -Raw -Path $configPath 
@@ -53,6 +53,7 @@ if( -not $connString )
 }
 
 Write-Debug -Message $connString -Debug
+$Global:DebugPreference = 'Inquire'
 $conn = New-Object 'Data.SqlClient.SqlConnection'
 $conn.ConnectionString = $connString
 $conn.Open()
