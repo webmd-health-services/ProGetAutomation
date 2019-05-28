@@ -54,7 +54,6 @@ if( -not $connString )
 }
 
 Write-Debug -Message $connString
-$Global:DebugPreference = 'SilentlyContinue'
 
 $conn = New-Object 'Data.SqlClient.SqlConnection'
 $conn.ConnectionString = $connString
