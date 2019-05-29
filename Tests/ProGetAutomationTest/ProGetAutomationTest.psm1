@@ -9,15 +9,50 @@ if( -not $svcRoot )
     throw $pgNotInstalledMsg
 }
 
-$svcConfig = [xml](Get-Content -Path (Join-Path -Path $svcRoot -ChildPath 'ProGet.Service.exe.config' -Resolve) -Raw)
-if( -not $svcConfig )
+$uri = ('http://{0}:82/' -f [Environment]::MachineName)
+
+$configFiles = & {
+                    Join-Path -Path $svcRoot -ChildPath 'ProGet.Service.exe.config'
+                    Join-Path -Path $svcRoot -ChildPath 'App_appsettings.config'
+                    Join-Path -Path $env:ProgramData -ChildPath 'Inedo\SharedConfig\ProGet.config'
+                } | 
+                Where-Object { Test-Path -Path $_ -PathType Leaf }
+
+foreach( $configPath in $configFiles )
 {
-    throw $pgNotInstalledMsg
+    $configContent = Get-Content -Raw -Path $configPath 
+    $configContent | Write-Debug
+    $svcConfig = [xml]$configContent
+    if( -not $svcConfig )
+    {
+        throw $pgNotInstalledMsg
+    }
+
+    $connString = $svcConfig.SelectSingleNode("//add[@key = 'InedoLib.DbConnectionString']").Value
+    if( $connString )
+    {
+        break
+    }
+
+
+    $connString = $svcConfig.SelectSingleNode("//ConnectionString").InnerText
+    if( $connString )
+    {
+        break
+    }
 }
 
-$uri = ('http://{0}:82/' -f $env:COMPUTERNAME)
-$connString = $svcConfig.SelectSingleNode("//add[@key = 'InedoLib.DbConnectionString']").Value
-$connString
+if( -not $connString )
+{
+    $connString = 'Server=.\INEDO;Database=ProGet;Trusted_Connection=True;'
+    if( (Test-Path -Path 'env:APPVEYOR') )
+    {
+        $connString = 'Server=(local)\SQL2016;Database=ProGet;User ID=sa;Password=Password12!'
+    }
+    Write-Warning -Message ('Unable to read ProGet connection string from configuraion files. Using static connection string "{0}". This may or may not work.')
+}
+
+Write-Debug -Message $connString
 
 $conn = New-Object 'Data.SqlClient.SqlConnection'
 $conn.ConnectionString = $connString

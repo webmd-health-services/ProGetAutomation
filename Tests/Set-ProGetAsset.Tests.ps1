@@ -101,7 +101,7 @@ function ThenAssetShouldExist
         [string]
         $Directory
     )
-    it ('should contain the asset ''{0}''' -f $Name) {
+    it ('should contain the asset "{0}"' -f $Name) {
         Get-ProGetAsset -Session $session -DirectoryName $baseDirectory -Path $Directory | Where-Object { $_.name -match $name } | Should -Not -BeNullOrEmpty
     }
 }
@@ -114,7 +114,7 @@ function ThenAssetShouldNotExist
         [string]
         $Directory
     )
-    it ('should not contain the asset ''{0}''' -f $Name) {
+    it ('should not contain the asset "{0}"' -f $Name) {
         Get-ProGetAsset -Session $session -DirectoryName $baseDirectory -Path $Directory -ErrorAction Ignore | Where-Object { $_.name -match $name } | Should -BeNullOrEmpty
     }
 }
@@ -139,7 +139,7 @@ function ThenErrorShouldBeThrown
         [string]
         $ExpectedError
     )
-    It ('should write an error that matches ''{0}''' -f $ExpectedError) {
+    It ('should write an error that matches "{0}"' -f $ExpectedError) {
         $Global:Error | Where-Object { $_ -match $ExpectedError } | Should -Not -BeNullOrEmpty
     }
 }
@@ -189,7 +189,7 @@ Describe 'Set-ProGetAsset.when target asset directory does not exist' {
     GivenSourceFilePath 'foo.txt'
     WhenAssetIsPublished -ErrorAction SilentlyContinue
     ThenAssetShouldNotExist -Name 'foo.txt' -Directory 'badDir'
-    ThenErrorShouldBeThrown -ExpectedError 'The remote server returned an error: \(404\) Not Found\.'
+    ThenErrorShouldBeThrown -ExpectedError 'There\ is\ no\ feed\ with\ that\ name\ in\ ProGet\.'
 }
 
 Describe 'Set-ProGetAsset.when source file exists in a subdirectory of local working directory' {
