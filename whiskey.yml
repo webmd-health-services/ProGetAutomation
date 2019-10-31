@@ -10,6 +10,7 @@ Build:
     Path: init.ps1
 - Pester4:
     Path: Tests\*.Tests.ps1
+    Verbose: false
 - Zip:
     ArchivePath: .output\ProGetAutomation.zip
     Path: 
