@@ -9,7 +9,7 @@ if( -not $svcRoot )
     throw $pgNotInstalledMsg
 }
 
-$uri = ('http://{0}:82/' -f [Environment]::MachineName)
+$uri = ('http://{0}:8624/' -f [Environment]::MachineName)
 
 $configFiles = & {
                     Join-Path -Path $svcRoot -ChildPath 'ProGet.Service.exe.config'
@@ -44,12 +44,7 @@ foreach( $configPath in $configFiles )
 
 if( -not $connString )
 {
-    $connString = 'Server=.\INEDO;Database=ProGet;Trusted_Connection=True;'
-    if( (Test-Path -Path 'env:APPVEYOR') )
-    {
-        $connString = 'Server=(local)\SQL2016;Database=ProGet;User ID=sa;Password=Password12!'
-    }
-    Write-Warning -Message ('Unable to read ProGet connection string from configuraion files. Using static connection string "{0}". This may or may not work.')
+    Write-Error -Message ('It looks like ProGet isn''t installed. We can''t find its connection string.') -ErrorAction Stop
 }
 
 Write-Debug -Message $connString
@@ -97,7 +92,7 @@ try
             Write-Verbose ('{0} = {1}' -f $name,$value)
             [void] $cmd.Parameters.AddWithValue( $name, $value )
         }
-        $result = $cmd.ExecuteNonQuery();
+        [Void]$cmd.ExecuteNonQuery();
     }
 }
 finally
@@ -110,9 +105,9 @@ function New-ProGetTestSession
     return New-ProGetSession -Uri $uri -Credential $credential -ApiKey $apiKey
 }
 
-# Activate ProGet. Otherwise, it takes ProGet 30 minutes to activeate itself.
+# Activate ProGet. Otherwise, it takes ProGet 30 minutes to activate itself.
 $loginUri = New-Object 'Uri' $uri,'/log-in'
-$response = Invoke-WebRequest -Uri $loginUri -SessionVariable 'progetSession'
+Invoke-WebRequest -Uri $loginUri -SessionVariable 'progetSession'
 
 $loginBody = '.ASPXAUTH=uninclused&ah0%7Eah0%7Eah0%7Eah3%7Eah1%7Eah1=Admin&ah0%7Eah0%7Eah0%7Eah3%7Eah2%7Eah1=Admin&ah0%7Eah0%7Eah0%7Eah3%7Eah3%7Eah0=click&__AhTrigger=null'
 Invoke-WebRequest -Method Post -Uri $loginUri -Body $loginBody -WebSession $progetSession
