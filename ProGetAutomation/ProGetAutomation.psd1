@@ -12,7 +12,7 @@
     RootModule = 'ProGetAutomation.psm1'
 
     # Version number of this module.
-    ModuleVersion = '0.9.0'
+    ModuleVersion = '0.10.0'
 
     # Supported PSEditions
     CompatiblePSEditions = @( 'Desktop', 'Core' )
@@ -127,10 +127,12 @@
             # A URL to an icon representing this module.
             # IconUri = ''
 
+            # Any prerelease information.
+            Prerelease = ''
+
             # ReleaseNotes of this module
             ReleaseNotes = @'
-* Added `-Quiet` switch to `Add-ProGetUniversalPackageFile` to suppress progress messages while adding files to the package.
-* Fixed: `Add-ProGetUniversalPackageFile` fails when passed multiple paths directly, in a non-pipeline manner.
+* Improved import speed by merging functions into the module's .psm1 file.
 '@
 
         } # End of PSData hashtable

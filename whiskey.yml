@@ -12,6 +12,12 @@ Build:
 - PowerShell:
     ExceptDuring: Clean
     Path: init.ps1
+- MergeFile:
+    OnlyBy: BuildServer
+    Path: ProGetAutomation\Functions\*.ps1
+    DestinationPath: ProGetAutomation\ProGetAutomation.psm1
+    DeleteSourceFiles: true
+    TextSeparator: "$(NewLine)$(NewLine)"
 - Pester4:
     Path: Tests\*.Tests.ps1
     Verbose: false
