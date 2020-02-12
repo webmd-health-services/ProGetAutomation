@@ -9,15 +9,45 @@ if( -not $svcRoot )
     throw $pgNotInstalledMsg
 }
 
-$svcConfig = [xml](Get-Content -Path (Join-Path -Path $svcRoot -ChildPath 'ProGet.Service.exe.config' -Resolve) -Raw)
-if( -not $svcConfig )
+$uri = ('http://{0}:8624/' -f [Environment]::MachineName)
+
+$configFiles = & {
+                    Join-Path -Path $svcRoot -ChildPath 'ProGet.Service.exe.config'
+                    Join-Path -Path $svcRoot -ChildPath 'App_appsettings.config'
+                    Join-Path -Path $env:ProgramData -ChildPath 'Inedo\SharedConfig\ProGet.config'
+                } | 
+                Where-Object { Test-Path -Path $_ -PathType Leaf }
+
+foreach( $configPath in $configFiles )
 {
-    throw $pgNotInstalledMsg
+    $configContent = Get-Content -Raw -Path $configPath 
+    $configContent | Write-Debug
+    $svcConfig = [xml]$configContent
+    if( -not $svcConfig )
+    {
+        throw $pgNotInstalledMsg
+    }
+
+    $connString = $svcConfig.SelectSingleNode("//add[@key = 'InedoLib.DbConnectionString']").Value
+    if( $connString )
+    {
+        break
+    }
+
+
+    $connString = $svcConfig.SelectSingleNode("//ConnectionString").InnerText
+    if( $connString )
+    {
+        break
+    }
 }
 
-$uri = ('http://{0}:82/' -f $env:COMPUTERNAME)
-$connString = $svcConfig.SelectSingleNode("//add[@key = 'InedoLib.DbConnectionString']").Value
-$connString
+if( -not $connString )
+{
+    Write-Error -Message ('It looks like ProGet isn''t installed. We can''t find its connection string.') -ErrorAction Stop
+}
+
+Write-Debug -Message $connString
 
 $conn = New-Object 'Data.SqlClient.SqlConnection'
 $conn.ConnectionString = $connString
@@ -62,7 +92,7 @@ try
             Write-Verbose ('{0} = {1}' -f $name,$value)
             [void] $cmd.Parameters.AddWithValue( $name, $value )
         }
-        $result = $cmd.ExecuteNonQuery();
+        [Void]$cmd.ExecuteNonQuery();
     }
 }
 finally
@@ -75,9 +105,9 @@ function New-ProGetTestSession
     return New-ProGetSession -Uri $uri -Credential $credential -ApiKey $apiKey
 }
 
-# Activate ProGet. Otherwise, it takes ProGet 30 minutes to activeate itself.
+# Activate ProGet. Otherwise, it takes ProGet 30 minutes to activate itself.
 $loginUri = New-Object 'Uri' $uri,'/log-in'
-$response = Invoke-WebRequest -Uri $loginUri -SessionVariable 'progetSession'
+Invoke-WebRequest -Uri $loginUri -SessionVariable 'progetSession'
 
 $loginBody = '.ASPXAUTH=uninclused&ah0%7Eah0%7Eah0%7Eah3%7Eah1%7Eah1=Admin&ah0%7Eah0%7Eah0%7Eah3%7Eah2%7Eah1=Admin&ah0%7Eah0%7Eah0%7Eah3%7Eah3%7Eah0=click&__AhTrigger=null'
 Invoke-WebRequest -Method Post -Uri $loginUri -Body $loginBody -WebSession $progetSession

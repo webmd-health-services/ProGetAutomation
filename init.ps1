@@ -2,17 +2,62 @@
 param(
 )
 
-#Requires -Version 5.1
 #Requires -RunAsAdministrator
+#Requires -Version 5.1
 Set-StrictMode -Version 'Latest'
 
-Import-Module (Join-Path -Path $PSScriptRoot -ChildPath 'PSModules\Carbon') -Force
+& {
+    $VerbosePreference = 'SilentlyContinue'
+    Import-Module -Name (Join-Path -Path $PSScriptRoot -ChildPath 'PSModules\Carbon') -Force
+    Import-Module -Name (Join-Path -Path $PSScriptRoot -ChildPath 'PSModules\SqlServer') -Force
+}
 
 $runningUnderAppVeyor = (Test-Path -Path 'env:APPVEYOR')
 
-$version = '4.8.12'
+$version = '5.2.24'
+Write-Verbose -Message ('Testing ProGet {0}' -f $version)
+$sqlServer = $null
+$installerPath = 'SQL'
+$installerUri = 'sql'
+$dbParam = '/InstallSqlExpress'
 
-$installerPath = Join-Path -Path $env:TEMP -ChildPath ('ProGetInstaller-SQL-{0}.exe' -f $version)
+$sqlServers = @()
+if( (Test-Path -Path 'env:APPVEYOR') )
+{
+    $sqlServers = Get-Item -Path ('SQLSERVER:\SQL\{0}\SQL2017' -f [Environment]::MachineName)
+}
+else
+{
+    $sqlServers = Get-ChildItem -Path ('SQLSERVER:\SQL\{0}' -f [Environment]::MachineName)
+}
+
+foreach( $item in $sqlServers )
+{
+    if( $item.Status -ne [Microsoft.SqlServer.Management.Smo.ServerStatus]::Online )
+    {
+        Write-Verbose -Message ('Skipping SQL Server instance "{0}": "{1}".' -f $item.Name,$item.Status)
+        continue
+    }
+
+    $item | Format-List | Out-String | Write-Verbose
+
+    if( -not $item.InstanceName -or $item.InstanceName -in @( 'Inedo', 'SQL2017' ) )
+    {
+        Write-Verbose -Message ('Found SQL Server instance "{0}": "{1}".' -f $item.Name,$item.Status)
+        $installerPath = 'NO{0}' -f $installerPath
+        $installerUri = 'no{0}' -f $installerUri
+        $sqlServer = $item
+        $credentials = 'Integrated Security=true;'
+        if( $runningUnderAppVeyor )
+        {
+            $credentials = 'User ID=sa;Password=Password12!'
+        }
+        $dbParam = '"/ConnectionString=Server={0};Database=ProGet;{1}"' -f $sqlServer.Name,$credentials
+        break
+    }
+}
+
+$installerPath = Join-Path -Path $PSScriptRoot -ChildPath ('.output\ProGetIntaller{0}-{1}.exe' -f $installerPath,$version)
 if( -not (Test-Path -Path $installerPath -PathType Leaf) )
 {
     $uri = ('http://inedo.com/proget/download/sql/{0}' -f $version)
@@ -23,29 +68,6 @@ if( -not (Test-Path -Path $installerPath -PathType Leaf) )
 $pgInstallInfo = Get-CProgramInstallInfo -Name 'ProGet'
 if( -not $pgInstallInfo )
 {
-    $installSqlParam = '/InstallSqlExpress'
-    $connString = '/S'
-    $bmInstallInfo = Get-CProgramInstallInfo -Name 'BuildMaster'
-    if ($bmInstallInfo)
-    {
-        Write-Verbose -Message 'BuildMaster is installed. ProGet will join existing SQL Server instance.'
-        $bmConfigLocation = Join-Path -Path (Get-ItemProperty -Path 'HKLM:\Software\Inedo\BuildMaster').ServicePath -ChildPath 'app_appSettings.config'
-    
-        $xml = [xml](Get-Content -Path $bmConfigLocation) 
-        $bmDbConfigSetting = $xml.SelectSingleNode("//add[@key = 'Core.DbConnectionString']")
-        $bmConnectionString = $bmDbConfigSetting.Value.Substring(0,$bmDbConfigSetting.Value.IndexOf(';'))
-        $connString = ('/ConnectionString="{0};Initial Catalog=ProGet; Integrated Security=True;"' -f $bmConnectionString)
-        $installSqlParam = '/InstallSqlExpress=False'
-    }
-
-    # Under AppVeyor, use the pre-installed database.
-    # Otherwise, install a SQL Express ProGet instance.
-    if( $runningUnderAppVeyor )
-    {
-        $connString = '"/ConnectionString=Server=(local)\SQL2016;Database=ProGet;User ID=sa;Password=Password12!"'
-        $installSqlParam = '/InstallSqlExpress=False'
-    }
-
     $outputRoot = Join-Path -Path $PSScriptRoot -ChildPath '.output'
     New-Item -Path $outputRoot -ItemType 'Directory' -ErrorAction Ignore
 
@@ -57,15 +79,17 @@ if( -not $pgInstallInfo )
     $installerFileName = $installerPath | Split-Path -Leaf
     $stdOutLogPath = Join-Path -Path $logRoot -ChildPath ('{0}.stdout.log' -f $installerFileName)
     $stdErrLogPath = Join-Path -Path $logRoot -ChildPath ('{0}.stderr.log' -f $installerFileName)
+    $argumentList = '/S','/Edition=Express',$dbParam,('"/LogFile={0}"' -f $logPath)
+    Write-Verbose ('{0} {1}' -f $installerPath,($argumentList -join ' '))
     $process = Start-Process -FilePath $installerPath `
-                             -ArgumentList '/S','/Edition=Trial',$installSqlParam,$connString,('"/LogFile={0}"' -f $logPath),'/Port=82' `
+                             -ArgumentList $argumentList `
                              -Wait `
                              -PassThru `
                              -RedirectStandardError $stdErrLogPath `
                              -RedirectStandardOutput $stdOutLogPath
     $process.WaitForExit()
 
-    Write-Verbose -Message ('{0} exited with code {1}' -f $installerFileName, $process.ExitCode)
+    Write-Verbose -Message ('{0} exited with code {1}' -f $installerFileName,$process.ExitCode)
 
     if( -not (Get-CProgramInstallInfo -Name 'ProGet') )
     {

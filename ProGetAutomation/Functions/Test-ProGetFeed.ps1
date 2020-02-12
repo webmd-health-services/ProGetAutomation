@@ -49,5 +49,5 @@ function Test-ProGetFeed
                     }
 
     $feed = Invoke-ProGetNativeApiMethod -Session $Session -Name 'Feeds_GetFeed' -Parameter $Parameters
-    return ($feed -and $feed.FeedType_Name -eq $Type)
+    return ($feed -and ($feed | Get-Member -Name 'FeedType_Name') -and $feed.FeedType_Name -eq $Type)
 }
