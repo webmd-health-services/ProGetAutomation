@@ -14,7 +14,7 @@ Set-StrictMode -Version 'Latest'
 
 $runningUnderAppVeyor = (Test-Path -Path 'env:APPVEYOR')
 
-$version = '5.2.14'
+$version = '5.2.24'
 Write-Verbose -Message ('Testing ProGet {0}' -f $version)
 $sqlServer = $null
 $installerPath = 'SQL'
