@@ -12,7 +12,7 @@
     RootModule = 'ProGetAutomation.psm1'
 
     # Version number of this module.
-    ModuleVersion = '0.10.0'
+    ModuleVersion = '0.10.1'
 
     # Supported PSEditions
     CompatiblePSEditions = @( 'Desktop', 'Core' )
@@ -132,7 +132,8 @@
 
             # ReleaseNotes of this module
             ReleaseNotes = @'
-* Improved import speed by merging functions into the module's .psm1 file.
+* Update vendored Zip module dependency to version 0.3.1 (from 0.3.0).
+* Fixed: ProGet universal packages created by ProGetAutomation are not extractable on non-Windows platforms due to using "\" as the directory separator character.
 '@
 
         } # End of PSData hashtable
