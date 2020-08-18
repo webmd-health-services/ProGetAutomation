@@ -4,26 +4,50 @@ PublishOn:
 Build:
 - Version:
     Path: ProGetAutomation\ProGetAutomation.psd1
+
+- Delete:
+    Path: ProGetAutomation/Zip
+
+- SetVariable:
+    ZipModuleVersion: 0.3.1
+
+- GetPowerShellModule:
+    Name: Zip
+    Version: $(ZipModuleVersion)
+    Path: ProGetAutomation
+
+- PowerShell:
+    ScriptBlock: |
+        $ErrorActionPreference = 'Stop'
+        $zipModuleDownloadRoot = (Join-Path -Path '$(WHISKEY_BUILD_ROOT)' -ChildPath 'ProGetAutomation/Zip/$(ZipModuleVersion)')
+        Move-Item -Path "$zipModuleDownloadRoot/*" -Destination '$(WHISKEY_BUILD_ROOT)/ProGetAutomation/Zip' -Force
+        Remove-Item -Path $zipModuleDownloadRoot -Recurse -Force
+
 - GetPowerShellModule:
     Name: Carbon
+
 - GetPowerShellModule:
     Name: SqlServer
     Version: 21.*
+
 - PowerShell:
     ExceptDuring: Clean
     Path: init.ps1
+
 - MergeFile:
     OnlyBy: BuildServer
     Path: ProGetAutomation\Functions\*.ps1
     DestinationPath: ProGetAutomation\ProGetAutomation.psm1
     DeleteSourceFiles: true
     TextSeparator: "$(NewLine)$(NewLine)"
+
 - Pester4:
-    Path: Tests\*.Tests.ps1
+    Script: Tests\*.Tests.ps1
     Verbose: false
+
 - Zip:
     ArchivePath: .output\ProGetAutomation.zip
-    Path: 
+    Path:
     - ProGetAutomation
     Exclude:
     - "*.pdb"
@@ -34,7 +58,7 @@ Publish:
     UnlessExists: env:APPVEYOR_PULL_REQUEST_NUMBER
     Path: ProGetAutomation
     RepositoryName: PSGallery
-    RepositoryUri: https://www.powershellgallery.com/api/v2/ 
+    RepositoryUri: https://www.powershellgallery.com/api/v2/
     ApiKeyID: powershellgallery.com
 - SetVariableFromPowerShellDataFile:
     Path: ProGetAutomation\ProGetAutomation.psd1
@@ -42,6 +66,7 @@ Publish:
         PrivateData:
             PSData:
                 ReleaseNotes: RELEASE_NOTES
+
 - GitHubRelease:
     UnlessExists: env:APPVEYOR_PULL_REQUEST_NUMBER
     RepositoryName: webmd-health-services/ProGetAutomation
