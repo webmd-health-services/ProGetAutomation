@@ -9,7 +9,7 @@ Build:
     Path: ProGetAutomation/Zip
 
 - SetVariable:
-    ZipModuleVersion: 0.3.1
+    ZipModuleVersion: 0.3.2
 
 - GetPowerShellModule:
     Name: Zip
