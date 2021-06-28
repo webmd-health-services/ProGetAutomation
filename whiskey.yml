@@ -17,14 +17,10 @@ Build:
 - GetPowerShellModule:
     Name: Carbon
 
-- GetPowerShellModule:
-    Name: SqlServer
-    Version: 21.*
-
 - PowerShell:
     ExceptDuring: Clean
     OnlyBy: BuildServer
-    Path: init.ps1
+    ScriptBlock: .\init.ps1 -SqlServerName '.\SQL2017'
 
 - MergeFile:
     OnlyBy: BuildServer
