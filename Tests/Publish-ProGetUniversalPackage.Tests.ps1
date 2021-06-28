@@ -22,7 +22,7 @@ function Initialize-PublishProGetPackageTests
     # Remove all feeds from target ProGet instance
     Get-ProGetFeed -Session $ProGetSession -Force | Remove-ProGetFeed -Session $ProGetSession -Force
     
-    New-ProGetFeed -Session $ProGetSession -Type 'ProGet' -Name $feedName
+    New-ProGetFeed -Session $ProGetSession -Type 'Universal' -Name $feedName
     $feedId = (Get-ProGetFeed -Session $ProGetSession -Name $feedName).Feed_Id
     
     return $feedId
@@ -75,7 +75,7 @@ Describe 'Publish-ProGetUniversalPackage.when replacing an existing package' {
 }
 
 Describe 'Publish-ProGetUniversalPackage.invalid credentials are passed' {
-    
+    $Global:Error.Clear()
     $session = New-ProGetTestSession
     [String]$feedId = Initialize-PublishProGetPackageTests -ProGetSession $session
     $session.Credential = New-Object 'pscredential' ('Invalid',(ConvertTo-SecureString 'Credentia' -AsPlainText -Force))
@@ -88,11 +88,12 @@ Describe 'Publish-ProGetUniversalPackage.invalid credentials are passed' {
     }
     
     It 'should not publish the package to the Apps universal package feed' {
-        $packageExists | Should Not Be $true
+        $packageExists | Should -Not -BeTrue
     }
 }
 
 Describe 'Publish-ProGetUniversalPackage.no credentials are passed' {
+    $Global:Error.Clear()
     
     $session = New-ProGetTestSession
     [String]$feedId = Initialize-PublishProGetPackageTests -ProGetSession $session
@@ -110,7 +111,7 @@ Describe 'Publish-ProGetUniversalPackage.no credentials are passed' {
     } 
     
     It 'should not publish the package to the Apps universal package feed' {
-        $packageExists | Should Not Be $true
+        $packageExists | Should -Not -BeTrue
     }
 }
 
@@ -129,7 +130,7 @@ Describe 'Publish-ProGetUniversalPackage.specified target feed does not exist' {
     }
     
     It 'should not publish the package to the Apps universal package feed' {
-        $packageExists | Should Not Be $true
+        $packageExists | Should -Not -BeTrue
     }
 }
 
@@ -147,7 +148,7 @@ Describe 'Publish-ProGetUniversalPackage.package does not exist at specified pac
     }
     
     It 'should not publish the package to the Apps universal package feed' {
-        $packageExists | Should Not Be $true
+        $packageExists | Should -Not -BeTrue
     }
 }
 

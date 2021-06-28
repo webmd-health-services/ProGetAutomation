@@ -6,22 +6,13 @@ Build:
     Path: ProGetAutomation\ProGetAutomation.psd1
 
 - Delete:
-    Path: ProGetAutomation/Zip
-
-- SetVariable:
-    ZipModuleVersion: 0.3.2
+    Path: ProGetAutomation\Modules\Zip
 
 - GetPowerShellModule:
     Name: Zip
-    Version: $(ZipModuleVersion)
-    Path: ProGetAutomation
-
-- PowerShell:
-    ScriptBlock: |
-        $ErrorActionPreference = 'Stop'
-        $zipModuleDownloadRoot = (Join-Path -Path '$(WHISKEY_BUILD_ROOT)' -ChildPath 'ProGetAutomation/Zip/$(ZipModuleVersion)')
-        Move-Item -Path "$zipModuleDownloadRoot/*" -Destination '$(WHISKEY_BUILD_ROOT)/ProGetAutomation/Zip' -Force
-        Remove-Item -Path $zipModuleDownloadRoot -Recurse -Force
+    # If you change this version number, also update NestedModules path in ProGetAutomation.psd1.
+    Version: 0.3.2
+    Path: ProGetAutomation\Modules
 
 - GetPowerShellModule:
     Name: Carbon
@@ -32,6 +23,7 @@ Build:
 
 - PowerShell:
     ExceptDuring: Clean
+    OnlyBy: BuildServer
     Path: init.ps1
 
 - MergeFile:

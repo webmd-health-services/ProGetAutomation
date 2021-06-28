@@ -1,8 +1,9 @@
-/PSModules/**
-/.output/**
+/PSModules
+/.output
 *.log
 *.orig
 .psgallerykey
 /.whiskey/**/*_HelpInfo.xml
-/.whiskey/**/en-US/**
-/ProGetAutomation/Zip/**
+/.whiskey/**/en-US
+/ProGetAutomation/Modules
+/.vscode
