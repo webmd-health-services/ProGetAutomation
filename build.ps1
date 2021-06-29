@@ -156,8 +156,8 @@ if( $Initialize )
 
 $context = New-WhiskeyContext -Environment 'Dev' -ConfigurationPath $configPath
 $apiKeys = @{
-                'powershellgallery.com' = 'POWERSHELL_GALLERY_API_KEY';
-                'github.com' = 'GITHUB_ACCESS_TOKEN'
+                'powershellgallery.com' = 'WHS_POWERSHELL_GALLERY_API_KEY';
+                'github.com' = 'WHS_GITHUB_ACCESS_TOKEN'
             }
 foreach( $apiKeyID in $apiKeys.Keys )
 {
