@@ -10,7 +10,7 @@ $feedName = $PSCommandPath | Split-Path -Leaf
 function Init
 {
     Get-ProGetFeed -Session $session -Name $feedName | Remove-ProGetFeed -Session $session -Force
-    New-ProGetFeed -Session $session -Name $feedName -Type 'ProGet'
+    New-ProGetFeed -Session $session -Name $feedName -Type 'Universal'
 }
 
 Describe 'Invoke-ProGetNativeApiMethod.when making a GET request' {

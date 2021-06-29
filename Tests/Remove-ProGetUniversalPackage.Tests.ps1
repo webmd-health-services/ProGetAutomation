@@ -23,7 +23,7 @@ function GivenPackage
 function Init
 {
     Get-ProGetFeed -Session $session -Name $feedName | Remove-ProGetFeed -Session $session -Force
-    New-ProGetFeed -Session $session -Name $feedName -Type 'ProGet'
+    New-ProGetFeed -Session $session -Name $feedName -Type 'Universal'
 }
 
 function ThenError

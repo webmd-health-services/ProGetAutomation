@@ -16,7 +16,7 @@ function GivenFeed
     )
 
     Get-ProGetFeed -Session $Session -Name $Name | Remove-ProGetFeed -Session $Session -Force
-    New-ProGetFeed -Session $session -Name $Name -Type 'ProGet'
+    New-ProGetFeed -Session $session -Name $Name -Type 'Universal'
 }
 
 function GivenPackage

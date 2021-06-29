@@ -17,23 +17,20 @@ function Test-ProGetFeed
     #>
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory)]
-        [pscustomobject]
         # The session includes ProGet's URI and the API key. Use `New-ProGetSession` to create session objects
-        $Session,
+        [Parameter(Mandatory)]
+        [pscustomobject] $Session,
 
+        # The feed name indicates the name of the package feed that will be created.
         [Parameter(Mandatory)]
         [Alias('FeedName')]
-        [string]
-        # The feed name indicates the name of the package feed that will be created.
-        $Name,
+        [String] $Name,
 
-        [Parameter(Mandatory)]
-        [Alias('FeedType')]
-        [string]
         # The feed type indicates the type of package feed to create.
         # Valid feed types are ('VSIX', 'RubyGems', 'Docker', 'ProGet', 'Maven', 'Bower', 'npm', 'Deployment', 'Chocolatey', 'NuGet', 'PowerShell') - check here for a latest list - https://inedo.com/support/documentation/proget/feed-types/universal
-        $Type
+        [Parameter(Mandatory)]
+        [Alias('FeedType')]
+        [String] $Type
     )
 
     Set-StrictMode -Version 'Latest'
@@ -42,6 +39,14 @@ function Test-ProGetFeed
     {
         Write-Error -Message ('Failed to test for package feed ''{0}/{1}''. This function uses the ProGet Native API, which requires an API key. When you create a ProGet session with `New-ProGetSession`, provide an API key via the `ApiKey` parameter' -f $FeedType, $FeedName)
         return
+    }
+
+    if( $Type -eq 'ProGet' )
+    {
+        $msg = 'ProGet renamed its "ProGet" feed type name to "Universal". Please update the value of ' +
+               'New-ProGetFeed''s "Type" parameter from "ProGet" to "Universal".'
+        Write-Warning $msg
+        $Type = 'Universal'
     }
 
     $Parameters = @{
