@@ -38,12 +38,12 @@ $configFiles = & {
                     Join-Path -Path $svcRoot -ChildPath 'ProGet.Service.exe.config'
                     Join-Path -Path $svcRoot -ChildPath 'App_appsettings.config'
                     Join-Path -Path $env:ProgramData -ChildPath 'Inedo\SharedConfig\ProGet.config'
-                } | 
+                } |
                 Where-Object { Test-Path -Path $_ -PathType Leaf }
 
 foreach( $configPath in $configFiles )
 {
-    $configContent = Get-Content -Raw -Path $configPath 
+    $configContent = Get-Content -Raw -Path $configPath
     $configContent | Write-Debug
     $svcConfig = [xml]$configContent
     if( -not $svcConfig )
@@ -80,31 +80,54 @@ try
 {
     $cmd = New-Object 'Data.SqlClient.SqlCommand'
     $cmd.Connection = $conn
-    $cmd.CommandText = '[dbo].[ApiKeys_GetApiKeyByName]'
+    $cmd.CommandText = '[dbo].[ApiKeys_GetApiKeys]'
     $cmd.CommandType = [Data.CommandType]::StoredProcedure
-    $cmd.Parameters.AddWithValue('@ApiKey_Text', $apiKey)
 
-    $keyExists = $cmd.ExecuteScalar()
-    if( -not $keyExists )
+    $allApiKeys = [Collections.ArrayList]::new()
+    $apiKeyColumnIdx = $null
+
+    $reader = $cmd.ExecuteReader()
+
+    while ($reader.Read())
+    {
+        if (-not $apiKeyColumnIdx)
+        {
+            foreach ($i in (0..($reader.FieldCount - 1)))
+            {
+                if ($reader.GetName($i) -eq 'ApiKey_Text')
+                {
+                    $apiKeyColumnIdx = $i
+                    break
+                }
+            }
+        }
+
+        $allApiKeys.Add($reader.GetValue($apiKeyColumnIdx)) | Out-Null
+    }
+
+    $reader.Close()
+
+    if( $allApiKeys -notcontains $apiKey )
     {
         $apiKeyDescription = 'ProGetAutomation API Key'
         $apiKeyConfig = @'
 <Inedo.ProGet.ApiKeys.ApiKey Assembly="ProGetCoreEx">
-  <Properties AllowNativeApi="True" AllowPackagePromotionApi="False" />
+  <Properties AllowPackagePromotionApi="False" AllowRepackagingApi="False" AllowFeedManagementApi="False" AllowWebhooksApi="True" AllowConnectorHealthApi="True" AllowFeedsApi="True" AllowDockerBlobReaderApi="False" UseApiKeyTasks="False" AllowNativeApi="True" DoNotLogRequest="False" DoNotLogResponse="False" />
 </Inedo.ProGet.ApiKeys.ApiKey>
 '@
         $cmd.Dispose()
 
         $cmd = New-Object 'Data.SqlClient.SqlCommand'
-        $cmd.CommandText = "[dbo].[ApiKeys_CreateOrUpdateApiKey]"
+        $cmd.CommandText = '[dbo].[ApiKeys_CreateOrUpdateApiKey]'
         $cmd.Connection = $conn
         $cmd.CommandType = [Data.CommandType]::StoredProcedure
 
         $parameters = @{
-                            '@ApiKey_Text' = $apiKey;
-                            '@ApiKey_Description' = $apiKeyDescription;
-                            '@ApiKey_Configuration' = $apiKeyConfig
-                        }
+            '@ApiKey_Text' = $apiKey
+            '@ApiKey_Description' = $apiKeyDescription
+            '@ApiKey_Configuration' = $apiKeyConfig
+            '@ApiKey_Name' = $apiKeyDescription
+        }
         foreach( $name in $parameters.Keys )
         {
             $value = $parameters[$name]
