@@ -61,7 +61,8 @@ function ThenPackageContains
         It ('should add files to ZIP') {
             foreach( $entryNameItem in $EntryName )
             {
-                [IO.Compression.ZipArchiveEntry]$entry = $file.GetEntry(('package\{0}' -f $entryNameItem))
+                $entryNameItem = $entryNameItem -replace '\\','/'
+                [IO.Compression.ZipArchiveEntry]$entry = $file.GetEntry(('package/{0}' -f $entryNameItem))
                 $entry | Should -Not -BeNullOrEmpty
                 if( $ExpectedContent )
                 {

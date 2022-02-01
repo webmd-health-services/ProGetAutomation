@@ -50,20 +50,20 @@ function WhenTesting
 
 Describe 'Test-ProGetFeed.when feed exists' {
     Init
-    GivenFeed 'Fubar' -OfType 'ProGet'
-    WhenTesting 'Fubar' -OfType 'ProGet'
+    GivenFeed 'Fubar' -OfType 'Universal'
+    WhenTesting 'Fubar' -OfType 'Universal'
     ThenFeedExists
 }
 
 Describe 'Test-ProGetFeed.when feed does not exist' {
     Init
-    WhenTesting 'Fubar' -OfType 'ProGet'
+    WhenTesting 'Fubar' -OfType 'Universal'
     ThenFeedDoesNotExist
 }
 
 Describe 'Test-ProGetFeed.when feed with a name exists but it''s type is different' {
     Init
-    GivenFeed 'Fubar' -OfType 'ProGet'
+    GivenFeed 'Fubar' -OfType 'Universal'
     WhenTesting 'Fubar' -OfType 'NuGet'
     ThenFeedDoesNotExist
 }

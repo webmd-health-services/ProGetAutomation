@@ -15,31 +15,37 @@ function New-ProGetFeed
     #>
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory=$true)]
-        [pscustomobject]
         # The session includes ProGet's URI and the API key. Use `New-ProGetSession` to create session objects
-        $Session,
+        [Parameter(Mandatory)]
+        [pscustomobject] $Session,
 
-        [Parameter(Mandatory=$true)]
-        [Alias('FeedName')]
-        [string]
         # The feed name indicates the name of the package feed that will be created.
-        $Name,
+        [Parameter(Mandatory)]
+        [Alias('FeedName')]
+        [string] $Name,
 
-        [Parameter(Mandatory=$true)]
-        [Alias('FeedType')]
-        [string]
         # The feed type indicates the type of package feed to create.
         # Valid feed types are ('VSIX', 'RubyGems', 'Docker', 'ProGet', 'Maven', 'Bower', 'npm', 'Deployment', 'Chocolatey', 'NuGet', 'PowerShell') - check here for a latest list - https://inedo.com/support/documentation/proget/feed-types/universal
-        $Type
+        [Parameter(Mandatory)]
+        [Alias('FeedType')]
+        [string] $Type
     )
 
     Set-StrictMode -Version 'Latest'
+    Use-CallerPreference -Cmdlet $PSCmdlet -SessionState $ExecutionContext.SessionState
 
-    if (!$Session.ApiKey)
+    if( -not $Session.ApiKey )
     {
         Write-Error -Message ('We are unable to create new package feed ''{0}/{1}'' because your ProGet session is missing an API key. This function uses ProGet''s Native API, which requires an API key. Use `New-ProGetSession` to create a session object that uses an API key.' -f $Type, $Name)
         return
+    }
+
+    if( $Type -eq 'ProGet' )
+    {
+        $msg = 'ProGet renamed its "ProGet" feed type name to "Universal". Please update the value of ' +
+               'New-ProGetFeed''s "Type" parameter from "ProGet" to "Universal".'
+        Write-Warning $msg
+        $Type = 'Universal'
     }
 
     $Parameters = @{

@@ -12,7 +12,7 @@
     RootModule = 'ProGetAutomation.psm1'
 
     # Version number of this module.
-    ModuleVersion = '0.10.0'
+    ModuleVersion = '1.0.0'
 
     # Supported PSEditions
     CompatiblePSEditions = @( 'Desktop', 'Core' )
@@ -69,7 +69,7 @@
                         )
 
     # Modules to import as nested modules of the module specified in RootModule/ModuleToProcess
-    NestedModules = @( 'Zip' )
+    NestedModules = @( 'Modules\Zip\0.3.2\Zip.psd1' )
 
     # Functions to export from this module
     FunctionsToExport = @(
@@ -132,7 +132,7 @@
 
             # ReleaseNotes of this module
             ReleaseNotes = @'
-* Improved import speed by merging functions into the module's .psm1 file.
+* Upgraded to support ProGet 5.3.32.
 '@
 
         } # End of PSData hashtable

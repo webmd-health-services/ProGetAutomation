@@ -8,7 +8,7 @@ Describe 'Remove-ProGetFeed.when using WhatIf switch' {
     $feedName = $PSCommandPath | Split-Path -Leaf
     $session = New-ProGetTestSession
     Get-ProGetFeed -Session $session -Name $feedName | Remove-ProGetFeed -Session $session -Force
-    New-ProGetFeed -Session $session -Name $feedName -Type 'ProGet'
+    New-ProGetFeed -Session $session -Name $feedName -Type 'Universal'
     $feed = Get-ProGetFeed -Session $session -Name $feedName
     Remove-ProGetFeed -Session $session -ID $feed.Feed_Id -WhatIf
     It ('should not delete the feed') {

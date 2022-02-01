@@ -4,26 +4,38 @@ PublishOn:
 Build:
 - Version:
     Path: ProGetAutomation\ProGetAutomation.psd1
+
+- Delete:
+    Path: ProGetAutomation\Modules\Zip
+
+- GetPowerShellModule:
+    Name: Zip
+    # If you change this version number, also update NestedModules path in ProGetAutomation.psd1.
+    Version: 0.3.2
+    Path: ProGetAutomation\Modules
+
 - GetPowerShellModule:
     Name: Carbon
-- GetPowerShellModule:
-    Name: SqlServer
-    Version: 21.*
+
 - PowerShell:
     ExceptDuring: Clean
-    Path: init.ps1
+    OnlyBy: BuildServer
+    ScriptBlock: .\init.ps1 -SqlServerName '.\SQL2017'
+
 - MergeFile:
     OnlyBy: BuildServer
     Path: ProGetAutomation\Functions\*.ps1
     DestinationPath: ProGetAutomation\ProGetAutomation.psm1
     DeleteSourceFiles: true
     TextSeparator: "$(NewLine)$(NewLine)"
+
 - Pester4:
-    Path: Tests\*.Tests.ps1
+    Script: Tests\*.Tests.ps1
     Verbose: false
+
 - Zip:
     ArchivePath: .output\ProGetAutomation.zip
-    Path: 
+    Path:
     - ProGetAutomation
     Exclude:
     - "*.pdb"
@@ -34,7 +46,7 @@ Publish:
     UnlessExists: env:APPVEYOR_PULL_REQUEST_NUMBER
     Path: ProGetAutomation
     RepositoryName: PSGallery
-    RepositoryUri: https://www.powershellgallery.com/api/v2/ 
+    RepositoryUri: https://www.powershellgallery.com/api/v2/
     ApiKeyID: powershellgallery.com
 - SetVariableFromPowerShellDataFile:
     Path: ProGetAutomation\ProGetAutomation.psd1
@@ -42,6 +54,7 @@ Publish:
         PrivateData:
             PSData:
                 ReleaseNotes: RELEASE_NOTES
+
 - GitHubRelease:
     UnlessExists: env:APPVEYOR_PULL_REQUEST_NUMBER
     RepositoryName: webmd-health-services/ProGetAutomation

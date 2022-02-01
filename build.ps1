@@ -38,6 +38,8 @@ param(
 )
 
 #Requires -Version 5.1
+$ErrorActionPreference = 'Stop'
+
 Set-StrictMode -Version Latest
 
 # Set to a specific version to use a specific version of Whiskey. 
@@ -73,7 +75,7 @@ if( -not (Test-Path -Path $whiskeyModuleRoot -PathType Container) )
     $zipUri = 
         $release.assets |
         ForEach-Object { $_ } |
-        Where-Object { $_.name -eq 'Whiskey.zip' } |
+        Where-Object { $_.name -like 'Whiskey*.zip' } |
         Select-Object -ExpandProperty 'browser_download_url'
     
     if( -not $zipUri )
@@ -154,8 +156,8 @@ if( $Initialize )
 
 $context = New-WhiskeyContext -Environment 'Dev' -ConfigurationPath $configPath
 $apiKeys = @{
-                'powershellgallery.com' = 'POWERSHELL_GALLERY_API_KEY';
-                'github.com' = 'GITHUB_ACCESS_TOKEN'
+                'powershellgallery.com' = 'WHS_POWERSHELL_GALLERY_API_KEY';
+                'github.com' = 'WHS_GITHUB_ACCESS_TOKEN'
             }
 foreach( $apiKeyID in $apiKeys.Keys )
 {
