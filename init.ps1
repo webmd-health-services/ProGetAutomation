@@ -14,7 +14,7 @@ Set-StrictMode -Version 'Latest'
     Import-Module -Name (Join-Path -Path $PSScriptRoot -ChildPath 'PSModules\Carbon') -Force
 }
 
-$version = '6.0.7'
+$version = '6.0.18'
 
 $runningUnderAppVeyor = (Test-Path -Path 'env:APPVEYOR')
 
