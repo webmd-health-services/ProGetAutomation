@@ -189,7 +189,7 @@ try
     $activateUri = New-Object 'Uri' $uri,'/administration/licensing/activate'
     Invoke-WebRequest -Uri $activateUri -WebSession $activationWebSession
 
-    $tasksUri = [Uri]::New($uri, '/administration/security/tasks61')
+    $tasksUri = [Uri]::New($uri, '/administration/security/tasks')
     $result = Invoke-WebRequest -Uri $tasksUri -WebSession $activationWebSession
 
     # Now, disable Anonymous admin access, if it's enabled (i.e. the "Remove Anonymous Access" button is on the page).
