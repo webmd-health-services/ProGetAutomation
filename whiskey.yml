@@ -29,8 +29,53 @@ Build:
     DeleteSourceFiles: true
     TextSeparator: "$(NewLine)$(NewLine)"
 
+- Pester:
+    AsJob: true
+    Configuration:
+        Run:
+            Path: Tests\*.Tests.ps1
+            ExcludePath:
+            - "*\\Add-ProGetUniversalPackageFile.Tests.ps1"
+            - "*\\Get-ProGetAsset.Tests.ps1"
+            - "*\\Get-ProGetAssetContent.Tests.ps1"
+            - "*\\Get-ProGetUniversalPackage.Tests.ps1"
+            - "*\\Invoke-ProGetNativeApiMethod.Tests.ps1"
+            - "*\\Invoke-ProGetRestMethod.Tests.ps1"
+            - "*\\New-ProGetFeed.Tests.ps1"
+            - "*\\New-ProGetSession.Tests.ps1"
+            - "*\\New-ProGetUniversalPackage.Tests.ps1"
+            - "*\\Publish-ProGetUniversalPackage.Tests.ps1"
+            - "*\\Read-ProGetUniversalPackageFile.Tests.ps1"
+            - "*\\Remove-ProGetAsset.Tests.ps1"
+            - "*\\Remove-ProGetFeed.Tests.ps1"
+            - "*\\Remove-ProGetUniversalPackage.Tests.ps1"
+            - "*\\Test-ProGetFeed.Tests.ps1"
+            Exit: true
+            Throw: true
+        TestResult:
+            Enabled: true
+            OutputPath: .output\pester5.xml
+            TestSuiteName: ProGetAutomation
+        Output:
+            Verbosity: Detailed
+
 - Pester4:
-    Script: Tests\*.Tests.ps1
+    Script:
+    - Tests\Add-ProGetUniversalPackageFile.Tests.ps1
+    - Tests\Get-ProGetAsset.Tests.ps1
+    - Tests\Get-ProGetAssetContent.Tests.ps1
+    - Tests\Get-ProGetUniversalPackage.Tests.ps1
+    - Tests\Invoke-ProGetNativeApiMethod.Tests.ps1
+    - Tests\Invoke-ProGetRestMethod.Tests.ps1
+    - Tests\New-ProGetFeed.Tests.ps1
+    - Tests\New-ProGetSession.Tests.ps1
+    - Tests\New-ProGetUniversalPackage.Tests.ps1
+    - Tests\Publish-ProGetUniversalPackage.Tests.ps1
+    - Tests\Read-ProGetUniversalPackageFile.Tests.ps1
+    - Tests\Remove-ProGetAsset.Tests.ps1
+    - Tests\Remove-ProGetFeed.Tests.ps1
+    - Tests\Remove-ProGetUniversalPackage.Tests.ps1
+    - Tests\Test-ProGetFeed.Tests.ps1
     Verbose: false
 
 - Zip:
