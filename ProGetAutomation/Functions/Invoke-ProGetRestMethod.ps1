@@ -82,19 +82,7 @@ function Invoke-ProGetRestMethod
         }
     }
 
-    $headers = @{ }
-
-    if( $Session.ApiKey )
-    {
-        $headers['X-ApiKey'] = $Session.ApiKey;
-    }
-
-    if( $Session.Credential )
-    {
-        $bytes = [Text.Encoding]::UTF8.GetBytes(('{0}:{1}' -f $Session.Credential.UserName,$Session.Credential.GetNetworkCredential().Password))
-        $creds = 'Basic ' + [Convert]::ToBase64String($bytes)
-        $headers['Authorization'] = $creds
-    }
+    $headers = Get-ProGetRequestHeader -Session $Session
 
     #$DebugPreference = 'Continue'
     Write-Debug -Message ('{0} {1}' -f $Method.ToString().ToUpperInvariant(),($uri -replace '\b(API_Key=)([^&]+)','$1********'))
@@ -152,6 +140,11 @@ function Invoke-ProGetRestMethod
         if( (Get-Command -Name $cmdName -ParameterName 'UseBasicParsing' -ErrorAction Ignore) )
         {
             $optionalParams['UseBasicParsing'] = $true
+        }
+
+        if (Get-Command -Name $cmdName -ParameterName 'AllowUnencryptedAuthentication' -ErrorAction Ignore)
+        {
+            $optionalParams['AllowUnencryptedAuthentication'] = $true
         }
 
         if( $Method -eq [Microsoft.PowerShell.Commands.WebRequestMethod]::Get -or $PSCmdlet.ShouldProcess($uri,$Method) )

@@ -9,6 +9,10 @@
 to ProGet, since it's HTTP-based software.
 * Property `Url` on the ProGet session object. This replaces the `Uri` property.
 
+## Changed
+
+* `Set-ProGetAsset` function now uploads files of any size.
+
 ## Deprecated
 
 * The `New-ProGetSession` function's `Uri` parameter is deprecated. Use the new `Url` parameter instead.
