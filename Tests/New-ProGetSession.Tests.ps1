@@ -42,7 +42,7 @@ Describe 'New-ProGetSession.when passed credentials and not an API key' {
     }
 
     It 'should set URI' {
-        $session.Url| Should Be ([uri]$uri)
+        $session.Url | Should Be ([uri]$uri)
         $session.Uri | Should Be ([uri]$uri)
     }
 

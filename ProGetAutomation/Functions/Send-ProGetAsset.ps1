@@ -1,16 +1,48 @@
 function Send-ProGetAsset
 {
+    <#
+    .SYNOPSIS
+    Uploads file to a ProGet asset directory. ***This is an internal ProGetAutomation function. Use `Set-ProGetAsset`
+    instead.
+
+    .DESCRIPTION
+    The `Send-ProGetAsset` function is an internal ProGetAutomation function. You should be using `Set-ProGetAsset`
+    instead.
+
+    The `Send-ProGetAsset` function uploads a file to a ProGet asset directory. The file can be any size. ProGet has
+    undocumented capabilities to upload files in parts instead of the whole file and this function uses those
+    undocumented features.
+
+    Pass the session to ProGet to the `Session` parameter. Pass the path to the asset to the `AssetPath` parameter, e.g.
+    `/endpoints/DIRECTORY_NAME/content/PATH_TO_FILE`. Pass the path to the source file to upload to the `FilePath`
+    parameter. Pass the size, in bytes, of each part to the `MaxRequestSize` parameter.
+
+    The default max request content size in IIS is 30 MB/28.6 MiB and in Apache is 1 GB.
+
+    This function is adapted from https://gist.github.com/inedo-builds/cbee07725b3e227b0b566d028d4d3d07.
+
+    .EXAMPLE
+    Send-ProGetAsset -Session $Session -AssetPath '/endpoints/Installer/content/PowerShell/PowerShell-7.3.3.exe` -FilePath ~\Downloads\PowerShell-7.3.3.exe -MaxRequestSize 5mb
+
+    Demonstrates how to use `Send-ProGetAsset`. In this example, the "~\Downloads\PowerShell-7.3.3.exe" file will be
+    uploaded to the "Installers" asset directory at "Powershell/PowerShell-7.3.3.exe"
+    #>
     [CmdletBinding()]
     param(
+        # The session to ProGet. Use `New-ProGetSession` to create a session object.
         [Parameter(Mandatory)]
         [Object] $Session,
 
+        # The asset's path. This is the path to the asset upload endpoint and is usually
+        # `/endpoints/DIR_NAME/content/ASSET_PATH`.
         [Parameter(Mandatory)]
         [String] $AssetPath,
 
-        [Parameter(Mandatory, ParameterSetName='ByFile')]
+        # Path to the local file to upload.
+        [Parameter(Mandatory)]
         [String] $FilePath,
 
+        # The size of each part/request to upload to ProGet.
         [Parameter(Mandatory)]
         [UInt32] $MaxRequestSize
     )
@@ -122,7 +154,7 @@ function Send-ProGetAsset
     {
         $fileLength = $fileStream.Length
         $totalParts = [Math]::DivRem([long]$fileLength, [long]$MaxRequestSize, [ref]$remainder)
-        if($remainder -ne 0)
+        if ($remainder -ne 0)
         {
             $totalParts++
         }
