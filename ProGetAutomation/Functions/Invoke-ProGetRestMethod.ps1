@@ -54,9 +54,9 @@ function Invoke-ProGetRestMethod
 
     Set-StrictMode -Version 'Latest'
     Use-CallerPreference -Cmdlet $PSCmdlet -SessionState $ExecutionContext.SessionState
-    
-    $uri = New-Object 'Uri' -ArgumentList $Session.Uri,$Path
-    
+
+    $uri = New-Object 'Uri' -ArgumentList $Session.Url,$Path
+
     $requestContentType = 'application/json; charset=utf-8'
     $debugBody = $null
 
@@ -109,7 +109,7 @@ function Invoke-ProGetRestMethod
 
         Write-Debug -Message ('    {0}: {1}' -f $headerName,$value)
     }
-    
+
     if( $debugBody )
     {
         $debugBody | Write-Verbose
@@ -156,8 +156,8 @@ function Invoke-ProGetRestMethod
 
         if( $Method -eq [Microsoft.PowerShell.Commands.WebRequestMethod]::Get -or $PSCmdlet.ShouldProcess($uri,$Method) )
         {
-            & $cmdName -Method $Method -Uri $uri @optionalParams -Headers $headers | 
-                ForEach-Object { $_ } 
+            & $cmdName -Method $Method -Uri $uri @optionalParams -Headers $headers |
+                ForEach-Object { $_ }
         }
     }
     catch [Net.WebException]

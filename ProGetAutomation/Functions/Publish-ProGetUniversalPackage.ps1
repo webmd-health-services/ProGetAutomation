@@ -11,7 +11,7 @@ function Publish-ProGetUniversalPackage
     .EXAMPLE
     Publish-ProGetUniversalPackage -Session $ProGetSession -FeedName 'Apps' -PackagePath 'C:\ProGetPackages\TestPackage.upack'
 
-    Demonstrates how to call `Publish-ProGetUniversalPackage`. In this case, the package named 'TestPackage.upack' will be published to the 'Apps' feed located at $Session.Uri using the $Session.Credential authentication credentials
+    Demonstrates how to call `Publish-ProGetUniversalPackage`. In this case, the package named 'TestPackage.upack' will be published to the 'Apps' feed located at $Session.Url using the $Session.Credential authentication credentials
     #>
     [CmdletBinding(SupportsShouldProcess=$true)]
     param(
@@ -41,9 +41,9 @@ function Publish-ProGetUniversalPackage
 
     Set-StrictMode -Version 'Latest'
     Use-CallerPreference -Cmdlet $PSCmdlet -SessionState $ExecutionContext.SessionState
-    
+
     $shouldProcessCaption = ('creating {0} package' -f $PackagePath)
-    $proGetPackageUri = New-Object 'Uri' $Session.Uri,('/upack/{0}' -f $FeedName)
+    $proGetPackageUri = New-Object 'Uri' $Session.Url,('/upack/{0}' -f $FeedName)
     $proGetCredential = $Session.Credential
 
     $PackagePath = Resolve-Path -Path $PackagePath | Select-Object -ExpandProperty 'ProviderPath'
@@ -118,23 +118,23 @@ function Publish-ProGetUniversalPackage
 
         if( -not $foundUpackJson )
         {
-            Write-Error -Message ('The upack file ''{0}'' is invalid. It must contain a upack.json metadata file. See http://inedo.com/support/documentation/various/universal-packages/universal-feed-api for more information.' -f $PackagePath) 
+            Write-Error -Message ('The upack file ''{0}'' is invalid. It must contain a upack.json metadata file. See http://inedo.com/support/documentation/various/universal-packages/universal-feed-api for more information.' -f $PackagePath)
             return
         }
 
         if( $invalidUpackJson )
         {
             Write-Error -Message (@"
-The upack.json metadata file in '$($PackagePath)' is invalid. It must be a valid JSON file with ''version'' and ''name'' properties that have values, e.g. 
-    
+The upack.json metadata file in '$($PackagePath)' is invalid. It must be a valid JSON file with ''version'' and ''name'' properties that have values, e.g.
+
     {
         ""name"": ""HDARS"",
         ""version": ""1.3.9""
     }
-    
+
 See http://inedo.com/support/documentation/various/universal-packages/universal-feed-api for more information.
-    
-"@)        
+
+"@)
             return
         }
 
@@ -147,7 +147,7 @@ See http://inedo.com/support/documentation/various/universal-packages/universal-
                 $description = 'properties don''t have values'
             }
             $emptyPropertyNames =  $propertyNames -join ''' and '''
-                                    
+
             Write-Error -Message ('The upack.json metadata file in ''{0}'' is invalid. The ''{1}'' {2}. See http://inedo.com/support/documentation/various/universal-packages/universal-feed-api for more information.' -f $PackagePath,$emptyPropertyNames,$description)
             return
         }
@@ -212,7 +212,7 @@ See http://inedo.com/support/documentation/various/universal-packages/universal-
                 Write-Error -Message ('Uploading file ''{0}'' to ''{1}'' timed out after {2} second(s). To increase this timeout, set the Timeout parameter to the number of seconds to wait for the upload to complete.' -f $PackagePath,$proGetPackageUri,$Timeout)
                 return
             }
-                        
+
             $response = $httpResponseMessage.Result
             if( -not $response.IsSuccessStatusCode )
             {
@@ -230,7 +230,7 @@ See http://inedo.com/support/documentation/various/universal-packages/universal-
 
             if( $ex -is [Threading.Tasks.TaskCanceledException] )
             {
-                Write-Error -Message ('Uploading file ''{0}'' to ''{1}'' was cancelled. This is usually because the upload took longer than the timeout, which was {2} second(s). Use the Timeout parameter to increase the upload timeout.' -f $PackagePath,$proGetPackageUri,$Timeout) 
+                Write-Error -Message ('Uploading file ''{0}'' to ''{1}'' was cancelled. This is usually because the upload took longer than the timeout, which was {2} second(s). Use the Timeout parameter to increase the upload timeout.' -f $PackagePath,$proGetPackageUri,$Timeout)
                 return
             }
 
@@ -239,7 +239,7 @@ See http://inedo.com/support/documentation/various/universal-packages/universal-
         }
         finally
         {
-            $disposables = @( 'httpClientHandler', 'httpClient', 'canceller', 'packageStream', 'streamContent', 'httpResponseMessage', 'response' ) 
+            $disposables = @( 'httpClientHandler', 'httpClient', 'canceller', 'packageStream', 'streamContent', 'httpResponseMessage', 'response' )
             $disposables |
                 ForEach-Object { Get-Variable -Name $_ -ValueOnly -ErrorAction Ignore } |
                 Where-Object { $_ -ne $null } |
