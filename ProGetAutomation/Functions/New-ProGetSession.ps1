@@ -3,37 +3,41 @@ function New-ProGetSession
 {
     <#
     .SYNOPSIS
-    Creates a session object used to communicate with a ProGet instance.
+    Creates a session object used to connect with a ProGet instance.
 
     .DESCRIPTION
-    The `New-ProGetSession` function creates and returns a session object that is required when calling any function in the ProGetAutomation module that communicates with ProGet. The session includes ProGet's URI and the credentials to use when utilizing ProGet's API.
+    The `New-ProGetSession` function creates and returns a session object that is required when calling any function in
+    the ProGetAutomation module that communicates with ProGet. The session includes ProGet's URL and the
+    credentials and/or API key to use when making requests.
 
     .EXAMPLE
-    $session = New-ProGetSession -Uri 'https://proget.com' -Credential $credential
+    $session = New-ProGetSession -Url 'https://proget.com' -Credential $credential
 
-    Demonstrates how to call `New-ProGetSession`. In this case, the returned session object can be passed to other ProGetAutomation module functions to communicate with ProGet at `https://proget.com` with the credential in `$credential`.
+    Demonstrates how to call `New-ProGetSession`. In this case, the returned session object can be passed to other
+    ProGetAutomation module functions to communicate with ProGet at `https://proget.com` with the credential in
+    `$credential`.
     #>
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory=$true)]
-        [uri]
-        # The URI to the ProGet instance to use.
-        $Uri,
+        # The URL to the ProGet instance to use.
+        [Parameter(Mandatory)]
+        [Alias('Uri')]
+        [uri] $Url,
 
-        [pscredential]
         # The credential to use when making requests to ProGet utilizing the Universal Feed API.
-        $Credential,
+        [pscredential] $Credential,
 
-        [string]
         # The API key to use when making requests to ProGet utilizing the Native API
-        $ApiKey
+        [string] $ApiKey
     )
 
     Set-StrictMode -Version 'Latest'
+    Use-CallerPreference -Cmdlet $PSCmdlet -SessionState $ExecutionContext.SessionState
 
     return [pscustomobject]@{
-                                Uri = $Uri;
-                                Credential = $Credential;
-                                ApiKey = $ApiKey
-                            }
+            Url = $Url;
+            Credential = $Credential;
+            ApiKey = $ApiKey
+        } |
+        Add-Member -MemberType AliasProperty -Name 'Uri' -Value 'Url' -PassThru
 }

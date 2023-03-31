@@ -59,7 +59,7 @@ function New-ProGetFeed
         Write-Error -Message ('Unable to create {0} {1} feed: a feed with that name and type already exists.' -f $Type, $Name) -ErrorAction $ErrorActionPreference
         return
     }
-    Write-Verbose -Message ('Creating {0} {1} feed in ProGet instance "{2}".' -f $Type, $Name, $Session.Uri)
+    Write-Verbose -Message ('Creating {0} {1} feed in ProGet instance "{2}".' -f $Type, $Name, $Session.Url)
     $null = Invoke-ProGetNativeApiMethod -Session $Session -Name 'Feeds_CreateFeed' -Parameter $Parameters
 
 }
