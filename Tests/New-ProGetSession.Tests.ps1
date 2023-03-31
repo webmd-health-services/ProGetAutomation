@@ -8,14 +8,15 @@ $apiKey = '==TestAPIKey'
 $credential = New-Object 'pscredential' ('Test',(ConvertTo-SecureString 'User' -AsPlainText -Force))
 
 Describe 'New-ProGetSession.when passed credentials and an API key' {
-        
-    $session = New-ProGetSession -Uri $uri -Credential $credential -ApiKey $apiKey 
+
+    $session = New-ProGetSession -Url $uri -Credential $credential -ApiKey $apiKey
 
     It 'should return session object' {
         $session | Should Not BeNullOrEmpty
     }
 
     It 'should set URI' {
+        $session.Url | Should Be ([uri]$uri)
         $session.Uri | Should Be ([uri]$uri)
     }
 
@@ -33,14 +34,15 @@ Describe 'New-ProGetSession.when passed credentials and an API key' {
 }
 
 Describe 'New-ProGetSession.when passed credentials and not an API key' {
-        
-    $session = New-ProGetSession -Uri $uri -Credential $credential
+
+    $session = New-ProGetSession -Url $uri -Credential $credential
 
     It 'should return session object' {
         $session | Should Not BeNullOrEmpty
     }
 
     It 'should set URI' {
+        $session.Url | Should Be ([uri]$uri)
         $session.Uri | Should Be ([uri]$uri)
     }
 
@@ -58,21 +60,22 @@ Describe 'New-ProGetSession.when passed credentials and not an API key' {
 }
 
 Describe 'New-ProGetSession.when passed an API key and no credentials' {
-        
-    $session = New-ProGetSession -Uri $uri -ApiKey $apiKey
+
+    $session = New-ProGetSession -Url $uri -ApiKey $apiKey
 
     It 'should return session object' {
         $session | Should Not BeNullOrEmpty
     }
 
     It 'should set URI' {
+        $session.Url | Should Be ([uri]$uri)
         $session.Uri | Should Be ([uri]$uri)
     }
 
     It 'should not contain username or password credentials' {
         $session.Credential | Should BeNullOrEmpty
     }
-    
+
     It 'should contain a valid API key' {
         $session.ApiKey | Should Be $apiKey
     }

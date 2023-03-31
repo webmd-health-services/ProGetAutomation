@@ -1,235 +1,228 @@
 
-#Requires -Version 4
+#Requires -Version 5.1
 Set-StrictMode -Version 'Latest'
 
-& (Join-Path -Path $PSScriptRoot -ChildPath 'Initialize-Tests.ps1' -Resolve)
+BeforeAll {
+    & (Join-Path -Path $PSScriptRoot -ChildPath 'Initialize-Tests.ps1' -Resolve)
 
-
-function Init
-{
+    $script:testDir = $null
+    $script:testNum = 1
     $script:fileName = $null
-    $script:progetAssetName = $null
-    $script:baseDirectory = (Split-Path -Path $TestDrive.FullName -Leaf)
+    $script:assetName = $null
+    $script:feedName = $PSCommandPath | Split-Path -Leaf
     $script:directory = $null
     $script:filePath = $null
     $script:valueContent = $null
-}
 
-function GivenSession 
-{
     $script:session = New-ProGetTestSession
-    $feed = Test-ProGetFeed -Session $session -Name $baseDirectory -Type 'Asset'
-    if( !$feed )
+    Get-ProGetFeed -Session $session -Name $script:feedName -ErrorAction Ignore |
+        Remove-ProGetFeed -Session $session -Force
+    New-ProGetFeed -Session $session -Name $script:feedName -Type 'Asset'
+
+    function GivenFile
     {
-        New-ProGetFeed -Session $session -Name $baseDirectory -Type 'Asset'
+        param(
+            [String] $Path,
+
+            [String] $WithContent
+        )
+
+        $script:filePath = Join-Path -Path $script:testDir -ChildPath $Path
+        New-Item -Path $script:filePath -ItemType 'File' -Force
+
+        if ($WithContent)
+        {
+            [IO.File]::WriteAllText($filePath, $WithContent)
+        }
     }
-}
 
-function GivenAssetName
-{
-    param(
-        [string]
-        $Name
-    )
-
-    $script:proGetAssetName = $Name
-}
-
-function GivenAssetDirectory
-{
-    param(
-        [string]
-        $RootDirectory        
-    )
-
-    $script:baseDirectory = $RootDirectory
-}
-
-function GivenSourceFilePath
-{
-    param(
-        [string]
-        $Path,
-        [switch]
-        $WhereFileDoesNotExist
-    )
-
-    $script:filePath = Join-Path -Path $TestDrive.FullName -ChildPath $Path
-
-    if( !$WhereFileDoesNotExist )
+    function WhenAssetIsPublished
     {
-        New-Item -Path $filePath -ItemType 'File' -Force
+        [CmdletBinding()]
+        param(
+            [hashtable] $WithArgs = @{}
+        )
+
+        if (-not $WithArgs.ContainsKey('DirectoryName'))
+        {
+            $WithArgs['DirectoryName'] = $script:feedName
+        }
+
+        Push-Location $script:testDir
+        try
+        {
+            Set-ProGetAsset -Session $script:session @WithArgs
+        }
+        finally
+        {
+            Pop-Location
+        }
     }
-}
 
-function GivenSourceContent
-{
-    param(
-        [string]
-        $Content
-    )
-
-    $script:content = $Content
-}
-
-function WhenAssetIsPublished
-{
-    [CmdletBinding()]
-    param(
-    )
-
-    $Global:Error.Clear()
-
-    $params = @{ }
-    if( $filePath )
+    function ThenAsset
     {
-        $params['FilePath'] = $filePath
+        param(
+            [switch] $Not,
+
+            [switch] $Exists,
+
+            [String] $InFolder = '',
+
+            [String] $WithContent = ''
+        )
+
+        $asset = $null
+        try
+        {
+            $asset =
+                Get-ProGetAsset -Session $script:session `
+                                -DirectoryName $script:feedName `
+                                -Path $InFolder `
+                                -ErrorAction Ignore |
+                Where-Object 'name' -eq $script:assetName
+        }
+        catch
+        {
+            # Throws 404 in PowerShell if asset does not exist.
+        }
+
+        if ($Not)
+        {
+            $asset | Should -BeNullOrEmpty
+        }
+        else
+        {
+            $path = $script:assetName
+            if ($InFolder)
+            {
+                $path = Join-Path -Path $InFolder -ChildPath $path
+            }
+
+            $asset | Should -Not -BeNullOrEmpty
+            $assetContents =
+                Get-ProGetAssetContent -Session $session -DirectoryName $script:feedName -Path $path
+            $assetContents | Should -Be $WithContent
+        }
     }
-    else
+
+    function ThenError
     {
-        $params['Content'] = $content
-    }
+        [Diagnostics.CodeAnalysis.SuppressMessage('PSAvoidAssignmentToAutomaticVariable', '')]
+        param(
+            [String] $Matches,
 
-    Set-ProGetAsset -Session $session -Path $proGetAssetName -DirectoryName $baseDirectory @params
-}
+            [switch] $IsEmpty
+        )
 
-function ThenAssetShouldExist
-{
-    param(
-        [string]
-        $Name,
-        [string]
-        $Directory
-    )
-    it ('should contain the asset "{0}"' -f $Name) {
-        Get-ProGetAsset -Session $session -DirectoryName $baseDirectory -Path $Directory | Where-Object { $_.name -match $name } | Should -Not -BeNullOrEmpty
-    }
-}
+        if ($IsEmpty)
+        {
+            $Global:Error | Should -BeNullOrEmpty
+        }
 
-function ThenAssetShouldNotExist
-{
-    param(
-        [string]
-        $Name,
-        [string]
-        $Directory
-    )
-    it ('should not contain the asset "{0}"' -f $Name) {
-        Get-ProGetAsset -Session $session -DirectoryName $baseDirectory -Path $Directory -ErrorAction Ignore | Where-Object { $_.name -match $name } | Should -BeNullOrEmpty
+        if ($Matches)
+        {
+            $Global:Error | Should -Match $Matches
+        }
     }
 }
 
-function ThenAssetContentsShouldMatch
-{
-    param(
-        $Content
-    )
+Describe 'Set-ProGetAsset' {
+    BeforeEach {
+        $Global:Error.Clear()
 
-    $assetContents = Invoke-ProGetRestMethod -Session $session -Path ('/endpoints/{0}/content/{1}' -f $baseDirectory, $progetAssetName) -Method Get
+        $script:testDir = Join-Path -Path $TestDrive -ChildPath $script:testNum
+        New-Item -Path $script:testDir -ItemType Directory
 
-    It 'should post the correct content to the ProGet asset' {
-        $assetContents.Test | Should Be $Content.Test
-        $assetContents.Test2 | Should Be $Content.Test2
+        $script:fileName = $null
+        $script:assetName = "asset$($script:testNum).txt"
+        $script:directory = $null
+        $script:filePath = $null
+        $script:valueContent = $null
+}
+
+    AfterEach {
+        $script:testNum += 1
     }
-}
 
-function ThenErrorShouldBeThrown
-{
-    param(
-        [string]
-        $ExpectedError
-    )
-    It ('should write an error that matches "{0}"' -f $ExpectedError) {
-        $Global:Error | Where-Object { $_ -match $ExpectedError } | Should -Not -BeNullOrEmpty
+    It 'should upload empty asset' {
+        GivenFile $script:assetName
+        WhenAssetIsPublished -WithArgs @{ FilePath = $script:assetName ; Path = $script:assetName }
+        ThenAsset -Exists
+        ThenError -IsEmpty
     }
-}
 
-function ThenNoErrorShouldBeThrown
-{
-    It 'should not write any errors' {
-        $Global:Error | Should -BeNullOrEmpty
+    It 'should upload asset' {
+        $content = ((New-Guid).ToString('N') + [Environment]::NewLine) * 20
+        GivenFile $script:assetName -WithContent $content
+        WhenAssetIsPublished -WithArgs @{ FilePath = $script:assetName ; Path = $script:assetName }
+        ThenAsset -Exists -WithContent $content
+        ThenError -IsEmpty
     }
-}
 
-Describe 'Set-ProGetAsset.when file asset is uploaded' {
-    Init
-    GivenSession
-    GivenAssetName 'foo.txt'
-    GivenSourceFilePath 'foo.txt'
-    WhenAssetIsPublished
-    ThenAssetShouldExist -Name 'foo.txt' -Directory ''
-    ThenNoErrorShouldBeThrown
-}
+    It 'should upload assets in chunks' {
+        $content = ((New-Guid).ToString('N') + [Environment]::NewLine) * 20
+        GivenFile $script:assetName -WithContent $content
+        WhenAssetIsPublished -WithArgs @{
+            FilePath = $script:assetName;
+            MaxRequestSize = (New-Guid).ToString('N').Length;
+            Path = $script:assetName;
+        }
+        ThenAsset -Exists -WithContent $content
+        ThenError -IsEmpty
+    }
 
-Describe 'Set-ProGetAsset.when file asset is uploaded in subfolder' {
-    Init
-    GivenSession
-    GivenAssetName 'subdir/foo.txt' 
-    GivenSourceFilePath 'foo.txt'
-    WhenAssetIsPublished
-    ThenAssetShouldExist -Name 'foo.txt' -Directory 'subdir'
-    ThenNoErrorShouldBeThrown
-}
+    It 'should upload to subfolder' {
+        GivenFile $script:assetName
+        WhenAssetIsPublished -WithArgs @{ FilePath = $script:assetName ; Path = "subdir1/$($script:assetName)" }
+        ThenAsset -Exists -InFolder 'subdir1'
+        ThenError -IsEmpty
+    }
 
-Describe 'Set-ProGetAsset.when file asset is uploaded in subfolder with backslashes' {
-    Init
-    GivenSession
-    GivenAssetName '\subdir\foo.txt' 
-    GivenSourceFilePath 'foo.txt'
-    WhenAssetIsPublished
-    ThenAssetShouldExist -Name 'foo.txt' -Directory 'subdir'
-    ThenNoErrorShouldBeThrown
-}
+    It 'should handle backslashes in asset path' {
+        GivenFile $script:assetName
+        WhenAssetIsPublished -WithArgs @{ FilePath = $script:assetName ; Path = "\subdir2\$($script:assetName)" }
+        ThenAsset -Exists -InFolder 'subdir2'
+        ThenError -IsEmpty
+    }
 
-Describe 'Set-ProGetAsset.when target asset directory does not exist' {
-    Init
-    GivenSession
-    GivenAssetName 'foo.txt' 
-    GivenAssetDirectory 'badDir'
-    GivenSourceFilePath 'foo.txt'
-    WhenAssetIsPublished -ErrorAction SilentlyContinue
-    ThenAssetShouldNotExist -Name 'foo.txt' -Directory 'badDir'
-    ThenErrorShouldBeThrown -ExpectedError 'There\ is\ no\ feed\ with\ that\ name\ in\ ProGet\.'
-}
+    It 'should require asset directory to exist' {
+        GivenFile $script:assetName
+        WhenAssetIsPublished -ErrorAction SilentlyContinue -WithArgs @{
+            DirectoryName = 'badDir';
+            FilePath = $script:assetName;
+            Path = $script:assetName
+        }
+        ThenAsset -Not -Exists -InDirectory 'badDir'
+        ThenError -Matches '.badDir. because that asset directory does not exist'
+    }
 
-Describe 'Set-ProGetAsset.when source file exists in a subdirectory of local working directory' {
-    Init
-    GivenSession
-    GivenAssetName 'foo.txt'
-    GivenSourceFilePath 'dir/foo.txt'
-    WhenAssetIsPublished
-    ThenAssetShouldExist -Name 'foo.txt'
-    ThenNoErrorShouldBeThrown
-}
+    It 'should allow relative file paths' {
+        GivenFile "dir/$($script:assetName)"
+        WhenAssetIsPublished -WithArgs @{ FilePath = "dir/$($script:assetName)" ; Path = $script:assetName }
+        ThenAsset -Exists
+        ThenError -IsEmpty
+    }
 
-Describe 'Set-ProGetAsset.when source file does not exist' {
-    Init
-    GivenSession
-    GivenAssetName 'fubu.txt'
-    GivenSourceFilePath 'fubu.txt' -WhereFileDoesNotExist
-    WhenAssetIsPublished -ErrorAction SilentlyContinue
-    ThenAssetShouldNotExist -Name 'fubu.txt' -Directory ''
-    ThenErrorShouldBeThrown -ExpectedError 'Could not find file named'
-}
+    It 'should validate file exists' {
+        WhenAssetIsPublished -WithArgs @{ FilePath = $script:assetName ; Path = $script:assetName } -ErrorAction SilentlyContinue
+        ThenAsset -Not -Exists
+        ThenError -Matches "$([regex]::Escape($script:assetName))..*that file does not exist"
+    }
 
-Describe 'Set-ProGetAsset.when file asset already exists' {
-    Init
-    GivenSession
-    GivenAssetName 'foo.txt'
-    GivenSourceFilePath 'foo.txt'
-    WhenAssetIsPublished
-    WhenAssetIsPublished
-    ThenAssetShouldExist -Name 'foo.txt'
-    ThenNoErrorShouldBeThrown
-}
+    It 'should replace existing file' {
+        GivenFile $script:assetName -WithContent 'fubarsnafu'
+        WhenAssetIsPublished -WithArgs @{ FilePath = $script:assetName ; Path = $script:assetName }
+        ThenAsset -Exists -WithContent 'fubarsnafu'
+        GivenFile $script:assetName -WithContent 'snafufubar'
+        WhenAssetIsPublished -WithArgs @{ FilePath = $script:assetName ; Path = $script:assetName }
+        ThenAsset -Exists -WithContent 'snafufubar'
+        ThenError -IsEmpty
+    }
 
-Describe 'Set-ProGetAsset.when body content is provided instead of a file' {
-    Init
-    GivenSession
-    GivenAssetName 'foo.txt'
-    GivenSourceContent (@{ Test = 'Test'; Test2 = 'Test2' } | ConvertTo-Json | Out-String)
-    WhenAssetIsPublished
-    ThenAssetShouldExist -Name 'foo.txt' -Directory ''
-    ThenAssetContentsShouldMatch @{ Test = 'Test'; Test2 = 'Test2' }
-    ThenNoErrorShouldBeThrown
+    It 'should create asset from string' {
+        $content = @{ Test = 'Test'; Test2 = 'Test2' } | ConvertTo-Json | Out-String
+        WhenAssetIsPublished -WithArgs @{ Path = $script:assetName ; Content = $content }
+        ThenAsset -Exists -WithContent $content
+        ThenError -IsEmpty
+    }
 }

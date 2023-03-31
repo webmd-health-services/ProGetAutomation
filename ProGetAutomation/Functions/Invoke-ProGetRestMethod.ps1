@@ -54,9 +54,9 @@ function Invoke-ProGetRestMethod
 
     Set-StrictMode -Version 'Latest'
     Use-CallerPreference -Cmdlet $PSCmdlet -SessionState $ExecutionContext.SessionState
-    
-    $uri = New-Object 'Uri' -ArgumentList $Session.Uri,$Path
-    
+
+    $uri = New-Object 'Uri' -ArgumentList $Session.Url,$Path
+
     $requestContentType = 'application/json; charset=utf-8'
     $debugBody = $null
 
@@ -82,19 +82,7 @@ function Invoke-ProGetRestMethod
         }
     }
 
-    $headers = @{ }
-
-    if( $Session.ApiKey )
-    {
-        $headers['X-ApiKey'] = $Session.ApiKey;
-    }
-
-    if( $Session.Credential )
-    {
-        $bytes = [Text.Encoding]::UTF8.GetBytes(('{0}:{1}' -f $Session.Credential.UserName,$Session.Credential.GetNetworkCredential().Password))
-        $creds = 'Basic ' + [Convert]::ToBase64String($bytes)
-        $headers['Authorization'] = $creds
-    }
+    $headers = Get-ProGetRequestHeader -Session $Session
 
     #$DebugPreference = 'Continue'
     Write-Debug -Message ('{0} {1}' -f $Method.ToString().ToUpperInvariant(),($uri -replace '\b(API_Key=)([^&]+)','$1********'))
@@ -109,7 +97,7 @@ function Invoke-ProGetRestMethod
 
         Write-Debug -Message ('    {0}: {1}' -f $headerName,$value)
     }
-    
+
     if( $debugBody )
     {
         $debugBody | Write-Verbose
@@ -154,10 +142,15 @@ function Invoke-ProGetRestMethod
             $optionalParams['UseBasicParsing'] = $true
         }
 
+        if (Get-Command -Name $cmdName -ParameterName 'AllowUnencryptedAuthentication' -ErrorAction Ignore)
+        {
+            $optionalParams['AllowUnencryptedAuthentication'] = $true
+        }
+
         if( $Method -eq [Microsoft.PowerShell.Commands.WebRequestMethod]::Get -or $PSCmdlet.ShouldProcess($uri,$Method) )
         {
-            & $cmdName -Method $Method -Uri $uri @optionalParams -Headers $headers | 
-                ForEach-Object { $_ } 
+            & $cmdName -Method $Method -Uri $uri @optionalParams -Headers $headers |
+                ForEach-Object { $_ }
         }
     }
     catch [Net.WebException]

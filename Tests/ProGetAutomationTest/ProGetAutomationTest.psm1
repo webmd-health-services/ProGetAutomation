@@ -148,7 +148,7 @@ finally
 
 function New-ProGetTestSession
 {
-    return New-ProGetSession -Uri $uri -Credential $credential -ApiKey $apiKey
+    return New-ProGetSession -Url $uri -Credential $credential -ApiKey $apiKey
 }
 
 Remove-Variable -Name 'activationWebSession' -ErrorAction Ignore

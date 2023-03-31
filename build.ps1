@@ -42,7 +42,7 @@ $ErrorActionPreference = 'Stop'
 
 Set-StrictMode -Version Latest
 
-# Set to a specific version to use a specific version of Whiskey. 
+# Set to a specific version to use a specific version of Whiskey.
 $whiskeyVersion = '0.*'
 $allowPrerelease = $false
 
@@ -52,7 +52,7 @@ $whiskeyModuleRoot = Join-Path -Path $PSScriptRoot -ChildPath 'PSModules\Whiskey
 if( -not (Test-Path -Path $whiskeyModuleRoot -PathType Container) )
 {
     [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor [System.Net.SecurityProtocolType]::Tls12
-    $release = 
+    $release =
         Invoke-RestMethod -Uri 'https://api.github.com/repos/webmd-health-services/Whiskey/releases' |
         ForEach-Object { $_ } |
         Where-Object { $_.name -like $whiskeyVersion } |
@@ -72,12 +72,12 @@ if( -not (Test-Path -Path $whiskeyModuleRoot -PathType Container) )
         return
     }
 
-    $zipUri = 
+    $zipUri =
         $release.assets |
         ForEach-Object { $_ } |
         Where-Object { $_.name -like 'Whiskey*.zip' } |
         Select-Object -ExpandProperty 'browser_download_url'
-    
+
     if( -not $zipUri )
     {
         Write-Error -Message ('URI to Whiskey ZIP file does not exist.') -ErrorAction Stop
@@ -130,7 +130,7 @@ if( -not (Test-Path -Path $whiskeyModuleRoot -PathType Container) )
     Import-Module -Name $whiskeyModuleRoot -Force
 }
 
-$configPath = Join-Path -Path $PSScriptRoot -ChildPath 'whiskey.yml' 
+$configPath = Join-Path -Path $PSScriptRoot -ChildPath 'whiskey.yml'
 if( -not (Test-Path -Path $configPath -PathType 'Leaf') )
 {
     @'
