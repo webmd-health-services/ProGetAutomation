@@ -3,7 +3,7 @@ function Send-ProGetAsset
     <#
     .SYNOPSIS
     Uploads file to a ProGet asset directory. ***This is an internal ProGetAutomation function. Use `Set-ProGetAsset`
-    instead.
+    instead.***
 
     .DESCRIPTION
     The `Send-ProGetAsset` function is an internal ProGetAutomation function. You should be using `Set-ProGetAsset`
