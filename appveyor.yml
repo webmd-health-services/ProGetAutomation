@@ -1,0 +1,76 @@
+version: 0.0.0+{build}
+
+skip_tags: true
+
+skip_branch_with_pr: true
+
+build:
+  verbosity: minimal
+
+test: false
+
+services:
+- mssql2017
+
+environment:
+  WHISKEY_DISABLE_ERROR_FORMAT: True
+  matrix:
+  # Uses SQL Server 2014. Uncomment when has time to deal with that.
+  # - job_name: Windows PowerShell 5.1/.NET 4.6.2
+  #   job_group: ps
+  #   appveyor_build_worker_image: Visual Studio 2013
+
+  - job_name: Windows PowerShell 5.1/.NET 4.8
+    job_group: ps
+    appveyor_build_worker_image: Visual Studio 2019
+
+  # ProGetAutomation doesn't handle the way PowerShell's Invoke-RestMethod/Invoke-WebRequest throws web exceptions.
+  # - job_name: PowerShell 6.2 on Windows
+  #   job_group: pwsh
+  #   appveyor_build_worker_image: Visual Studio 2015
+
+  # - job_name: PowerShell 7.1 on Windows
+  #   job_group: pwsh
+  #   appveyor_build_worker_image: Visual Studio 2019
+
+  # - job_name: PowerShell 7.2 on Windows
+  #   job_group: pwsh
+  #   appveyor_build_worker_image: Visual Studio 2022
+
+
+artifacts:
+- path: .output\*
+
+
+for:
+# Build in Windows PowerShell
+- matrix:
+    only:
+    - job_group: ps
+  build_script:
+  - ps: |
+        if( (Test-Path -Path 'env:ENABLE_RDP') -and $env:ENABLE_RDP -eq 'True' )
+        {
+          $blockRdp = $true
+          iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+        }
+
+        $ProgressPreference = 'SilentlyContinue'
+        iwr https://raw.githubusercontent.com/webmd-health-services/Prism/main/Scripts/init.ps1 | iex | Format-Table
+        .\build.ps1
+
+# Build in PowerShell
+- matrix:
+    only:
+    - job_group: pwsh
+  build_script:
+  - pwsh: |
+        if( (Test-Path -Path 'env:ENABLE_RDP') -and $env:ENABLE_RDP -eq 'True' )
+        {
+          $blockRdp = $true
+          iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+        }
+
+        $ProgressPreference = 'SilentlyContinue'
+        iwr https://raw.githubusercontent.com/webmd-health-services/Prism/main/Scripts/init.ps1 | iex | Format-Table
+        ./build.ps1
