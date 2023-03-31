@@ -1,0 +1,9 @@
+{
+  "PSModules": [
+    {
+      "Name": "Zip",
+      "Version": "*"
+    }
+  ],
+  "PSModulesDirectoryName": "Modules"
+}

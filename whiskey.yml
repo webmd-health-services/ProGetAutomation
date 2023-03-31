@@ -5,22 +5,12 @@ Build:
 - Version:
     Path: ProGetAutomation\ProGetAutomation.psd1
 
-- Delete:
-    Path: ProGetAutomation\Modules\Zip
-
-- GetPowerShellModule:
-    Name: Zip
-    # If you change this version number, also update NestedModules path in ProGetAutomation.psd1.
-    Version: 0.3.2
-    Path: ProGetAutomation\Modules
-
-- GetPowerShellModule:
-    Name: Carbon
-
 - PowerShell:
     ExceptDuring: Clean
-    OnlyBy: BuildServer
-    ScriptBlock: .\init.ps1 -SqlServerName '.\SQL2017'
+    ScriptBlock: |
+        prism install | Format-Table
+        prism install -Path .\ProGetAutomation | Format-Table
+        .\init.ps1 -SqlServerName '.\SQL2017'
 
 - MergeFile:
     OnlyBy: BuildServer
@@ -91,7 +81,7 @@ Publish:
     UnlessExists: env:APPVEYOR_PULL_REQUEST_NUMBER
     Path: ProGetAutomation
     RepositoryName: PSGallery
-    RepositoryUri: https://www.powershellgallery.com/api/v2/
+    RepositoryLocation: https://www.powershellgallery.com/api/v2/
     ApiKeyID: powershellgallery.com
 - SetVariableFromPowerShellDataFile:
     Path: ProGetAutomation\ProGetAutomation.psd1
