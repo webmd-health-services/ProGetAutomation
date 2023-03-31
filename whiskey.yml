@@ -1,10 +1,5 @@
-PublishOn:
-- master
 
 Build:
-- Version:
-    Path: ProGetAutomation\ProGetAutomation.psd1
-
 - PowerShell:
     ExceptDuring: Clean
     ScriptBlock: |
@@ -12,12 +7,49 @@ Build:
         prism install -Path .\ProGetAutomation | Format-Table
         .\init.ps1 -SqlServerName '.\SQL2017'
 
+- Version:
+    Path: ProGetAutomation\ProGetAutomation.psd1
+    Prerelease:
+    - main: ""
+    - "*": rc1
+
+# Update the AppVeyor build/version number.
+- Exec:
+      OnlyBy: BuildServer
+      Path: appveyor
+      Argument: [ UpdateBuild, -Version, "$(WHISKEY_SEMVER2)+$(WHISKEY_BUILD_NUMBER)" ]
+
+# Dot-sourcing files is expensive. Move all functions into .psm1 file to improve import speed. Do this before testing
+# to ensure the module still works.
 - MergeFile:
     OnlyBy: BuildServer
     Path: ProGetAutomation\Functions\*.ps1
     DestinationPath: ProGetAutomation\ProGetAutomation.psm1
     DeleteSourceFiles: true
     TextSeparator: "$(NewLine)$(NewLine)"
+
+- CopyFile:
+    Path:
+    - CHANGELOG.md
+    - README.md
+    - LICENSE.txt
+    - NOTICE.txt
+    DestinationDirectory: ProGetAutomation
+
+- Zip:
+    ArchivePath: .output\ProGetAutomation-$(WHISKEY_SEMVER2).zip
+    Path:
+    - ProGetAutomation
+    Exclude:
+    - "*.pdb"
+    - "*.orig"
+    - prism.json
+    - prism.*.json
+
+- Exec:
+    OnlyBy: BuildServer
+    Path: appveyor
+    Argument: [ 'PushArtifact', '.output/ProGetAutomation-$(WHISKEY_SEMVER2).zip', '-DeploymentName', 'GitHub' ]
 
 - Pester:
     AsJob: true
@@ -68,37 +100,20 @@ Build:
     - Tests\Test-ProGetFeed.Tests.ps1
     Verbose: false
 
-- Zip:
-    ArchivePath: .output\ProGetAutomation.zip
+- Delete:
+    OnlyBy: BuildServer
     Path:
-    - ProGetAutomation
-    Exclude:
-    - "*.pdb"
-    - "*.orig"
+    - ProGetAutomation\prism*.json
 
-Publish:
 - PublishPowerShellModule:
-    UnlessExists: env:APPVEYOR_PULL_REQUEST_NUMBER
     Path: ProGetAutomation
-    RepositoryName: PSGallery
-    RepositoryLocation: https://www.powershellgallery.com/api/v2/
-    ApiKeyID: powershellgallery.com
-- SetVariableFromPowerShellDataFile:
-    Path: ProGetAutomation\ProGetAutomation.psd1
-    Variables:
-        PrivateData:
-            PSData:
-                ReleaseNotes: RELEASE_NOTES
 
-- GitHubRelease:
-    UnlessExists: env:APPVEYOR_PULL_REQUEST_NUMBER
-    RepositoryName: webmd-health-services/ProGetAutomation
-    ApiKeyID: github.com
-    Tag: $(WHISKEY_SEMVER2_NO_BUILD_METADATA)
-    Commitish: $(WHISKEY_SCM_COMMIT_ID)
-    Name: $(WHISKEY_SEMVER2_NO_BUILD_METADATA)
-    Description: $(RELEASE_NOTES)
-    Assets:
-    - Path: .output\ProGetAutomation.zip
-      ContentType: application/zip
-      Name: ProGetAutomation-$(WHISKEY_SEMVER2_NO_BUILD_METADATA).zip
+- Exec:
+    OnlyBy: BuildServer
+    Path: appveyor
+    Argument: [
+        'PushArtifact',
+        '.output/ProGetAutomation.$(WHISKEY_SEMVER2_NO_BUILD_METADATA).nupkg',
+        '-DeploymentName',
+        'PowerShellGallery'
+    ]
