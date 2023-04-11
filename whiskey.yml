@@ -54,7 +54,15 @@ Build:
 - Pester:
     AsJob: true
     Configuration:
+        TestResult:
+            Enabled: true
+            OutputPath: .output\pester5.xml
+            TestSuiteName: ProGetAutomation
+        Output:
+            Verbosity: Detailed
         Run:
+            Exit: true
+            Throw: true
             Path: Tests\*.Tests.ps1
             ExcludePath:
             - "*\\Add-ProGetUniversalPackageFile.Tests.ps1"
@@ -71,15 +79,6 @@ Build:
             - "*\\Remove-ProGetAsset.Tests.ps1"
             - "*\\Remove-ProGetFeed.Tests.ps1"
             - "*\\Remove-ProGetUniversalPackage.Tests.ps1"
-            - "*\\Test-ProGetFeed.Tests.ps1"
-            Exit: true
-            Throw: true
-        TestResult:
-            Enabled: true
-            OutputPath: .output\pester5.xml
-            TestSuiteName: ProGetAutomation
-        Output:
-            Verbosity: Detailed
 
 - Pester4:
     Script:
@@ -97,7 +96,6 @@ Build:
     - Tests\Remove-ProGetAsset.Tests.ps1
     - Tests\Remove-ProGetFeed.Tests.ps1
     - Tests\Remove-ProGetUniversalPackage.Tests.ps1
-    - Tests\Test-ProGetFeed.Tests.ps1
     Verbose: false
 
 - Delete:

@@ -7,7 +7,7 @@ function Test-ProGetFeed
 
     .DESCRIPTION
     The `Test-ProGetFeed` function tests if a feed exists in ProGet instance. Pass the session to your ProGet instance to the `Session` parameter (use `New-ProGetSession` to create a session).  Pass the name of the feed to the `Name` parameter. Pass the type of the feed to the `Type` parameter. If the feed exists, the function returns `true`. Otherwise, it returns `false`.
-    
+
     Uses the `Feeds_GetFeed` endpoint in ProGet's native API.
 
     .EXAMPLE

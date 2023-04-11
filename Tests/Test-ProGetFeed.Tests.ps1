@@ -2,68 +2,66 @@
 #Requires -Version 5.1
 Set-StrictMode -Version 'Latest'
 
-& (Join-Path -Path $PSScriptRoot -ChildPath 'Initialize-Tests.ps1' -Resolve)
+BeforeAll {
+    Set-StrictMode -Version 'Latest'
 
-$session = New-ProGetTestSession
-$result = $null
+    & (Join-Path -Path $PSScriptRoot -ChildPath 'Initialize-Tests.ps1' -Resolve)
 
-function Init
-{
+    $script:session = New-ProGetTestSession
     $script:result = $null
 
-    Get-ProGetFeed -Session $session | Remove-ProGetFeed -Session $session -Force
-}
+    function GivenFeed
+    {
+        param(
+            $Name,
+            $OfType
+        )
 
-function GivenFeed
-{
-    param(
-        $Name,
-        $OfType
-    )
+        New-ProGetFeed -Session $script:session -Name $Name -Type $OfType
+    }
 
-    New-ProGetFeed -Session $session -Name $Name -Type $OfType
-}
+    function ThenFeedExists
+    {
+        $script:result | Should -BeTrue
+    }
 
-function ThenFeedExists
-{
-    It ('should exist') {
-        $result | Should -BeTrue
+    function ThenFeedDoesNotExist
+    {
+        $script:result | Should -BeFalse
+    }
+
+    function WhenTesting
+    {
+        param(
+            $Name,
+            $OfType
+        )
+
+        $script:result = Test-ProGetFeed -Session $script:session -Name $Name -Type $OfType
     }
 }
 
-function ThenFeedDoesNotExist
-{
-    It ('should not exist') {
-        $result | Should -BeFalse
+Describe 'Test-ProGetFeed' {
+    BeforeEach {
+        $script:result = $null
+
+        Get-ProGetFeed -Session $script:session | Remove-ProGetFeed -Session $script:session -Force
     }
-}
 
-function WhenTesting
-{
-    param(
-        $Name,
-        $OfType
-    )
+    It 'detects existing feed' {
+        GivenFeed 'Fubar' -OfType 'Universal'
+        WhenTesting 'Fubar' -OfType 'Universal'
+        ThenFeedExists
+    }
 
-    $script:result = Test-ProGetFeed -Session $session -Name $Name -Type $OfType
-}
+    It 'detects non-existent feed' {
+        WhenTesting 'Fubar' -OfType 'Universal'
+        ThenFeedDoesNotExist
+    }
 
-Describe 'Test-ProGetFeed.when feed exists' {
-    Init
-    GivenFeed 'Fubar' -OfType 'Universal'
-    WhenTesting 'Fubar' -OfType 'Universal'
-    ThenFeedExists
-}
-
-Describe 'Test-ProGetFeed.when feed does not exist' {
-    Init
-    WhenTesting 'Fubar' -OfType 'Universal'
-    ThenFeedDoesNotExist
-}
-
-Describe 'Test-ProGetFeed.when feed with a name exists but it''s type is different' {
-    Init
-    GivenFeed 'Fubar' -OfType 'Universal'
-    WhenTesting 'Fubar' -OfType 'NuGet'
-    ThenFeedDoesNotExist
+    It 'uses feed type to determine existence' {
+        GivenFeed 'Fubar' -OfType 'Universal'
+        WhenTesting 'Fubar' -OfType 'NuGet'
+        ThenFeedDoesNotExist
+    }
 }
