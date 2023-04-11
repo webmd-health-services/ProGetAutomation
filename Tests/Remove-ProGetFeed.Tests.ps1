@@ -2,21 +2,20 @@
 #Requires -Version 5.1
 Set-StrictMode -Version 'Latest'
 
-& (Join-Path -Path $PSScriptRoot -ChildPath 'Initialize-Tests.ps1' -Resolve)
+BeforeAll {
+    & (Join-Path -Path $PSScriptRoot -ChildPath 'Initialize-Tests.ps1' -Resolve)
+}
 
-Describe 'Remove-ProGetFeed.when using WhatIf switch' {
-    $feedName = $PSCommandPath | Split-Path -Leaf
-    $session = New-ProGetTestSession
-    Get-ProGetFeed -Session $session -Name $feedName | Remove-ProGetFeed -Session $session -Force
-    New-ProGetFeed -Session $session -Name $feedName -Type 'Universal'
-    $feed = Get-ProGetFeed -Session $session -Name $feedName
-    Remove-ProGetFeed -Session $session -ID $feed.Feed_Id -WhatIf
-    It ('should not delete the feed') {
+Describe 'Remove-ProGetFeed' {
+    It 'supports WhatIf' {
+        $feedName = $PSCommandPath | Split-Path -Leaf
+        $session = New-ProGetTestSession
+        Get-ProGetFeed -Session $session -Name $feedName | Remove-ProGetFeed -Session $session -Force
+        New-ProGetFeed -Session $session -Name $feedName -Type 'Universal'
+        $feed = Get-ProGetFeed -Session $session -Name $feedName
+        Remove-ProGetFeed -Session $session -ID $feed.Feed_Id -WhatIf
         Get-ProGetFeed -Session $session -Name $feedName | Should -Not -BeNullOrEmpty
-    }
-
-    Remove-ProGetFeed -Session $session -ID $feed.Feed_Id -WhatIf -Force
-    It ('should not delete the feed even when using the Force') {
+        Remove-ProGetFeed -Session $session -ID $feed.Feed_Id -WhatIf -Force
         Get-ProGetFeed -Session $session -Name $feedName | Should -Not -BeNullOrEmpty
     }
 }
