@@ -1,5 +1,12 @@
 
 using namespace Microsoft.PowerShell.Commands
+using namespace System.IO
+using namespace System.IO.Compression
+using namespace System.Net.Http
+using namespace System.Net.Http.Headers
+using namespace System.Text
+using namespace System.Threading
+using namespace System.Threading.Tasks
 using namespace System.Web
 
 Add-Type -AssemblyName 'System.Net.Http'

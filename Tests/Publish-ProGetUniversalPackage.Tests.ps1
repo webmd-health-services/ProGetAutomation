@@ -118,12 +118,15 @@ Describe 'Publish-ProGetUniversalPackage.publish a new Universal package' {
     }
 
     It 'sends credentials' {
-        $credential = [pscredential]::New('Invalid',(ConvertTo-SecureString 'Credentia' -AsPlainText -Force))
-        $session = New-ProGetSession -Url $script:session.Url -Credential $credential
+        $session = New-ProGettestSession -ExcludeApiKey
+        WhenPublishing -WithArgs @{ Session = $session }
+        ThenPackage -Published
+    }
 
-        WhenPublishing -WithArgs @{ Session = $session } -ErrorAction SilentlyContinue
-        ThenPackage -Not -Published
-        ThenError -Matches 'Failed to upload'
+    It 'sends API key' {
+        $session = New-ProGettestSession -ExcludeCredential
+        WhenPublishing -WithArgs @{ Session = $session }
+        ThenPackage -Published
     }
 
     It 'does not publish to a non-existent feed' {

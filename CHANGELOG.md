@@ -44,6 +44,10 @@ verb when deleting a feed.
 
 Add `-ErrorAction Ignore` to usages of `Get-ProGetFeed`. That function now writes an error if a feed does not exist.
 
+### Added
+
+* The `Publish-ProGetUniversalPackage` can now authenticate using a ProGet API key.
+
 ### Changed
 
 * The `Get-ProGetFeed` and `New-ProGetFeed` functions now use the Feed Management API. The objects returned have
