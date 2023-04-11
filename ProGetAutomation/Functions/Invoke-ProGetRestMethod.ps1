@@ -6,50 +6,51 @@ function Invoke-ProGetRestMethod
     Invokes a ProGet REST method.
 
     .DESCRIPTION
-    The `Invoke-ProGetRestMethod` invokes a ProGet REST API method. You pass the path to the endpoint (everything after `/api/`) via the `Name` parameter, the HTTP method to use via the `Method` parameter, and the parameters to pass in the body of the request via the `Parameter` parameter.  This function converts the `Parameter` hashtable to JSON and sends it in the body of the request.
+    The `Invoke-ProGetRestMethod` invokes a ProGet REST API method. You pass the path to the endpoint (everything after
+    `/api/`) via the `Name` parameter, the HTTP method to use via the `Method` parameter, and the parameters to pass in
+    the body of the request via the `Parameter` parameter.  This function converts the `Parameter` hashtable to JSON and
+    sends it in the body of the request.
 
-    You also need to pass an object that represents the ProGet instance and API key to use when connecting via the `Session` parameter. Use the `New-ProGetSession` function to create a session object.
+    You also need to pass an object that represents the ProGet instance and API key to use when connecting via the
+    `Session` parameter. Use the `New-ProGetSession` function to create a session object.
     #>
-    [CmdletBinding(SupportsShouldProcess,DefaultParameterSetName='None')]
+    [CmdletBinding(SupportsShouldProcess, DefaultParameterSetName='None')]
     param(
+        # A session object that represents the ProGet instance to use. Use the `New-ProGetSession` function to create
+        # session objects.
         [Parameter(Mandatory)]
-        [object]
-        # A session object that represents the ProGet instance to use. Use the `New-ProGetSession` function to create session objects.
-        $Session,
+        [object] $Session,
 
-        [Parameter(Mandatory)]
-        [String]
         # The path to the API endpoint.
-        $Path,
+        [Parameter(Mandatory)]
+        [String] $Path,
 
-        [Microsoft.PowerShell.Commands.WebRequestMethod]
         # The HTTP/web method to use. The default is `POST`.
-        $Method = [Microsoft.PowerShell.Commands.WebRequestMethod]::Post,
+        [WebRequestMethod] $Method = [WebRequestMethod]::Post,
 
-        [Parameter(ParameterSetName='ByParameter')]
-        [hashtable]
         # The parameters to pass to the method.
-        $Parameter,
-
         [Parameter(ParameterSetName='ByParameter')]
-        [string]
+        [hashtable] $Parameter,
+
+        # Controls how the parameters are sent to the API. The default is `Form`, which sends them as URL-encoded
+        # name/value pairs (i.e. like a HTML form submission). The other options is `Json`, which converts the
+        # parameters to JSON and sends that JSON text as the content/body of the request. This parameter is ignored if
+        # there are no parmaeters to send or if the `InFile` parameter is used.
+        [Parameter(ParameterSetName='ByParameter')]
         [ValidateSet('Form','Json')]
-        # Controls how the parameters are sent to the API. The default is `Form`, which sends them as URL-encoded name/value pairs (i.e. like a HTML form submission). The other options is `Json`, which converts the parameters to JSON and sends that JSON text as the content/body of the request. This parameter is ignored if there are no parmaeters to send or if the `InFile` parameter is used.
-        $ContentType,
+        [String] $ContentType,
 
-        [Parameter(ParameterSetName='ByFile')]
-        [String]
         # Send the contents of the file at this path as the body of the web request.
-        $InFile,
+        [Parameter(ParameterSetName='ByFile')]
+        [String] $InFile,
 
-        [Parameter(ParameterSetName='ByContent')]
-        [String]
         # Send the content of this string as the body of the web request.
-        $Body,
+        [Parameter(ParameterSetName='ByContent')]
+        [String] $Body,
 
-        [Switch]
-        # Return the raw content from the request instead of attempting to convert the response from JSON into an object.
-        $Raw
+        # Return the raw content from the request instead of attempting to convert the response from JSON into an
+        # object.
+        [switch] $Raw
     )
 
     Set-StrictMode -Version 'Latest'
