@@ -1,5 +1,6 @@
 
 using namespace Microsoft.PowerShell.Commands
+using namespace System.Web
 
 Add-Type -AssemblyName 'System.Net.Http'
 Add-Type -AssemblyName 'System.Web'

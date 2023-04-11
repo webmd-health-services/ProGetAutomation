@@ -39,7 +39,7 @@ function Init
     $script:result = $null
     $script:upackFile = $null
 
-    Get-ProGetFeed -Session $Session -Name $feedName | Remove-ProGetFeed -Session $Session -Force
+    Get-ProGetFeed -Session $Session -Name $feedName -ErrorAction Ignore | Remove-ProGetFeed -Session $Session -Force
     New-ProGetFeed -Session $session -Name $feedName -Type 'Universal'
 }
 

@@ -1,10 +1,10 @@
 & (Join-Path -Path $PSScriptRoot -ChildPath 'Initialize-Tests.ps1' -Resolve)
 
-function GivenSession 
+function GivenSession
 {
     $script:session = New-ProGetTestSession
     $script:baseDirectory = (split-path -Path $TestDrive.FullName -leaf)
-    $feed = Test-ProGetFeed -Session $session -Name $baseDirectory -Type 'Asset'
+    $feed = Test-ProGetFeed -Session $session -Name $baseDirectory
     if( !$feed )
     {
         New-ProGetFeed -Session $session -Name $baseDirectory -Type 'Asset'
@@ -21,7 +21,7 @@ function GivenAssets
     )
     foreach($file in $Name)
     {
-        New-Item -Path (Join-Path -Path $TestDrive.FullName -ChildPath $file) -Type 'file' -value $WithContent -Force 
+        New-Item -Path (Join-Path -Path $TestDrive.FullName -ChildPath $file) -Type 'file' -value $WithContent -Force
         Set-ProGetAsset -Session $session -DirectoryName $baseDirectory -Path $file -FilePath (Join-Path -Path $TestDrive.FullName -ChildPath $file)
     }
 }

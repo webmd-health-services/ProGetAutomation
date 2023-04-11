@@ -75,7 +75,7 @@ function Set-ProGetAsset
 
     $assetPath = "/endpoints/$([Uri]::EscapeDataString($DirectoryName))/content/$($Path.TrimStart('/'))"
 
-    if (-not (Test-ProGetFeed -Session $Session -Name $DirectoryName -Type Asset))
+    if (-not (Test-ProGetFeed -Session $Session -Name $DirectoryName))
     {
         $msg = "Failed to upload file ""$($FilePath)"" to ProGet asset directory ""$($DirectoryName)"" because that " +
                'asset directory does not exist.'

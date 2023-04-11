@@ -58,7 +58,7 @@ function Invoke-ProGetRestMethod
 
     $uri = New-Object 'Uri' -ArgumentList $Session.Url,$Path
 
-    $requestContentType = 'application/json; charset=utf-8'
+    $requestContentType = 'application/json' #; charset=utf-8'
     $debugBody = $null
 
     if( $PSCmdlet.ParameterSetName -eq 'ByParameter' )
@@ -70,7 +70,9 @@ function Invoke-ProGetRestMethod
         }
         else
         {
-            $Body = $Parameter.Keys | ForEach-Object { '{0}={1}' -f [Web.HttpUtility]::UrlEncode($_),[Web.HttpUtility]::UrlEncode($Parameter[$_]) }
+            $Body =
+                $Parameter.Keys |
+                ForEach-Object { '{0}={1}' -f [Uri]::EscapeDataString($_),[Uri]::EscapeDataString($Parameter[$_]) }
             $Body = $Body -join '&'
             $requestContentType = 'application/x-www-form-urlencoded; charset=utf-8'
             $debugBody = $Parameter.Keys | ForEach-Object {
@@ -104,7 +106,7 @@ function Invoke-ProGetRestMethod
         $debugBody | Write-Verbose
     }
 
-    $errorsAtStart = $Global:Error.Count
+    $numErrorsAtStart = $Global:Error.Count
     try
     {
         $optionalParams = @{
@@ -154,13 +156,9 @@ function Invoke-ProGetRestMethod
                 ForEach-Object { $_ }
         }
     }
-    catch [Net.WebException]
+    catch
     {
-        for( $idx = $errorsAtStart; $idx -lt $Global:Error.Count; ++$idx )
-        {
-            $Global:Error.RemoveAt(0)
-        }
-
+        $Global:Error.RemoveRange(0, ($Global:Error.Count - $numErrorsAtStart))
         Write-Error -ErrorRecord $_ -ErrorAction $ErrorActionPreference
     }
 }

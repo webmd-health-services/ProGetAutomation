@@ -17,7 +17,7 @@ BeforeAll {
             $OfType
         )
 
-        New-ProGetFeed -Session $script:session -Name $Name -Type $OfType
+        New-ProGetFeed -Session $script:session -Name $Name -Type 'universal'
     }
 
     function ThenFeedExists
@@ -28,40 +28,35 @@ BeforeAll {
     function ThenFeedDoesNotExist
     {
         $script:result | Should -BeFalse
+        $null | Should -BeFalse
     }
 
     function WhenTesting
     {
         param(
-            $Name,
-            $OfType
+            $Name
         )
 
-        $script:result = Test-ProGetFeed -Session $script:session -Name $Name -Type $OfType
+        $script:result = Test-ProGetFeed -Session $script:session -Name $Name
+        $Global:Error | Should -BeNullOrEmpty
     }
 }
 
 Describe 'Test-ProGetFeed' {
     BeforeEach {
+        $Global:Error.Clear()
         $script:result = $null
-
         Get-ProGetFeed -Session $script:session | Remove-ProGetFeed -Session $script:session -Force
     }
 
     It 'detects existing feed' {
-        GivenFeed 'Fubar' -OfType 'Universal'
-        WhenTesting 'Fubar' -OfType 'Universal'
+        GivenFeed 'Test-ProGetFeed1'
+        WhenTesting 'Test-ProGetFeed1'
         ThenFeedExists
     }
 
     It 'detects non-existent feed' {
-        WhenTesting 'Fubar' -OfType 'Universal'
-        ThenFeedDoesNotExist
-    }
-
-    It 'uses feed type to determine existence' {
-        GivenFeed 'Fubar' -OfType 'Universal'
-        WhenTesting 'Fubar' -OfType 'NuGet'
+        WhenTesting 'Test-ProGetFeed2'
         ThenFeedDoesNotExist
     }
 }

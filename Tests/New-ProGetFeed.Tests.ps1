@@ -13,43 +13,45 @@ BeforeAll {
 Describe 'New-ProGetFeed.create a new Universal package feed' {
     BeforeEach {
         $script:session = New-ProGetTestSession
-        Get-ProGetFeed -Session $script:session -Force | Remove-ProGetFeed -Session $script:session -Force
+        Get-ProGetFeed -Session $script:session | Remove-ProGetFeed -Session $script:session -Force
         $Global:Error.Clear()
     }
 
     It 'creates universal feeds' {
-        New-ProGetFeed -Session $script:session -Type 'Universal' -Name 'FeedTest'
-        $feedExists = Test-ProGetFeed -Session $script:session -Type 'Universal' -Name 'FeedTest'
+        New-ProGetFeed -Session $script:session -Type 'Universal' -Name 'New-ProGetFeedTest1'
+        $feedExists = Test-ProGetFeed -Session $script:session -Name 'New-ProGetFeedTest1'
         $Global:Error | Should -BeNullOrEmpty
         $feedExists | Should -BeTrue
     }
 
     It 'does not create duplicate feeds' {
-        New-ProGetFeed -Session $script:session -Type 'Universal' -Name 'FeedTest'
-        New-ProGetFeed -Session $script:session -Type 'Universal' -Name 'FeedTest' -ErrorAction SilentlyContinue
-        $Global:Error | Should -Match 'A feed with that name and type already exists'
+        New-ProGetFeed -Session $script:session -Type 'Universal' -Name 'New-ProGetFeedTest2'
+        New-ProGetFeed -Session $script:session `
+                       -Type 'Universal' `
+                       -Name 'New-ProGetFeedTest2' `
+                       -ErrorAction SilentlyContinue
+        $Global:Error | Should -Match 'A feed with that name already exists'
     }
 
     It 'can ignore errors' {
-        New-ProGetFeed -Session $script:session -Type 'Universal' -Name 'FeedTest'
-        New-ProGetFeed -Session $script:session -Type 'Universal' -Name 'FeedTest' -ErrorAction Ignore
+        New-ProGetFeed -Session $script:session -Type 'Universal' -Name 'New-ProGetFeedTest3'
+        New-ProGetFeed -Session $script:session -Type 'Universal' -Name 'New-ProGetFeedTest3' -ErrorAction Ignore
         $Global:Error | Should -BeNullOrEmpty
     }
 
     It 'rejects requests with an invalid API key' {
         $script:session.ApiKey = '==InvalidAPIKey=='
-        New-ProGetFeed -Session $script:session -Type 'Universal' -Name 'FeedTest' -ErrorAction SilentlyContinue
-    }
-
-    It 'validates session has an API key' {
-        $script:session.ApiKey = $null
-        New-ProGetFeed -Session $script:session -Type 'Universal' -Name 'FeedTest' -ErrorAction SilentlyContinue
-        $Global:Error | Should -Match 'This function uses ProGet''s Native API, which requires an API key.'
+        New-ProGetFeed -Session $script:session `
+                       -Type 'Universal' `
+                       -Name 'New-ProGetFeedTest3' `
+                       -ErrorAction SilentlyContinue
     }
 
     It 'validates feed type' {
-        New-ProGetFeed -Session $script:session -Type 'InvalidFeedType' -Name 'FeedTest' -ErrorAction SilentlyContinue
-        $Global:Error |
-            Should -Match 'The INSERT statement conflicted with the CHECK constraint "CK__Feeds__FeedType_Name"'
+        New-ProGetFeed -Session $script:session `
+                       -Type 'InvalidFeedType' `
+                       -Name 'New-ProGetFeedTest1' `
+                       -ErrorAction SilentlyContinue
+        $Global:Error | Should -Match 'a valid feed type is required'
     }
 }

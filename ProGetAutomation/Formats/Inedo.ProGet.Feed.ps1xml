@@ -15,15 +15,12 @@
 <Configuration>
     <ViewDefinitions>
         <View>
-            <Name>Inedo.ProGet.Native.Feed</Name>
+            <Name>Inedo.ProGet.Feed</Name>
             <ViewSelectedBy>
-                <TypeName>Inedo.ProGet.Native.Feed</TypeName>
+                <TypeName>Inedo.ProGet.Feed</TypeName>
             </ViewSelectedBy>
             <TableControl>
                 <TableHeaders>
-                    <TableColumnHeader>
-                        <Width>7</Width>
-                    </TableColumnHeader>
                     <TableColumnHeader />
                     <TableColumnHeader>
                         <Width>13</Width>
@@ -37,19 +34,16 @@
                     <TableRowEntry>
                         <TableColumnItems>
                             <TableColumnItem>
-                                <PropertyName>Feed_Id</PropertyName>
+                                <PropertyName>name</PropertyName>
                             </TableColumnItem>
                             <TableColumnItem>
-                                <PropertyName>Feed_Name</PropertyName>
+                                <PropertyName>feedType</PropertyName>
                             </TableColumnItem>
                             <TableColumnItem>
-                                <PropertyName>FeedType_Name</PropertyName>
+                                <PropertyName>active</PropertyName>
                             </TableColumnItem>
                             <TableColumnItem>
-                                <PropertyName>Active_Indicator</PropertyName>
-                            </TableColumnItem>
-                            <TableColumnItem>
-                                <PropertyName>Feed_Description</PropertyName>
+                                <PropertyName>description</PropertyName>
                             </TableColumnItem>
                         </TableColumnItems>
                     </TableRowEntry>
