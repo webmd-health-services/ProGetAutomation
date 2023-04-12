@@ -5,18 +5,17 @@ function Remove-ProGetFeed
     .SYNOPSIS
     Removes a feed from ProGet.
 
-    .continueAndInquireMsg
+    .DESCRIPTION
     The `Remove-ProGetFeed` function removes a feed from ProGet. All packages in the feed are also deleted. Pass the
     session to the ProGet instance from which to delete the feed to the `Session` parameter (use the `New-ProGetSession`
-     function to create a session. Pass the ID of the feed to the `ID` parameter. You can also pipe feed IDs or feed
-     objects returned by `Get-ProGetFeed`.
+    function to create a session. Pass the ID of the feed to the `ID` parameter. You can also pipe feed IDs or feed
+    objects returned by `Get-ProGetFeed`.
 
     Since this has the potential to be a disastrous operation (did we mention all the packages in the feed will also get
     deleted) and can't be undone, you'll be asked to confirm the deletion. If you don't want to be prompted, use the
     `-Force` switch. This is dangerous.
 
-    This function uses the `Feeds_DeleteFeed` endpoint in
-    [ProGet's native API](https://inedo.com/support/documentation/proget/reference/api/native).
+    This function uses the [Feed Management API](https://docs.inedo.com/docs/proget-reference-api-feed-management).
 
     .EXAMPLE
     Remove-ProGetFeed -Session $session -ID 4398

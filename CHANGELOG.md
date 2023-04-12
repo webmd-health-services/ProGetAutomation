@@ -4,6 +4,8 @@
 
 ## 2.0.0
 
+> Released 2023-4-11
+
 ### Upgrade Instructions
 
 Updated `Get-ProGetFeed`, `New-ProGetFeed`, `Test-ProGetFeed`, and `Remove-ProGetFeed` functions to use ProGet's
@@ -12,15 +14,15 @@ Ensure that API keys/credentials used with those functions have appropriate acce
 
 Update usages of objects returned by `Get-ProGetFeed` and `New-ProGetFeed`. Rename these properties:
 
-* `Active_Indicator` -> `active`
-* `AllowUnknownLicenses_Indicator` -> `allowUnknownLicenses`
-* `Feed_Description` -> `description`
-* `AllowUnassessedVulnerabilities_Indicator` ->
-* `Feed_Name` -> `name`
-* `FeedType_Name` -> ``feedType`
+* `Active_Indicator` ➔ `active`
+* `AllowUnknownLicenses_Indicator` ➔ `allowUnknownLicenses`
+* `Feed_Description` ➔ `description`
+* `Feed_Name` ➔ `name`
+* `FeedType_Name` ➔ `feedType`
 
 Remove these properties:
 
+* `AllowUnassessedVulnerabilities_Indicator`
 * `Cache_Connectors_Indicator`
 * `DropPath_Text`
 * `Feed_Id`
@@ -46,7 +48,7 @@ Add `-ErrorAction Ignore` to usages of `Get-ProGetFeed`. That function now write
 
 ### Added
 
-* The `Publish-ProGetUniversalPackage` can now authenticate using a ProGet API key.
+* The `Publish-ProGetUniversalPackage` function can now authenticate using a ProGet API key.
 
 ### Changed
 
@@ -75,6 +77,8 @@ Pass the feed name to the `Name` parameter instead.
 * `Type` on function `Test-ProGetFeed`. All feeds, regardless of type, must now have a unique name.
 
 ## 1.1.0
+
+> Released 2023-3-31
 
 ### Added
 

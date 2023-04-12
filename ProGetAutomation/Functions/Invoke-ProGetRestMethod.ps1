@@ -58,7 +58,7 @@ function Invoke-ProGetRestMethod
 
     $uri = New-Object 'Uri' -ArgumentList $Session.Url,$Path
 
-    $requestContentType = 'application/json' #; charset=utf-8'
+    $requestContentType = 'application/json'
     $debugBody = $null
 
     if( $PSCmdlet.ParameterSetName -eq 'ByParameter' )

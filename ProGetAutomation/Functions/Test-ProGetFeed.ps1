@@ -11,7 +11,7 @@ function Test-ProGetFeed
     parameter. Pass the type of the feed to the `Type` parameter. If the feed exists, the function returns `true`.
     Otherwise, it returns `false`.
 
-    Uses the `Feeds_GetFeed` endpoint in ProGet's native API.
+    This function uses the [Feed Management API](https://docs.inedo.com/docs/proget-reference-api-feed-management).
 
     .EXAMPLE
     Test-ProGetFeed -Session $ProGetSession -Name 'Apps' -Type 'ProGet'

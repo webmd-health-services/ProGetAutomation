@@ -27,6 +27,8 @@ function New-ProGetFeed
     * universal
     * vsix
 
+    This function uses the [Feed Management API](https://docs.inedo.com/docs/proget-reference-api-feed-management).
+
     .EXAMPLE
     New-ProGetFeed -Session $ProGetSession -Name 'Apps' -Type 'ProGet'
 

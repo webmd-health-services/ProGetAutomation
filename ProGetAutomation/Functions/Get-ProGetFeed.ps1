@@ -13,8 +13,7 @@ function Get-ProGetFeed
     To get a specific feed, pass its name to the `Name` parameter. If the feed by that name doesn't exist, nothing is
     returned and no errors are written.
 
-    This function uses the `Feeds_GetFeed` and `Feeds_GetFeeds` endpoints in ProGet's
-    [native API](https://inedo.com/support/documentation/proget/reference/api/native).
+    This function uses the [Feed Management API](https://docs.inedo.com/docs/proget-reference-api-feed-management).
 
     .EXAMPLE
     Get-ProGetFeed -Session $session
