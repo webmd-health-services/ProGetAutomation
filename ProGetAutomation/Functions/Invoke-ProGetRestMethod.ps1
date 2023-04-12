@@ -25,8 +25,8 @@ function Invoke-ProGetRestMethod
         [Parameter(Mandatory)]
         [String] $Path,
 
-        # The HTTP/web method to use. The default is `POST`.
-        [WebRequestMethod] $Method = [WebRequestMethod]::Post,
+        # The HTTP/web method to use. The default is `Get`.
+        [WebRequestMethod] $Method = [WebRequestMethod]::Get,
 
         # The parameters to pass to the method.
         [Parameter(ParameterSetName='ByParameter')]

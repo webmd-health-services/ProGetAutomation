@@ -46,6 +46,9 @@ verb when deleting a feed.
 
 Add `-ErrorAction Ignore` to usages of `Get-ProGetFeed`. That function now writes an error if a feed does not exist.
 
+Add `-Method Post` to usages of `Invoke-ProGetRestMethod` that don't have a `-Method` argument. The default value
+changed to `Get` from `Post`.
+
 ### Added
 
 * The `Publish-ProGetUniversalPackage` function can now authenticate using a ProGet API key.
@@ -60,6 +63,7 @@ encode query string values (instead of `[Web.HttpUtility]::UrlEncode([String])`)
 * The `Remove-ProGetFeed` function now uses the HTTP `Delete` verb (instead of the `Post` verb) when making the HTTP
 request to delete a feed.
 * The `Get-ProGetFeed` function now writes an error if a feed does not exist.
+* The default value of the `Invoke-ProGetRestMethod` function's `Method` parameter changed to `Get` from `Post`.
 
 ### Removed
 

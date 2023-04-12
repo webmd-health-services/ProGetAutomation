@@ -11,7 +11,7 @@ Describe 'Invoke-ProGetRestMethod.when making a GET request' {
     $Global:Error.Clear()
 
     It 'should not throw an error' {
-        { Invoke-ProGetRestMethod -Session $session -Method Get -Path ('/upack/Fubar/versions') } | Should -Not -Throw
+        { Invoke-ProGetRestMethod -Session $session -Path ('/upack/Fubar/versions') } | Should -Not -Throw
     }
 
     It 'should not write any errors' {
@@ -43,7 +43,7 @@ Describe 'Invoke-ProGetRestMethod.when using credential in session' {
 
     Mock -CommandName 'Invoke-RestMethod' -ModuleName 'ProGetAutomation'
 
-    Invoke-ProGetRestMethod -Session $session -Method Get -Path ('/upack/Fubar/versions')
+    Invoke-ProGetRestMethod -Session $session -Path ('/upack/Fubar/versions')
 
     It 'should send credential to Invoke-RestMethod' {
         Assert-MockCalled -CommandName 'Invoke-RestMethod' -ModuleName 'ProGetAutomation' -ParameterFilter { $Credential -and $Credential.UserName -eq 'fubar' -and $Credential.GetNetworkCRedential().Password -eq 'snafu' }
@@ -57,7 +57,7 @@ Describe 'Invoke-ProGetRestMethod.when not using a credential' {
     $Global:Error.Clear()
 
     It 'should not throw an error' {
-        { Invoke-ProGetRestMethod -Session $session -Method Get -Path ('/upack/Fubar/versions') } | Should -Not -Throw
+        { Invoke-ProGetRestMethod -Session $session -Path ('/upack/Fubar/versions') } | Should -Not -Throw
     }
 
     It 'should not write any errors' {

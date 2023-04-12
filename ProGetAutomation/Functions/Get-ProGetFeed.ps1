@@ -42,5 +42,5 @@ function Get-ProGetFeed
     {
         $path = "/api/management/feeds/get/$([Uri]::EscapeDataString($Name))"
     }
-    Invoke-ProGetRestMethod -Session $Session -Path $path -method Get | Add-PSTypeName -Feed
+    Invoke-ProGetRestMethod -Session $Session -Path $path | Add-PSTypeName -Feed
 }
