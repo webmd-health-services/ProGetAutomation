@@ -9,7 +9,7 @@ $feedName = $PSCommandPath | Split-Path -Leaf
 
 function Init
 {
-    Get-ProGetFeed -Session $session -Name $feedName | Remove-ProGetFeed -Session $session -Force
+    Get-ProGetFeed -Session $session -Name $feedName -ErrorAction Ignore | Remove-ProGetFeed -Session $session -Force
     New-ProGetFeed -Session $session -Name $feedName -Type 'Universal'
 }
 
@@ -31,7 +31,7 @@ Describe 'Invoke-ProGetNativeApiMethod.when using WhatIf' {
     Init
     $feed = Get-ProGetFeed -Session $Session -Name $feedName
 
-    Invoke-ProGetNativeApiMethod -Session $Session -Name 'Feeds_DeleteFeed' -Parameter @{ Feed_Id = $feed.Feed_Id } -WhatIf
+    Invoke-ProGetNativeApiMethod -Session $Session -Name 'Feeds_DeleteFeed' -Parameter @{ Feed_Name = $feed.name } -WhatIf
 
     It ('should not make web request') {
         Get-ProGetFeed -Session $Session -Name $feedName | Should -Not -BeNullOrEmpty

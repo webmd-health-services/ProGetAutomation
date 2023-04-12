@@ -15,7 +15,7 @@ function GivenFeed
         $Name
     )
 
-    Get-ProGetFeed -Session $Session -Name $Name | Remove-ProGetFeed -Session $Session -Force
+    Get-ProGetFeed -Session $Session -Name $Name -ErrorAction Ignore | Remove-ProGetFeed -Session $Session -Force
     New-ProGetFeed -Session $session -Name $Name -Type 'Universal'
 }
 
@@ -37,7 +37,7 @@ function GivenPackage
     }
 
     $script:upackFile = New-ProGetUniversalPackage -OutFile (Join-Path -Path $TestDrive.FullName -ChildPath ('{0}{1}.zip' -f $InGroup,$Named)) -Version '0.0.0' -Name $Named @params
-    Publish-ProGetUniversalPackage -Session $session -FeedName $feedName -PackagePath $upackFile 
+    Publish-ProGetUniversalPackage -Session $session -FeedName $feedName -PackagePath $upackFile
 }
 
 function Init

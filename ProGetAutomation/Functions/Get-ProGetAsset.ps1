@@ -5,7 +5,7 @@ function Get-ProGetAsset
         Gets metadata about items in an asset directory.
 
         .DESCRIPTION
-        The `Get-ProGetAsset` function gets metadata from ProGet about assets. Pass the name of the root asset directory to the `DirectoryName` parameter. Information about all the files in that asset directory is returned. If the URL to an asset directory in ProGet is `https://proget.example.com/assets/versions/subdirectory/file`, the directory parameter is the first directory after `assets/` in this example `versions`, The path parameter the rest of the url in this case `subdirectory/file`. 
+        The `Get-ProGetAsset` function gets metadata from ProGet about assets. Pass the name of the root asset directory to the `DirectoryName` parameter. Information about all the files in that asset directory is returned. If the URL to an asset directory in ProGet is `https://proget.example.com/assets/versions/subdirectory/file`, the directory parameter is the first directory after `assets/` in this example `versions`, The path parameter the rest of the url in this case `subdirectory/file`.
 
         If you also pass a value to the `$filter` parameter, only files that match `$filter` value in the directory will be returned. Wildcards are supported.
 
@@ -13,12 +13,12 @@ function Get-ProGetAsset
 
         .Example
         Get-ProGetAsset -Session $session -Path 'myAsset' -DirectoryName 'versions'
-        
+
         Demonstrates how to get metadata about an asset. In this case, information about the `/versions/myAsset` file is returned. if `myAsset` is a directory then all files in that directory will be returned
 
         .Example
         Get-ProGetAsset -Session $session -Directory 'versions/subdirectory'
-        
+
         Demonstrates how to get metadata from all files in the `versions/subdirectory` asset directory. If no files found an empty list is returned.
 
     #>
@@ -30,8 +30,8 @@ function Get-ProGetAsset
 
         [Parameter(Mandatory = $true)]
         [string]
-        # The name of a valid path to the directory to get metadata of the desired assets in ProGet. 
-        $DirectoryName,        
+        # The name of a valid path to the directory to get metadata of the desired assets in ProGet.
+        $DirectoryName,
 
         [string]
         # The path to the subdirectory in the asset directory in ProGet.
@@ -52,5 +52,5 @@ function Get-ProGetAsset
     {
         $Filter = '*'
     }
-    return Invoke-ProGetRestMethod -Session $Session -Path $uri -Method Get | Where-Object { $_.Name -like $Filter }
+    return Invoke-ProGetRestMethod -Session $Session -Path $uri | Where-Object { $_.Name -like $Filter }
 }

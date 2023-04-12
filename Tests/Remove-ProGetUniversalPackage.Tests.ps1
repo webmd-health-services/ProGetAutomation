@@ -22,7 +22,7 @@ function GivenPackage
 
 function Init
 {
-    Get-ProGetFeed -Session $session -Name $feedName | Remove-ProGetFeed -Session $session -Force
+    Get-ProGetFeed -Session $session -Name $feedName -ErrorAction Ignore | Remove-ProGetFeed -Session $session -Force
     New-ProGetFeed -Session $session -Name $feedName -Type 'Universal'
 }
 
@@ -54,7 +54,7 @@ function ThenPackageDeleted
     )
 
     It ('should delete the package') {
-        $package = Get-ProGetUniversalPackage -Session $session -FeedName $feedName -Name $Named -GroupName $InGroup -ErrorAction Ignore 
+        $package = Get-ProGetUniversalPackage -Session $session -FeedName $feedName -Name $Named -GroupName $InGroup -ErrorAction Ignore
         if( $AtVersion )
         {
             $package = $package.versions | Where-Object { $_ -eq $AtVersion }
@@ -74,7 +74,7 @@ function ThenPackageNotDeleted
     )
 
     It ('should not delete the package') {
-        $package = Get-ProGetUniversalPackage -Session $session -FeedName $feedName -Name $Named -GroupName $InGroup 
+        $package = Get-ProGetUniversalPackage -Session $session -FeedName $feedName -Name $Named -GroupName $InGroup
         if( $AtVersion )
         {
             $package = $package.versions | Where-Object { $_ -eq $AtVersion }
@@ -128,7 +128,7 @@ Describe 'Remove-ProGetUniversalPackage.when package is in a group and package w
     GivenPackage 'Fubar' '0.0.0' -InGroup 'group'
     WhenDeletingPackage -Named 'Fubar' -AtVersion '0.0.0' -InGroup 'group'
     ThenPackageDeleted 'Fubar' -InGroup 'group'
-    ThenPackageNotDeleted 'Fubar' 
+    ThenPackageNotDeleted 'Fubar'
 }
 
 Describe 'Remove-ProGetUniversalPackage.when package doesn''t exist' {

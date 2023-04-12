@@ -11,7 +11,7 @@ Describe 'Invoke-ProGetRestMethod.when making a GET request' {
     $Global:Error.Clear()
 
     It 'should not throw an error' {
-        { Invoke-ProGetRestMethod -Session $session -Method Get -Path ('/upack/Fubar/versions') } | Should -Not -Throw
+        { Invoke-ProGetRestMethod -Session $session -Path ('/upack/Fubar/versions') } | Should -Not -Throw
     }
 
     It 'should not write any errors' {
@@ -23,7 +23,7 @@ Describe 'Invoke-ProGetRestMethod.when making a POST request with defined body c
     $Global:Error.Clear()
 
     Mock -CommandName 'Invoke-RestMethod' -ModuleName 'ProGetAutomation'
-    
+
     It 'should not throw an error' {
         { Invoke-ProGetRestMethod -Session $session -Method Post -Path ('/upack/Fubar/versions') -Body 'xyz body content' } | Should -Not -Throw
     }
@@ -43,7 +43,7 @@ Describe 'Invoke-ProGetRestMethod.when using credential in session' {
 
     Mock -CommandName 'Invoke-RestMethod' -ModuleName 'ProGetAutomation'
 
-    Invoke-ProGetRestMethod -Session $session -Method Get -Path ('/upack/Fubar/versions')
+    Invoke-ProGetRestMethod -Session $session -Path ('/upack/Fubar/versions')
 
     It 'should send credential to Invoke-RestMethod' {
         Assert-MockCalled -CommandName 'Invoke-RestMethod' -ModuleName 'ProGetAutomation' -ParameterFilter { $Credential -and $Credential.UserName -eq 'fubar' -and $Credential.GetNetworkCRedential().Password -eq 'snafu' }
@@ -57,7 +57,7 @@ Describe 'Invoke-ProGetRestMethod.when not using a credential' {
     $Global:Error.Clear()
 
     It 'should not throw an error' {
-        { Invoke-ProGetRestMethod -Session $session -Method Get -Path ('/upack/Fubar/versions') } | Should -Not -Throw
+        { Invoke-ProGetRestMethod -Session $session -Path ('/upack/Fubar/versions') } | Should -Not -Throw
     }
 
     It 'should not write any errors' {
@@ -67,7 +67,7 @@ Describe 'Invoke-ProGetRestMethod.when not using a credential' {
 
 Describe 'Invoke-ProGetRestMethod.when using WhatIf' {
     $feedName = 'Invoke-ProGetRestMethod.Tests.ps1.WhatIf'
-    Get-ProGetFeed -Session $session -Name $feedName | Remove-ProGetFeed -Session $session -Force
+    Get-ProGetFeed -Session $session -Name $feedName -ErrorAction Ignore | Remove-ProGetFeed -Session $session -Force
     New-ProGetFeed -Session $session -Name $feedName -Type 'Universal'
     $package = New-ProGetUniversalPackage -OutFile (Join-Path -Path $TestDrive.FullName -ChildPath 'package.upack') -Version '0.0.0' -Name 'WhatIf'
     Publish-ProGetUniversalPackage -Session $session -FeedName $feedName -PackagePath $package.FullName
@@ -76,5 +76,5 @@ Describe 'Invoke-ProGetRestMethod.when using WhatIf' {
         Get-ProGetUniversalPackage -Session $session -FeedName $feedName -Name 'WhatIf' | Should -Not -BeNullOrEmpty
     }
 
-    
+
 }

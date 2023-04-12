@@ -3,48 +3,46 @@ function Publish-ProGetUniversalPackage
 {
     <#
     .SYNOPSIS
-    Publishes a package to the specified ProGet instance
+    Publishes a universal package to ProGet.
 
     .DESCRIPTION
-    The `Publish-ProGetUniversalPackage` function will upload a package to the `FeedName` universal feed. It uses .NET 4.5's `HttpClient` to upload the file.
+    The `Publish-ProGetUniversalPackage` function will upload a package to the `FeedName` universal feed. It uses .NET's
+    `HttpClient` to upload the file.
 
     .EXAMPLE
-    Publish-ProGetUniversalPackage -Session $ProGetSession -FeedName 'Apps' -PackagePath 'C:\ProGetPackages\TestPackage.upack'
+    Publish-ProGetUniversalPackage -Session $session -FeedName 'Apps' -PackagePath 'C:\ProGetPackages\TestPackage.upack'
 
-    Demonstrates how to call `Publish-ProGetUniversalPackage`. In this case, the package named 'TestPackage.upack' will be published to the 'Apps' feed located at $Session.Url using the $Session.Credential authentication credentials
+    Demonstrates how to call `Publish-ProGetUniversalPackage`. In this case, the package named 'TestPackage.upack' will
+    be published to the 'Apps' feed located at `$Session.Url` using `$Session.Credential` and/or `$Session.ApiKey` to
+    authenticate.
     #>
-    [CmdletBinding(SupportsShouldProcess=$true)]
+    [CmdletBinding(SupportsShouldProcess)]
     param(
-        [Parameter(Mandatory=$true)]
-        [pscustomobject]
         # The session includes ProGet's URI and the credentials to use when utilizing ProGet's API.
-        $Session,
+        [Parameter(Mandatory)]
+        [pscustomobject] $Session,
 
-        [Parameter(Mandatory=$true)]
-        [string]
         # The feed name indicates the appropriate feed where the package should be published.
-        $FeedName,
+        [Parameter(Mandatory)]
+        [String] $FeedName,
 
-        [Parameter(Mandatory=$true)]
-        [string]
         # The path to the package that will be published to ProGet.
-        $PackagePath,
+        [Parameter(Mandatory)]
+        [String] $PackagePath,
 
-        [int]
         # The timeout (in seconds) for the upload. The default is 100 seconds.
-        $Timeout = 100,
+        [int] $Timeout = 100,
 
-        [Switch]
         # Replace the package if it already exists in ProGet.
-        $Force
+        [switch] $Force
     )
 
     Set-StrictMode -Version 'Latest'
     Use-CallerPreference -Cmdlet $PSCmdlet -SessionState $ExecutionContext.SessionState
 
-    $shouldProcessCaption = ('creating {0} package' -f $PackagePath)
-    $proGetPackageUri = New-Object 'Uri' $Session.Url,('/upack/{0}' -f $FeedName)
-    $proGetCredential = $Session.Credential
+    $pgPackageUploadUrl = [Uri]::New($Session.Url,('/upack/{0}' -f $FeedName))
+    $pgCredential = $Session.Credential
+    $pgApiKey = $Session.ApiKey
 
     $PackagePath = Resolve-Path -Path $PackagePath | Select-Object -ExpandProperty 'ProviderPath'
     if( -not $PackagePath )
@@ -53,10 +51,15 @@ function Publish-ProGetUniversalPackage
         return
     }
 
-    $userMsg = ''
-    if( $proGetCredential )
+    $authMsg = ''
+    if( $pgCredential )
     {
-        $userMsg = ' as ''{0}''' -f $proGetCredential.UserName
+        $authMsg = " as user ""$($pgCredential.userName)"""
+    }
+
+    if ($pgApiKey)
+    {
+        $authmsg = "${authMsg} with API key ""$($pgApiKey -replace '^(.{4}).*(.{4})$', '$1********$2')"""
     }
 
     if( -not $Force )
@@ -69,7 +72,7 @@ function Publish-ProGetUniversalPackage
         $invalidUpackJson = $false
         try
         {
-            $zip = [IO.Compression.ZipFile]::OpenRead($PackagePath)
+            $zip = [ZipFile]::OpenRead($PackagePath)
             $foundUpackJson = $false
             foreach( $entry in $zip.Entries )
             {
@@ -80,7 +83,7 @@ function Publish-ProGetUniversalPackage
 
                 $foundUpackJson = $true
                 $stream = $entry.Open()
-                $stringReader = New-Object 'IO.StreamReader' $stream
+                $stringReader = [StreamReader]::New($stream)
                 try
                 {
                     $packageJson = $stringReader.ReadToEnd() | ConvertFrom-Json
@@ -155,96 +158,112 @@ See http://inedo.com/support/documentation/various/universal-packages/universal-
         $packageInfo = Get-ProGetUniversalPackage -Session $Session -FeedName $FeedName -GroupName $group -Name $name -ErrorAction Ignore
         if( $packageInfo -and $packageInfo.versions -contains $version )
         {
-            Write-Error -Message ('Package {0} {1} already exists in universal ProGet feed ''{2}''.' -f $name,$version,$proGetPackageUri)
+            Write-Error -Message ('Package {0} {1} already exists in universal ProGet feed ''{2}''.' -f $name,$version,$pgPackageUploadUrl)
             return
         }
     }
 
-    $operationDescription = 'Uploading ''{0}'' package to ProGet at ''{1}''{2}.' -f ($PackagePath | Split-Path -Leaf), $proGetPackageUri, $userMsg
-    if( $PSCmdlet.ShouldProcess($operationDescription, $operationDescription, $shouldProcessCaption) )
+    $operationDescription = "Uploading ""${PackagePath}"" to ProGet at ${pgPackageUploadUrl}${authMsg}."
+    $shouldProcessCaption = "creating ${PackagePath} package"
+    if (-not $PSCmdlet.ShouldProcess($operationDescription, $operationDescription, $shouldProcessCaption))
     {
-        Write-Verbose -Message $operationDescription
+        return
+    }
 
-        $networkCred = $null
-        if( $proGetCredential )
+    Write-Information "[${pgPackageUploadUrl}]  Uploading ""${PackagePath}""."
+
+    $networkCred = $null
+    if( $pgCredential )
+    {
+        $networkCred = $pgCredential.GetNetworkCredential()
+    }
+
+    $maxDuration = [TimeSpan]::New(0, 0, $Timeout)
+
+    [HttpClientHandler]$httpClientHandler = $null
+    [HttpClient]$httpClient = $null
+    [FileStream]$packageStream = $null
+    [StreamContent]$streamContent = $null
+    [Task[HttpResponseMessage]]$httpResponseMessage = $null
+    [HttpResponseMessage]$response = $null
+    [Threading.CancellationTokenSource]$canceller = $null
+    try
+    {
+        $httpClientHandler = [HttpClientHandler]::New()
+        if( $pgCredential )
         {
-            $networkCred = $proGetCredential.GetNetworkCredential()
+            $httpClientHandler.UseDefaultCredentials = $false
+            $httpClientHandler.Credentials = $networkCred
+        }
+        $httpClientHandler.PreAuthenticate = $true;
+
+        $httpClient = [HttpClient]::New([HttpMessageHandler]$httpClientHandler)
+        $httpClient.Timeout = $maxDuration
+        if ($pgApiKey)
+        {
+            $httpClient.DefaultRequestHeaders.Add('X-ApiKey', $pgApiKey)
         }
 
-        $maxDuration = New-Object 'TimeSpan' 0,0,$Timeout
-
-        [Net.Http.HttpClientHandler]$httpClientHandler = $null
-        [Net.Http.HttpClient]$httpClient = $null
-        [IO.FileStream]$packageStream = $null
-        [Net.Http.StreamContent]$streamContent = $null
-        [Threading.Tasks.Task[Net.Http.HttpResponseMessage]]$httpResponseMessage = $null
-        [Net.Http.HttpResponseMessage]$response = $null
-        [Threading.CancellationTokenSource]$canceller = $null
-        try
+        $packageStream = [FileStream]::New($PackagePath, 'Open', 'Read')
+        $streamContent = [StreamContent]::New([Stream]$packageStream)
+        $streamContent.Headers.ContentType = [MediaTypeHeaderValue]::New('application/octet-stream')
+        $canceller = [CancellationTokenSource]::New()
+        $httpResponseMessage =
+            $httpClient.PutAsync($pgPackageUploadUrl, [HttpContent]$streamContent, $canceller.Token)
+        if( -not $httpResponseMessage.Wait($maxDuration) )
         {
-            $httpClientHandler = New-Object 'Net.Http.HttpClientHandler'
-            if( $proGetCredential )
+            $canceller.Cancel()
+            $maxTries = 1000
+            $tryNum = 0
+            while( $tryNum -lt $maxTries -and -not $httpResponseMessage.IsCanceled )
             {
-                $httpClientHandler.UseDefaultCredentials = $false
-                $httpClientHandler.Credentials = $networkCred
+                $tryNum += 1
+                Start-Sleep -Milliseconds 100
             }
-
-            $httpClientHandler.PreAuthenticate = $true;
-
-            $httpClient = New-Object 'Net.Http.HttpClient' ([Net.Http.HttpMessageHandler]$httpClientHandler)
-            $httpClient.Timeout = $maxDuration
-
-            $packageStream = New-Object 'IO.FileStream' ($PackagePath, 'Open', 'Read')
-            $streamContent = New-Object 'Net.Http.StreamContent' ([IO.Stream]$packageStream)
-            $streamContent.Headers.ContentType = New-Object 'Net.Http.Headers.MediaTypeHeaderValue' ('application/octet-stream')
-            $canceller = New-Object 'Threading.CancellationTokenSource'
-            $httpResponseMessage = $httpClient.PutAsync($proGetPackageUri, [Net.Http.HttpContent]$streamContent, $canceller.Token)
-            if( -not $httpResponseMessage.Wait($maxDuration) )
-            {
-                $canceller.Cancel()
-                $maxTries = 1000
-                $tryNum = 0
-                while( $tryNum -lt $maxTries -and -not $httpResponseMessage.IsCanceled )
-                {
-                    $tryNum += 1
-                    Start-Sleep -Milliseconds 100
-                }
-                Write-Error -Message ('Uploading file ''{0}'' to ''{1}'' timed out after {2} second(s). To increase this timeout, set the Timeout parameter to the number of seconds to wait for the upload to complete.' -f $PackagePath,$proGetPackageUri,$Timeout)
-                return
-            }
-
-            $response = $httpResponseMessage.Result
-            if( -not $response.IsSuccessStatusCode )
-            {
-                Write-Error -Message ('Failed to upload ''{0}'' to ''{1}''. We received the following ''{2} {3}'' response:{4} {4}{5}{4} {4}' -f $PackagePath,$proGetPackageUri,[int]$response.StatusCode,$response.StatusCode,[Environment]::NewLine,$response.Content.ReadAsStringAsync().Result)
-                return
-            }
-        }
-        catch
-        {
-            $ex = $_.Exception
-            while( $ex.InnerException )
-            {
-                $ex = $ex.InnerException
-            }
-
-            if( $ex -is [Threading.Tasks.TaskCanceledException] )
-            {
-                Write-Error -Message ('Uploading file ''{0}'' to ''{1}'' was cancelled. This is usually because the upload took longer than the timeout, which was {2} second(s). Use the Timeout parameter to increase the upload timeout.' -f $PackagePath,$proGetPackageUri,$Timeout)
-                return
-            }
-
-            Write-Error -Message ('An unknown error occurred uploading ''{0}'' to ''{1}'': {2}' -f $PackagePath,$proGetPackageUri,$_)
+            Write-Error -Message ('Uploading file ''{0}'' to ''{1}'' timed out after {2} second(s). To increase this timeout, set the Timeout parameter to the number of seconds to wait for the upload to complete.' -f $PackagePath,$pgPackageUploadUrl,$Timeout)
             return
         }
-        finally
+
+        $response = $httpResponseMessage.Result
+        if( -not $response.IsSuccessStatusCode )
         {
-            $disposables = @( 'httpClientHandler', 'httpClient', 'canceller', 'packageStream', 'streamContent', 'httpResponseMessage', 'response' )
-            $disposables |
-                ForEach-Object { Get-Variable -Name $_ -ValueOnly -ErrorAction Ignore } |
-                Where-Object { $_ -ne $null } |
-                ForEach-Object { $_.Dispose() }
-            $disposables | ForEach-Object { Remove-Variable -Name $_ -Force -ErrorAction Ignore }
+            Write-Error -Message ('Failed to upload ''{0}'' to ''{1}''. We received the following ''{2} {3}'' response:{4} {4}{5}{4} {4}' -f $PackagePath,$pgPackageUploadUrl,[int]$response.StatusCode,$response.StatusCode,[Environment]::NewLine,$response.Content.ReadAsStringAsync().Result)
+            return
         }
+    }
+    catch
+    {
+        $ex = $_.Exception
+        while( $ex.InnerException )
+        {
+            $ex = $ex.InnerException
+        }
+
+        if( $ex -is [TaskCanceledException] )
+        {
+            Write-Error -Message ('Uploading file ''{0}'' to ''{1}'' was cancelled. This is usually because the upload took longer than the timeout, which was {2} second(s). Use the Timeout parameter to increase the upload timeout.' -f $PackagePath,$pgPackageUploadUrl,$Timeout)
+            return
+        }
+
+        Write-Error -Message ('An unknown error occurred uploading ''{0}'' to ''{1}'': {2}' -f $PackagePath,$pgPackageUploadUrl,$_)
+        return
+    }
+    finally
+    {
+        $disposables = @(
+            'httpClientHandler',
+            'httpClient',
+            'canceller',
+            'packageStream',
+            'streamContent',
+            'httpResponseMessage',
+            'response'
+        )
+
+        $disposables |
+            ForEach-Object { Get-Variable -Name $_ -ValueOnly -ErrorAction Ignore } |
+            Where-Object { $_ -ne $null } |
+            ForEach-Object { $_.Dispose() }
+        $disposables | ForEach-Object { Remove-Variable -Name $_ -Force -ErrorAction Ignore }
     }
 }
