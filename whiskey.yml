@@ -1,27 +1,26 @@
-PublishOn:
-- master
 
 Build:
-- Version:
-    Path: ProGetAutomation\ProGetAutomation.psd1
-
-- Delete:
-    Path: ProGetAutomation\Modules\Zip
-
-- GetPowerShellModule:
-    Name: Zip
-    # If you change this version number, also update NestedModules path in ProGetAutomation.psd1.
-    Version: 0.3.2
-    Path: ProGetAutomation\Modules
-
-- GetPowerShellModule:
-    Name: Carbon
-
 - PowerShell:
     ExceptDuring: Clean
-    OnlyBy: BuildServer
-    ScriptBlock: .\init.ps1 -SqlServerName '.\SQL2017'
+    ScriptBlock: |
+        prism install | Format-Table
+        prism install -Path .\ProGetAutomation | Format-Table
+        .\init.ps1 -SqlServerName '.\SQL2017'
 
+- Version:
+    Path: ProGetAutomation\ProGetAutomation.psd1
+    Prerelease:
+    - main: ""
+    - "*": rc1
+
+# Update the AppVeyor build/version number.
+- Exec:
+      OnlyBy: BuildServer
+      Path: appveyor
+      Argument: [ UpdateBuild, -Version, "$(WHISKEY_SEMVER2)+$(WHISKEY_BUILD_NUMBER)" ]
+
+# Dot-sourcing files is expensive. Move all functions into .psm1 file to improve import speed. Do this before testing
+# to ensure the module still works.
 - MergeFile:
     OnlyBy: BuildServer
     Path: ProGetAutomation\Functions\*.ps1
@@ -29,10 +28,41 @@ Build:
     DeleteSourceFiles: true
     TextSeparator: "$(NewLine)$(NewLine)"
 
+- CopyFile:
+    Path:
+    - CHANGELOG.md
+    - README.md
+    - LICENSE.txt
+    - NOTICE.txt
+    DestinationDirectory: ProGetAutomation
+
+- Zip:
+    ArchivePath: .output\ProGetAutomation-$(WHISKEY_SEMVER2).zip
+    Path:
+    - ProGetAutomation
+    Exclude:
+    - "*.pdb"
+    - "*.orig"
+    - prism.json
+    - prism.*.json
+
+- Exec:
+    OnlyBy: BuildServer
+    Path: appveyor
+    Argument: [ 'PushArtifact', '.output/ProGetAutomation-$(WHISKEY_SEMVER2).zip', '-DeploymentName', 'GitHub' ]
+
 - Pester:
     AsJob: true
     Configuration:
+        TestResult:
+            Enabled: true
+            OutputPath: .output\pester5.xml
+            TestSuiteName: ProGetAutomation
+        Output:
+            Verbosity: Detailed
         Run:
+            Exit: true
+            Throw: true
             Path: Tests\*.Tests.ps1
             ExcludePath:
             - "*\\Add-ProGetUniversalPackageFile.Tests.ps1"
@@ -41,23 +71,11 @@ Build:
             - "*\\Get-ProGetUniversalPackage.Tests.ps1"
             - "*\\Invoke-ProGetNativeApiMethod.Tests.ps1"
             - "*\\Invoke-ProGetRestMethod.Tests.ps1"
-            - "*\\New-ProGetFeed.Tests.ps1"
             - "*\\New-ProGetSession.Tests.ps1"
             - "*\\New-ProGetUniversalPackage.Tests.ps1"
-            - "*\\Publish-ProGetUniversalPackage.Tests.ps1"
             - "*\\Read-ProGetUniversalPackageFile.Tests.ps1"
             - "*\\Remove-ProGetAsset.Tests.ps1"
-            - "*\\Remove-ProGetFeed.Tests.ps1"
             - "*\\Remove-ProGetUniversalPackage.Tests.ps1"
-            - "*\\Test-ProGetFeed.Tests.ps1"
-            Exit: true
-            Throw: true
-        TestResult:
-            Enabled: true
-            OutputPath: .output\pester5.xml
-            TestSuiteName: ProGetAutomation
-        Output:
-            Verbosity: Detailed
 
 - Pester4:
     Script:
@@ -67,48 +85,27 @@ Build:
     - Tests\Get-ProGetUniversalPackage.Tests.ps1
     - Tests\Invoke-ProGetNativeApiMethod.Tests.ps1
     - Tests\Invoke-ProGetRestMethod.Tests.ps1
-    - Tests\New-ProGetFeed.Tests.ps1
     - Tests\New-ProGetSession.Tests.ps1
     - Tests\New-ProGetUniversalPackage.Tests.ps1
-    - Tests\Publish-ProGetUniversalPackage.Tests.ps1
     - Tests\Read-ProGetUniversalPackageFile.Tests.ps1
     - Tests\Remove-ProGetAsset.Tests.ps1
-    - Tests\Remove-ProGetFeed.Tests.ps1
     - Tests\Remove-ProGetUniversalPackage.Tests.ps1
-    - Tests\Test-ProGetFeed.Tests.ps1
     Verbose: false
 
-- Zip:
-    ArchivePath: .output\ProGetAutomation.zip
+- Delete:
+    OnlyBy: BuildServer
     Path:
-    - ProGetAutomation
-    Exclude:
-    - "*.pdb"
-    - "*.orig"
+    - ProGetAutomation\prism*.json
 
-Publish:
 - PublishPowerShellModule:
-    UnlessExists: env:APPVEYOR_PULL_REQUEST_NUMBER
     Path: ProGetAutomation
-    RepositoryName: PSGallery
-    RepositoryUri: https://www.powershellgallery.com/api/v2/
-    ApiKeyID: powershellgallery.com
-- SetVariableFromPowerShellDataFile:
-    Path: ProGetAutomation\ProGetAutomation.psd1
-    Variables:
-        PrivateData:
-            PSData:
-                ReleaseNotes: RELEASE_NOTES
 
-- GitHubRelease:
-    UnlessExists: env:APPVEYOR_PULL_REQUEST_NUMBER
-    RepositoryName: webmd-health-services/ProGetAutomation
-    ApiKeyID: github.com
-    Tag: $(WHISKEY_SEMVER2_NO_BUILD_METADATA)
-    Commitish: $(WHISKEY_SCM_COMMIT_ID)
-    Name: $(WHISKEY_SEMVER2_NO_BUILD_METADATA)
-    Description: $(RELEASE_NOTES)
-    Assets:
-    - Path: .output\ProGetAutomation.zip
-      ContentType: application/zip
-      Name: ProGetAutomation-$(WHISKEY_SEMVER2_NO_BUILD_METADATA).zip
+- Exec:
+    OnlyBy: BuildServer
+    Path: appveyor
+    Argument: [
+        'PushArtifact',
+        '.output/ProGetAutomation.$(WHISKEY_SEMVER2_NO_BUILD_METADATA).nupkg',
+        '-DeploymentName',
+        'PowerShellGallery'
+    ]

@@ -7,12 +7,12 @@ function Get-ProGetUniversalPackage
 
     .DESCRIPTION
     The `Get-ProGetUniversalPackage` function gets all the packages in a ProGet universal feed. Pass a ProGet sesion to the `Session` parameter (use `New-ProGetSession` to create a session). Pass the name of the universal feed to the `FeedName` parameter.
-    
+
     You can get information about a specific package by passing its name to the `Name` parameter. Wildcards are supported. If the package is in a group, you must pass the group's name to the `GroupName` parameter. Otherwise, ProGet won't find it (i.e. if you don't pass the group name, ProGet only looks for a package not in a group).
 
     If the package doesn't exist, you'll get an error.
 
-    To get all the packages in a group, pass the group name to the `GroupName` parameter and nothing to the `Name` parameter. (Note: there is currently a bug in ProGet 4.8.6 where this functionality doesn't work.) 
+    To get all the packages in a group, pass the group name to the `GroupName` parameter and nothing to the `Name` parameter. (Note: there is currently a bug in ProGet 4.8.6 where this functionality doesn't work.)
 
     You can use wildcards to search for packages with names or in groups. Whenever you do a wildcard search, the function downloads *all* packages from ProGet and searches through them locally. If a wildcard search finds no packages, nothing happens (i.e. you won't see any errors).
 
@@ -69,7 +69,7 @@ function Get-ProGetUniversalPackage
 
     Set-StrictMode -Version 'Latest'
     Use-CallerPreference -Cmdlet $PSCmdlet -SessionState $ExecutionContext.SessionState
-    
+
     $searchingName = ($Name -and [WildcardPattern]::ContainsWildcardCharacters($Name))
     $searchingGroup = ($GroupName -and [WildcardPattern]::ContainsWildcardCharacters($GroupName))
     $queryString = ''
@@ -94,7 +94,8 @@ function Get-ProGetUniversalPackage
         $queryString = '?{0}' -f ($queryString -join '&')
     }
 
-    Invoke-ProGetRestMethod -Session $Session -Path ('/upack/{0}/packages{1}' -f [uri]::EscapeDataString($FeedName),$queryString) -Method Get |
+    $path = "/upack/$([Uri]::EscapeDataString($FeedName))/packages${queryString}"
+    Invoke-ProGetRestMethod -Session $Session -Path $path |
         Where-Object {
             if( -not $searchingName )
             {

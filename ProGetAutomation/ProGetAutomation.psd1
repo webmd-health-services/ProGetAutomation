@@ -12,7 +12,7 @@
     RootModule = 'ProGetAutomation.psm1'
 
     # Version number of this module.
-    ModuleVersion = '1.1.0'
+    ModuleVersion = '2.0.0'
 
     # Supported PSEditions
     CompatiblePSEditions = @( 'Desktop', 'Core' )
@@ -64,7 +64,8 @@
 
     # Format files (.ps1xml) to be loaded when importing this module
     FormatsToProcess = @(
-                            'Formats\Inedo.ProGet.Native.Feed.ps1xml'
+                            'Formats\Inedo.ProGet.Feed.ps1xml',
+                            'Formats\Inedo.ProGet.Native.Feed.ps1xml',
                             'Formats\Inedo.ProGet.PackageInfo.ps1xml'
                         )
 

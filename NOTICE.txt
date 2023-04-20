@@ -1,0 +1,5 @@
+ProGetAutomation
+
+Copyright 2023 WebMD Health Services
+
+This product includes software developed at WebMD Health Services (https://www.webmdhealthservices.com/).

@@ -1,213 +1,171 @@
 
-#Requires -Version 4
+#Requires -Version 5.1
 Set-StrictMode -Version 'Latest'
 
-& (Join-Path -Path $PSScriptRoot -ChildPath 'Initialize-Tests.ps1' -Resolve)
+BeforeAll {
+    Set-StrictMode -Version 'Latest'
+    & (Join-Path -Path $PSScriptRoot -ChildPath 'Initialize-Tests.ps1' -Resolve)
 
-$packagePath = Join-Path -Path $PSScriptRoot -ChildPath '.\UniversalPackageTest-0.1.1.upack'
-$packageName = 'UniversalPackageTest'
-$feedName = 'Apps'
+    $script:packagePath = Join-Path -Path $PSScriptRoot -ChildPath '.\UniversalPackageTest-0.1.1.upack'
+    $script:packageName = 'UniversalPackageTest'
+    $script:feedName = 'Publish-ProGetUniversalPackage.Tests.ps1'
 
-function Initialize-PublishProGetPackageTests
-{
-    [CmdletBinding()]
-    param(
-        [Parameter(Mandatory=$true)]
-        [object]
-        $ProGetSession
-    )
-    
-    $Global:Error.Clear()
+    $script:session = New-ProGetTestSession
+    New-ProGetFeed -Session $script:session -Type 'Universal' -Name $script:feedName -ErrorAction Ignore
 
-    # Remove all feeds from target ProGet instance
-    Get-ProGetFeed -Session $ProGetSession -Force | Remove-ProGetFeed -Session $ProGetSession -Force
-    
-    New-ProGetFeed -Session $ProGetSession -Type 'Universal' -Name $feedName
-    $feedId = (Get-ProGetFeed -Session $ProGetSession -Name $feedName).Feed_Id
-    
-    return $feedId
-    
+    function ThenError
+    {
+        param(
+            [int] $AtIndex,
+
+            [String] $MatchesPattern
+        )
+
+        $errToTest = $Global:Error
+        if ($PSBoundParameters.ContainsKey('AtIndex'))
+        {
+            $errToTest = $Global:Error[$AtIndex]
+        }
+        $errToTest | Should -Match $MatchesPattern
+    }
+
+    function ThenPackage
+    {
+        param(
+            [switch] $Not,
+
+            [switch] $Published
+        )
+
+        $pkg = Get-ProGetUniversalPackage -Session $script:session `
+                                          -FeedName $script:feedName `
+                                          -Name $script:packageName `
+                                          -ErrorAction Ignore
+
+        if ($Not)
+        {
+            $pkg | Should -BeNullOrEmpty
+            $Global:Error | Should -Not -BeNullOrEmpty
+        }
+        else
+        {
+            $pkg | Should -Not -BeNullOrEmpty
+            $Global:Error | Should -BeNullOrEmpty
+        }
+    }
+
+    function WhenPublishing
+    {
+        [CmdletBinding()]
+        param(
+            [hashtable] $WithArgs = @{}
+        )
+
+        if (-not $WithArgs.ContainsKey('Session'))
+        {
+            $WithArgs['Session'] = $script:session
+        }
+
+        if (-not $WithArgs.ContainsKey('PackagePath'))
+        {
+            $WithArgs['PackagePath'] = $script:packagePath
+        }
+
+        if (-not $WithArgs.ContainsKey('FeedName'))
+        {
+            $WithArgs['FeedName'] = $script:feedName
+        }
+
+        Publish-ProGetUniversalPackage @WithArgs
+    }
 }
 
 Describe 'Publish-ProGetUniversalPackage.publish a new Universal package' {
-    
-    $session = New-ProGetTestSession
-    [String]$feedId = Initialize-PublishProGetPackageTests -ProGetSession $session
-    
-    Publish-ProGetUniversalPackage -Session $session -FeedName $feedName -PackagePath $packagePath
-    $packageExists = Get-ProGetUniversalPackage -Session $session -FeedName $feedName -Name $packageName
-
-    It 'should write no errors' {
-        $Global:Error | Should BeNullOrEmpty
-    }
-    
-    It 'should publish the package to the Apps universal package feed' {
-        $packageExists | Should -Not -BeNullOrEmpty
-    }
-}
-
-Describe 'Publish-ProGetUniversalPackage.publish an existing package' {
-    
-    $session = New-ProGetTestSession
-    [String]$feedId = Initialize-PublishProGetPackageTests -ProGetSession $session
-
-    Publish-ProGetUniversalPackage -Session $session -FeedName $feedName -PackagePath $packagePath
-    Publish-ProGetUniversalPackage -Session $session -FeedName $feedName -PackagePath $packagePath -ErrorAction SilentlyContinue
-    $packageExists = Get-ProGetUniversalPackage -Session $session -FeedName $feedName -Name $packageName
-
-    It 'should write an error that package exists' {
-        $Global:Error | Should -Match 'already exists'
-    }
-}
-
-Describe 'Publish-ProGetUniversalPackage.when replacing an existing package' {
-    
-    $session = New-ProGetTestSession
-    [String]$feedId = Initialize-PublishProGetPackageTests -ProGetSession $session
-
-    Publish-ProGetUniversalPackage -Session $session -FeedName $feedName -PackagePath $packagePath
-    Publish-ProGetUniversalPackage -Session $session -FeedName $feedName -PackagePath $packagePath -Force
-    $packageExists = Get-ProGetUniversalPackage -Session $session -FeedName $feedName -Name $packageName
-
-    It 'should replace the package' {
-        $Global:Error | Should -BeNullOrEmpty
-    }
-}
-
-Describe 'Publish-ProGetUniversalPackage.invalid credentials are passed' {
-    $Global:Error.Clear()
-    $session = New-ProGetTestSession
-    [String]$feedId = Initialize-PublishProGetPackageTests -ProGetSession $session
-    $session.Credential = New-Object 'pscredential' ('Invalid',(ConvertTo-SecureString 'Credentia' -AsPlainText -Force))
-
-    Publish-ProGetUniversalPackage -Session $session -FeedName $feedName -PackagePath $packagePath -ErrorAction SilentlyContinue
-    $packageExists = Get-ProGetUniversalPackage -Session $session -FeedName $feedName -Name $packageName -ErrorAction Ignore
-
-    It 'should write an error that the action cannot be performed' {
-        $Global:Error | Where-Object { $_ -match 'Failed to upload' } | Should -Not -BeNullOrEmpty
-    }
-    
-    It 'should not publish the package to the Apps universal package feed' {
-        $packageExists | Should -Not -BeTrue
-    }
-}
-
-Describe 'Publish-ProGetUniversalPackage.no credentials are passed' {
-    $Global:Error.Clear()
-    
-    $session = New-ProGetTestSession
-    [String]$feedId = Initialize-PublishProGetPackageTests -ProGetSession $session
-    $credential = $session.Credential
-    $session.Credential = $null
-
-    Publish-ProGetUniversalPackage -Session $session -FeedName $feedName -PackagePath $packagePath -ErrorAction SilentlyContinue
-
-    $session.Credential = $credential
-    $packageExists = Get-ProGetUniversalPackage -Session $session -FeedName $feedName -Name $packageName -ErrorAction Ignore
-    
-    It 'should write an error that a PSCredential object must be provided' {
-        $Global:Error | Where-Object { $_ -match 'Failed to upload' } | Should -Not -BeNullOrEmpty
-        $Global:Error | Where-Object { $_ -match '401\ Unauthorized' } | Should -Not -BeNullOrEmpty
-    } 
-    
-    It 'should not publish the package to the Apps universal package feed' {
-        $packageExists | Should -Not -BeTrue
-    }
-}
-
-Describe 'Publish-ProGetUniversalPackage.specified target feed does not exist' {
-    
-    $session = New-ProGetTestSession
-    [String]$feedId = Initialize-PublishProGetPackageTests -ProGetSession $session
-    $feedName = 'InvalidAppFeed'
-
-    Publish-ProGetUniversalPackage -Session $session -FeedName $feedName -PackagePath $packagePath -ErrorAction SilentlyContinue
-    $packageExists = Get-ProGetUniversalPackage -Session $session -FeedName $feedName -Name $packageName -ErrorAction Ignore
-
-    It 'should write an error that the defined feed is invalid' {
-        $Global:Error | Where-Object { $_ -match 'Failed to upload' } | Should -Not -BeNullOrEmpty
-        $Global:Error | Where-Object { $_ -match '404\ NotFound' } | Should -Not -BeNullOrEmpty
-    }
-    
-    It 'should not publish the package to the Apps universal package feed' {
-        $packageExists | Should -Not -BeTrue
-    }
-}
-
-Describe 'Publish-ProGetUniversalPackage.package does not exist at specified package path' {
-    
-    $session = New-ProGetTestSession
-    [String]$feedId = Initialize-PublishProGetPackageTests -ProGetSession $session
-    $packagePath = '.\BadPackagePath'
-
-    Publish-ProGetUniversalPackage -Session $session -FeedName $feedName -PackagePath $packagePath -ErrorAction SilentlyContinue
-    $packageExists = Get-ProGetUniversalPackage -Session $session -FeedName $feedName -Name $packageName -ErrorAction Ignore
-
-    It 'should write an error that the package could not be found' {
-        $Global:Error | Should Match 'does not exist'
-    }
-    
-    It 'should not publish the package to the Apps universal package feed' {
-        $packageExists | Should -Not -BeTrue
-    }
-}
-
-Describe 'Publish-ProGetUniversalPackage.when package isn''t a ZIP file' {
-    $session = New-ProGetTestSession
-    [String]$feedId = Initialize-PublishProGetPackageTests -ProGetSession $session
-    Publish-ProGetUniversalPackage -Session $session -FeedName $feedName -PackagePath $PSCommandPath -ErrorAction SilentlyContinue
-    $packageExists = Get-ProGetUniversalPackage -Session $session -FeedName $feedName -Name $packageName -ErrorAction Ignore
-
-    It ('should fail') {
-        $Global:Error | Should -Not -BeNullOrEmpty
+    BeforeEach {
+        $Global:Error.Clear()
+        # Remove all packages from target ProGet feed
+        Get-ProGetUniversalPackage -Session $script:session -Feedname $script:feedName |
+            ForEach-Object {
+                foreach ($version in $_.versions)
+                {
+                    Remove-ProGetUniversalPackage -Session $script:session `
+                                                  -FeedName $script:feedName `
+                                                  -Name $_.name `
+                                                  -Version $version
+                }
+            }
     }
 
-    It ('should not publish the package') {
-        $packageExists | Should -BeNullOrEmpty
-    }
-}
-
-Describe 'Publish-ProGetUniversalPackage.when package contains invalid upack.json' {
-    $session = New-ProGetTestSession
-    [String]$feedId = Initialize-PublishProGetPackageTests -ProGetSession $session
-    Publish-ProGetUniversalPackage -Session $session -FeedName $feedName -PackagePath (Join-Path -Path $PSScriptRoot -ChildPath 'UniversalInvalidUpackJson.upack') -ErrorAction SilentlyContinue
-    $packages = Get-ProGetUniversalPackage -Session $session -FeedName $feedName 
-
-    It ('should fail') {
-        $Global:Error | Where-Object { $_ -match 'must be a valid JSON file' } | Should -Not -BeNullOrEmpty
+    It 'publishes universal packages' {
+        WhenPublishing
+        ThenPackage -Published
     }
 
-    It ('should not publish any packages') {
-        $packages | Should -BeNullOrEmpty
-    }
-}
+    It 'not replace existing package' {
+        WhenPublishing
+        ThenPackage -Published
 
-Describe 'Publish-ProGetUniversalPackage.when package contains no upack.json' {
-    $session = New-ProGetTestSession
-    [String]$feedId = Initialize-PublishProGetPackageTests -ProGetSession $session
-    Publish-ProGetUniversalPackage -Session $session -FeedName $feedName -PackagePath (Join-Path -Path $PSScriptRoot -ChildPath 'UniversalNoUpackJson.upack') -ErrorAction SilentlyContinue
-    $packages = Get-ProGetUniversalPackage -Session $session -FeedName $feedName
-
-    It ('should fail') {
-        $Global:Error | Where-Object { $_ -match 'must contain a upack\.json' } | Should -Not -BeNullOrEmpty
+        WhenPublishing -ErrorAction SilentlyContinue
+        ThenError -MatchesPattern 'already exists'
     }
 
-    It ('should not publish any packages') {
-        $packages | Should -BeNullOrEmpty
-    }
-}
+    It 'should replace existing package' {
+        WhenPublishing
+        ThenPackage -Published
 
-Describe 'Publish-ProGetUniversalPackage.when upack.json missing name and version properties' {
-    $session = New-ProGetTestSession
-    [String]$feedId = Initialize-PublishProGetPackageTests -ProGetSession $session
-    Publish-ProGetUniversalPackage -Session $session -FeedName $feedName -PackagePath (Join-Path -Path $PSScriptRoot -ChildPath 'UniversalUpackJsonMissingNameAndVersion.upack') -ErrorAction SilentlyContinue
-    $packages = Get-ProGetUniversalPackage -Session $session -FeedName $feedName    
-
-    It ('should fail') {
-        $Global:Error | Where-Object { $_ -match '''name'' and ''version''' } | Should -Not -BeNullOrEmpty
+        WhenPublishing -WithArgs @{ Force = $true }
+        ThenPackage -Published
     }
 
-    It ('should not publish any packages') {
-        $packages | Should -BeNullOrEmpty
+    It 'sends credentials' {
+        $session = New-ProGettestSession -ExcludeApiKey
+        WhenPublishing -WithArgs @{ Session = $session }
+        ThenPackage -Published
+    }
+
+    It 'sends API key' {
+        $session = New-ProGettestSession -ExcludeCredential
+        WhenPublishing -WithArgs @{ Session = $session }
+        ThenPackage -Published
+    }
+
+    It 'does not publish to a non-existent feed' {
+        WhenPublishing -WithArgs @{ FeedName = 'invalidFeedName' } -ErrorAction SilentlyContinue
+        ThenPackage -Not -Published
+        ThenError -AtIndex 0 -Matches 'Failed to upload'
+    }
+
+    It 'validates package file exists' {
+        $packagePath = '.\BadPackagePath'
+        WhenPublishing -WithArgs @{ PackagePath = $packagePath } -ErrorAction SilentlyContinue
+        ThenPackage -Not -Published
+        ThenError -Matches 'does not exist'
+    }
+
+    It 'validates package is a ZIP file' {
+        WhenPublishing -WithArgs @{ PackagePath = $PSCommandPath } -ErrorAction SilentlyContinue
+        ThenPackage -Not -Published
+        ThenError -AtIndex 0 -Matches 'isn''t a valid ZIP file'
+    }
+
+    It 'validates upackJson file' {
+        $packagePath = Join-Path -Path $PSScriptRoot -ChildPath 'UniversalInvalidUpackJson.upack'
+        WhenPublishing -WithArgs @{ PackagePath = $packagePath } -ErrorAction SilentlyContinue
+        ThenPackage -Not -Published
+        ThenError -AtIndex 0 -Matches 'must be a valid JSON file'
+    }
+
+    It 'validates upackJson file exists' {
+        $packagePath = Join-Path -Path $PSScriptRoot -ChildPath 'UniversalNoUpackJson.upack'
+        WhenPublishing -WithArgs @{ PackagePath = $packagePath } -ErrorAction SilentlyContinue
+        ThenPackage -Not -Published
+        ThenError -Matches 'must contain a upack\.json'
+    }
+
+    It 'validates upackJson file contais name and description' {
+        $packagePath = Join-Path -Path $PSScriptRoot -ChildPath 'UniversalUpackJsonMissingNameAndVersion.upack'
+        WhenPublishing -WithArgs @{ PackagePath = $packagePath } -ErrorAction SilentlyContinue
+        ThenPackage -Not -Published
+        ThenError -Matches '''name'' and ''version'''
     }
 }

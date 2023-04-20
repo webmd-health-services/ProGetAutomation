@@ -4,11 +4,11 @@ Set-StrictMode -Version 'Latest'
 
 & (Join-Path -Path $PSScriptRoot -ChildPath 'Initialize-Tests.ps1' -Resolve)
 
-function GivenSession 
+function GivenSession
 {
     $script:session = New-ProGetTestSession
     $script:baseDirectory = (split-path -Path $TestDrive.FullName -leaf)
-    $feed = Test-ProGetFeed -Session $session -Name $baseDirectory -Type 'Asset'
+    $feed = Test-ProGetFeed -Session $session -Name $baseDirectory
     if( !$feed )
     {
         New-ProGetFeed -Session $session -Name $baseDirectory -Type 'Asset'

@@ -6,11 +6,14 @@ function Get-ProGetFeed
     Gets the feeds in a ProGet instance.
 
     .DESCRIPTION
-    The `Get-ProGetFeed` function gets all the feeds from a ProGet instance. Pass the session to the ProGet instance to the `Session` parameter. Use `New-ProGetSession` to create a session. By default, only active feeds are returned. Use the `-Force` switch to also return inactive feeds.
+    The `Get-ProGetFeed` function gets all the feeds from a ProGet instance. Pass the session to the ProGet instance to
+     the `Session` parameter. Use `New-ProGetSession` to create a session. By default, only active feeds are returned.
+     Use the `-Force` switch to also return inactive feeds.
 
-    To get a specific feed, pass its name to the `Name` parameter. If the feed by that name doesn't exist, nothing is returned and no errors are written. 
+    To get a specific feed, pass its name to the `Name` parameter. If the feed by that name doesn't exist, nothing is
+    returned and no errors are written.
 
-    This function uses the `Feeds_GetFeed` and `Feeds_GetFeeds` endpoints in ProGet's [native API](https://inedo.com/support/documentation/proget/reference/api/native).
+    This function uses the [Feed Management API](https://docs.inedo.com/docs/proget-reference-api-feed-management).
 
     .EXAMPLE
     Get-ProGetFeed -Session $session
@@ -22,52 +25,22 @@ function Get-ProGetFeed
 
     Demonstrates how to get a specific feed. In this case, the `PowerShell` feed is returned.
     #>
-    [CmdletBinding(DefaultParameterSetName='AllFeeds')]
+    [CmdletBinding()]
     param(
         [Parameter(Mandatory)]
-        [object]
-        $Session,
+        [pscustomobject] $Session,
 
-        [Parameter(Mandatory,ParameterSetName='ByName')]
-        [string]
         # By default, all feeds are returned. Use this parameter to return a specific feed using its name.
-        $Name,
-
-        [Parameter(Mandatory,ParameterSetName='ByID')]
-        [string]
-        # By default, all feeds are returned. Use this parameter to return a specific feed using its ID.
-        $ID,
-
-        [Parameter(ParameterSetName='AllFeeds')]
-        [Switch]
-        # By default, only active feeds are returned. Use this witch to return inactive feeds, too.
-        $Force
+        [String] $Name
     )
 
     Set-StrictMode -Version 'Latest'
     Use-CallerPreference -Cmdlet $PSCmdlet -SessionState $ExecutionContext.SessionState
 
-    $parameter = @{ 
-                    'IncludeInactive_Indicator' = $Force.IsPresent;
-                 }
-
-    $methodName = 'Feeds_GetFeeds'
-    if( $Name )
+    $path = "/api/management/feeds/list"
+    if ($Name)
     {
-        $methodName = 'Feeds_GetFeed'
-        $parameter = @{ 
-                        'Feed_Name' = $Name;
-                    }
+        $path = "/api/management/feeds/get/$([Uri]::EscapeDataString($Name))"
     }
-    elseif( $ID )
-    {
-        $methodName = 'Feeds_GetFeed'
-        $parameter = @{ 
-                        'Feed_Id' = $ID;
-                    }
-    }
-
-    Invoke-ProGetNativeApiMethod -Session $Session -Name $methodName -Parameter $parameter |
-        Where-Object { $_ } |
-        Add-PSTypeName -NativeFeed
+    Invoke-ProGetRestMethod -Session $Session -Path $path | Add-PSTypeName -Feed
 }
