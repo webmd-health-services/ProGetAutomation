@@ -49,22 +49,18 @@ function Get-ProGetUniversalPackage
     #>
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory)]
-        [object]
         # A session object representing the ProGet instance to connect to. Use `New-ProGetSession` to create a new session.
-        $Session,
-
         [Parameter(Mandatory)]
-        [string]
+        [Object] $Session,
+
         # The name of the feed whose packages to get.
-        $FeedName,
+        [Parameter(Mandatory)]
+        [String] $FeedName,
 
-        [string]
         # The name of a specific package to get. Wildcards supported. If the package is in a group, you must pass its group name to the `GroupName` parameter
-        $Name,
+        [String] $Name,
 
-        [string]
-        $GroupName
+        [String] $GroupName
     )
 
     Set-StrictMode -Version 'Latest'
@@ -73,20 +69,25 @@ function Get-ProGetUniversalPackage
     $searchingName = ($Name -and [WildcardPattern]::ContainsWildcardCharacters($Name))
     $searchingGroup = ($GroupName -and [WildcardPattern]::ContainsWildcardCharacters($GroupName))
     $queryString = ''
+
+    if ($null -eq $GroupName)
+    {
+        $GroupName = ''
+    }
+
     if( -not $searchingName -and -not $searchingGroup )
     {
         $queryString = & {
+            if( $Name )
+            {
+                "name=$([Uri]::EscapeDataString($Name))"
+            }
 
-                                if( $Name )
-                                {
-                                    'name={0}' -f [uri]::EscapeDataString($Name)
-                                }
-
-                                if( $GroupName )
-                                {
-                                    'group={0}' -f [Uri]::EscapeDataString($GroupName)
-                                }
-                        }
+            if ($GroupName)
+            {
+                "group=$([Uri]::EscapeDataString($GroupName))"
+            }
+        }
     }
 
     if( $queryString )
@@ -105,12 +106,8 @@ function Get-ProGetUniversalPackage
             return $_.name -like $Name
         } |
         Add-PSTypeName -PackageInfo |
-        Where-Object {
-            if( -not $GroupName -or -not $searchingGroup )
-            {
-                return $true
-            }
-
-            return $_.group -like $GroupName
-        }
+        # Always filter by group because if group parameter is omitted or doesn't have a value, packages in all groups
+        # are returned, but users of this function expect that if the `GroupName` parameter doesn't have a value, only
+        # packages *not* in a group are returned.
+        Where-Object 'group' -Like $GroupName
 }

@@ -2,11 +2,12 @@
 $apiKey = 'HKgaAKWjjgB9YRrTbTpHzw=='
 $credential = New-Object 'pscredential' ('Admin',(ConvertTo-SecureString 'Admin' -AsPlainText -Force))
 
-$pgNotInstalledMsg = 'It looks like ProGet isn''t installed. Please run init.ps1 to install and configure a local ProGet instance so we can run automated tests against it.'
+$pgNotInstalledMsg = 'It looks like ProGet isn''t installed. Please run init.ps1 to install and configure a local ' +
+                     'ProGet instance so we can run automated tests against it.'
 $svcRoot =
     Get-ItemProperty -Path 'hklm:\SOFTWARE\Inedo\ProGet' -Name 'ServicePath' -ErrorAction Ignore |
     Select-Object -ExpandProperty 'ServicePath'
-if( -not $svcRoot )
+if (-not $svcRoot)
 {
     # If ProGet is installed with the Inedo Hub, there won't be any registry key.
     $svc = Get-CimInstance -ClassName 'Win32_Service' -Filter 'Name="INEDOPROGETSVC"'

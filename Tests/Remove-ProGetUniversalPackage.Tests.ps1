@@ -27,8 +27,9 @@ BeforeAll {
 
     function ThenError
     {
+        [Diagnostics.CodeAnalysis.SuppressMessage('PSAvoidAssignmentToAutomaticVariable', '')]
         param(
-            $Matches
+            [String] $Matches
         )
 
         $Global:Error | Should -Match $Matches
@@ -47,7 +48,12 @@ BeforeAll {
             $AtVersion
         )
 
-        $package = Get-ProGetUniversalPackage -Session $script:session -FeedName $script:feedName -Name $Named -GroupName $InGroup -ErrorAction Ignore
+        $package = Get-ProGetUniversalPackage -Session $script:session `
+                                              -FeedName $script:feedName `
+                                              -Name $Named `
+                                              -GroupName $InGroup `
+                                              -ErrorAction Ignore
+
         if( $AtVersion )
         {
             $package = $package.versions | Where-Object { $_ -eq $AtVersion }
