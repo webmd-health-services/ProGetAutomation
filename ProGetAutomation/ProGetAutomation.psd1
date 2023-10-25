@@ -70,7 +70,7 @@
                         )
 
     # Modules to import as nested modules of the module specified in RootModule/ModuleToProcess
-    NestedModules = @( 'Modules\Zip\0.3.2\Zip.psd1' )
+    # NestedModules = @()
 
     # Functions to export from this module
     FunctionsToExport = @(
