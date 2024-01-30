@@ -73,7 +73,6 @@ Build:
             - "*\\New-ProGetSession.Tests.ps1"
             - "*\\Read-ProGetUniversalPackageFile.Tests.ps1"
             - "*\\Remove-ProGetAsset.Tests.ps1"
-            - "*\\Remove-ProGetUniversalPackage.Tests.ps1"
 
 - Pester4:
     Script:
@@ -85,7 +84,6 @@ Build:
     - Tests\New-ProGetSession.Tests.ps1
     - Tests\Read-ProGetUniversalPackageFile.Tests.ps1
     - Tests\Remove-ProGetAsset.Tests.ps1
-    - Tests\Remove-ProGetUniversalPackage.Tests.ps1
     Verbose: false
 
 - Delete:
