@@ -1,6 +1,14 @@
 <!--markdownlint-disable MD024 no-duplicate-header-->
+<!--markdownlint-disable MD012 no-multiple-blanks-->
 
 # ProGetAutomation Changelog
+
+## 2.0.1
+
+> Released 31 Jan 2024
+
+Fixed: `Get-ProGetAssetContent` returns a web request object instead of the actual content.
+
 
 ## 2.0.0
 
@@ -80,6 +88,7 @@ directive.
 Pass the feed name to the `Name` parameter instead.
 * `Type` on function `Test-ProGetFeed`. All feeds, regardless of type, must now have a unique name.
 
+
 ## 1.1.0
 
 > Released 31 Mar 2023
@@ -103,17 +112,20 @@ request content length).
 * The `New-ProGetSession` function's `Uri` parameter is deprecated. Use the new `Url` parameter instead.
 * The `Uri` property on the ProGet session object. Use the new `Url` property instead.
 
+
 ## 1.0.0
 
 > Released 26 Jun 2021
 
 Added support for ProGet 5.3.32
 
+
 ## 0.10.2
 
 > Released 3 Sep 2021
 
 Update vendored Zip module dependency to version 0.3.2 (from 0.3.1).
+
 
 ## 0.10.1
 
@@ -123,11 +135,13 @@ Update vendored Zip module dependency to version 0.3.2 (from 0.3.1).
 * Fixed: ProGet universal packages created by ProGetAutomation are not extractable on non-Windows platforms due to using
   "" as the directory separator character.
 
+
 ## 0.10.0
 
 > Released 12 Feb 2020
 
 Improved import speed by merging functions into the module's .psm1 file.
+
 
 ## 0.9.0
 
@@ -136,6 +150,7 @@ Improved import speed by merging functions into the module's .psm1 file.
 * Added `-Quiet` switch to `Add-ProGetUniversalPackageFile` to suppress progress messages while adding files to the
   package.
 * Fixed: `Add-ProGetUniversalPackageFile` fails when passed multiple paths directly, in a non-pipeline manner.
+
 
 ## 0.8.0
 
@@ -150,6 +165,7 @@ Improved import speed by merging functions into the module's .psm1 file.
   with a given name, regardless of its type.
 * Renamed the `New-ProGetFeed` and `Test-ProGetFeed` function's `FeedName` and `FeedType` parameters to `Name` and
   `Type`.
+
 
 ## 0.7.0
 

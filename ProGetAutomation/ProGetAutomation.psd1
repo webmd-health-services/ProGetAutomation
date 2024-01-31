@@ -12,7 +12,7 @@
     RootModule = 'ProGetAutomation.psm1'
 
     # Version number of this module.
-    ModuleVersion = '2.0.0'
+    ModuleVersion = '2.0.1'
 
     # Supported PSEditions
     CompatiblePSEditions = @( 'Desktop', 'Core' )
@@ -132,9 +132,7 @@
             Prerelease = ''
 
             # ReleaseNotes of this module
-            ReleaseNotes = @'
-* Upgraded to support ProGet 5.3.32.
-'@
+            ReleaseNotes = 'https://github.com/webmd-health-services/ProGetAutomation/blob/main/CHANGELOG.md'
 
         } # End of PSData hashtable
 

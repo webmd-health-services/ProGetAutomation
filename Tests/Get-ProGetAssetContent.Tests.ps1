@@ -21,14 +21,27 @@ BeforeAll {
     function GivenAsset
     {
         param(
-            [string]
-            $Name,
+            [Parameter(Position=0)]
+            [String] $Name,
 
-            [string]
-            $WithContent
+            [Parameter(ParameterSetName='FromString')]
+            [String] $WithContent,
+
+            [Parameter(ParameterSetName='FromFile')]
+            [String] $FromFile
         )
 
-        Set-ProGetAsset -Session $session -DirectoryName $baseDirectory -Path $Name -Content $WithContent
+        $setArgs = @{}
+        if ($WithContent)
+        {
+            $setArgs['Content'] = $WithContent
+        }
+        elseif ($FromFile)
+        {
+            $setArgs['FilePath'] = Join-Path -Path $PSScriptRoot -Child $FromFile -Resolve
+        }
+
+        Set-ProGetAsset -Session $session -DirectoryName $baseDirectory -Path $Name @setArgs
     }
 
     function WhenContentIsRequested
@@ -45,20 +58,28 @@ BeforeAll {
     function ThenContent
     {
         param(
-            [string]
-            $Is,
+            [Parameter(ParameterSetName='Is')]
+            [String] $Is,
 
-            [Switch]
-            $IsNull
+            [Parameter(ParameterSetName='IsNull')]
+            [switch] $IsNull,
+
+            [Parameter(ParameterSetName='IsBinary')]
+            [String] $IsFile
         )
 
         if( $IsNull )
         {
             $content | Should -BeNullOrEmpty
         }
+        elseif ($IsFile)
+        {
+            $script:content |
+                Should -Be ([IO.File]::ReadAllBytes((Join-Path -Path $PSScriptRoot -ChildPath $IsFile -Resolve)))
+        }
         else
         {
-            $content | Should -Be $Is
+            $script:content | Should -Be $Is
         }
     }
 
@@ -91,7 +112,7 @@ Describe 'Get-ProGetAssetContent' {
         GivenSession
         GivenAsset 'foofoobar' -WithContent '{ "foofoobar": "snafu" }'
         WhenContentIsRequested 'foofoobar'
-        ThenContent 'foofoobar' -Is '{ "foofoobar": "snafu" }'
+        ThenContent -Is '{ "foofoobar": "snafu" }'
         ThenNoErrorShouldBeThrown
     }
 
@@ -108,5 +129,28 @@ Describe 'Get-ProGetAssetContent' {
         WhenContentIsRequested 'fubar/snafu/fizzbuzz.txt'
         ThenContent -Is "snafu`nfizzbuzz"
         ThenNoErrorShouldBeThrown
+    }
+
+    It 'returns asset that''s a number' {
+        GivenSession
+        GivenAsset 'number' -WithContent (([Int32]::MaxValue) - 1)
+        WhenContentIsRequested 'number'
+        ThenContent -Is (([Int32]::MaxValue) - 1).ToString()
+        ThenNoErrorShouldBeThrown
+    }
+
+    It 'gets JSON content as raw string' {
+        GivenSession
+        GivenAsset 'list.json' -WithContent '[ "one", "two", "three" ]'
+        WhenContentIsRequested 'list.json'
+        ThenContent -Is '[ "one", "two", "three" ]'
+        ThenNoErrorShouldBeThrown
+    }
+
+    It 'gets binary content' {
+        GivenSession
+        GivenAsset 'boom.png' -FromFile 'boom.png'
+        WhenContentIsRequested 'boom.png'
+        ThenContent -IsFile 'boom.png'
     }
 }

@@ -38,5 +38,5 @@ function Get-ProGetAssetContent
 
     $uri = '/endpoints/{0}/content/{1}' -f $DirectoryName,$Path
 
-    return Invoke-ProGetRestMethod -Session $Session -Path $uri -Raw
+    return Invoke-ProGetRestMethod -Session $Session -Path $uri -Raw | Select-Object -ExpandProperty 'Content'
 }
