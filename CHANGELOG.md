@@ -3,11 +3,37 @@
 
 # ProGetAutomation Changelog
 
-## 2.0.1
+## 3.0.0
 
 > Released 31 Jan 2024
 
-Fixed: `Get-ProGetAssetContent` returns a web request object instead of the actual content.
+### Upgrade Instructions
+
+* The return value from `Get-ProGetAssetContent` is no longer an HTTP response object. Instead, the response content is
+returned. Updated usages to handle the new return value. What gets returned depends on the content type of the uploaded
+asset. Any *file* uploaded by a previous version of ProGetAutomation will come back as an array of bytes. Strings will
+be returned as strings.
+* The `Set-ProGetAsset` function no longer sets the content type of assets to `application/x-www-form-urlencoded`.
+Instead, when uploading files using the `FilePath` parameter, the content type is set to `application/octet-stream`.
+When uploading from a string using the `Content` parameter, the content type is set to `text/plain; charset=utf-8`. If
+you want to customize the content type, use the new `ContentType` parameter.
+* Remove usages of `-ContentType Form` on calls to `Invoke-ProGetRestMethod`. This is now the default behavior.
+* Replaces usages of `-ContentType Json` on calls to `Invoke-ProGetRestMethod` with `-AsJson`.
+
+### Breaking Changes
+
+* `Get-ProGetAssetContent` now returns the actual content instead of an HTTP response object.
+
+### Changes
+
+* `Set-ProGetAsset` no longer sets the content type of assets to `application/x-www-form-urlencoded`.
+* `Set-ProGetAsset` sets the content type of uploaded files to `application/octet-stream`.
+* `Set-ProGetAsset` sets the content type of uploaded strings to `text/plain; charset=utf-8`.
+
+### Removed
+
+* The `ContentType` parameter on `Invoke-ProGetRestMethod`. Use the new `AsJson` switch instead for usages of
+`-ContentType Json` and remove usages of `-ContentType Form` entirely.
 
 
 ## 2.0.0
