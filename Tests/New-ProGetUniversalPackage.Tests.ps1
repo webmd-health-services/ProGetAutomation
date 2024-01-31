@@ -100,6 +100,10 @@ BeforeAll {
             }
             else
             {
+                if ($value -is [DateTime])
+                {
+                    $value = $value.ToString('yyyy-MM-ddTHH:mm:ss.fffffffZ')
+                }
                 $value | Should -BeLike $HasMetadata[$key]
             }
 
