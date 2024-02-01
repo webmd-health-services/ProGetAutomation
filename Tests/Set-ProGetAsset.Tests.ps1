@@ -1,4 +1,4 @@
-
+﻿
 #Requires -Version 5.1
 Set-StrictMode -Version 'Latest'
 
@@ -68,7 +68,7 @@ BeforeAll {
 
             [String] $InFolder = '',
 
-            [String] $WithContent = ''
+            [Object] $WithContent = $null
         )
 
         $asset = $null
@@ -144,29 +144,34 @@ Describe 'Set-ProGetAsset' {
         $script:testNum += 1
     }
 
-    It 'should upload empty asset' {
+    It 'should upload empty file' {
         GivenFile $script:assetName
-        WhenAssetIsPublished -WithArgs @{ FilePath = $script:assetName ; Path = $script:assetName }
+        WhenAssetIsPublished -WithArgs @{ FilePath = $script:assetName; Path = $script:assetName }
         ThenAsset -Exists
         ThenError -IsEmpty
     }
 
-    It 'should upload asset' {
+    It 'should upload file' {
         $content = ((New-Guid).ToString('N') + [Environment]::NewLine) * 20
         GivenFile $script:assetName -WithContent $content
-        WhenAssetIsPublished -WithArgs @{ FilePath = $script:assetName ; Path = $script:assetName }
+        WhenAssetIsPublished -WithArgs @{
+                FilePath = $script:assetName;
+                Path = $script:assetName;
+                ContentType = 'text/plain';
+            }
         ThenAsset -Exists -WithContent $content
         ThenError -IsEmpty
     }
 
-    It 'should upload assets in chunks' {
+    It 'should upload files in chunks' {
         $content = ((New-Guid).ToString('N') + [Environment]::NewLine) * 20
         GivenFile $script:assetName -WithContent $content
         WhenAssetIsPublished -WithArgs @{
-            FilePath = $script:assetName;
-            MaxRequestSize = (New-Guid).ToString('N').Length;
-            Path = $script:assetName;
-        }
+                FilePath = $script:assetName;
+                MaxRequestSize = (New-Guid).ToString('N').Length;
+                Path = $script:assetName;
+                ContentType = 'text/plain';
+            }
         ThenAsset -Exists -WithContent $content
         ThenError -IsEmpty
     }
@@ -188,10 +193,10 @@ Describe 'Set-ProGetAsset' {
     It 'should require asset directory to exist' {
         GivenFile $script:assetName
         WhenAssetIsPublished -ErrorAction SilentlyContinue -WithArgs @{
-            DirectoryName = 'badDir';
-            FilePath = $script:assetName;
-            Path = $script:assetName
-        }
+                DirectoryName = 'badDir';
+                FilePath = $script:assetName;
+                Path = $script:assetName;
+            }
         ThenAsset -Not -Exists -InDirectory 'badDir'
         ThenError -Matches '.badDir. because that asset directory does not exist'
     }
@@ -204,23 +209,38 @@ Describe 'Set-ProGetAsset' {
     }
 
     It 'should validate file exists' {
-        WhenAssetIsPublished -WithArgs @{ FilePath = $script:assetName ; Path = $script:assetName } -ErrorAction SilentlyContinue
+        WhenAssetIsPublished -WithArgs @{ FilePath = $script:assetName; Path = $script:assetName } `
+                             -ErrorAction SilentlyContinue
         ThenAsset -Not -Exists
         ThenError -Matches "$([regex]::Escape($script:assetName))..*that file does not exist"
     }
 
     It 'should replace existing file' {
         GivenFile $script:assetName -WithContent 'fubarsnafu'
-        WhenAssetIsPublished -WithArgs @{ FilePath = $script:assetName ; Path = $script:assetName }
-        ThenAsset -Exists -WithContent 'fubarsnafu'
+        WhenAssetIsPublished -WithArgs @{
+                FilePath = $script:assetName;
+                Path = $script:assetName;
+            }
+        ThenAsset -Exists -WithContent ([Text.Encoding]::UTF8.GetBytes('fubarsnafu'))
         GivenFile $script:assetName -WithContent 'snafufubar'
-        WhenAssetIsPublished -WithArgs @{ FilePath = $script:assetName ; Path = $script:assetName }
+        WhenAssetIsPublished -WithArgs @{
+                FilePath = $script:assetName;
+                Path = $script:assetName;
+                ContentType = 'text/plain';
+            }
         ThenAsset -Exists -WithContent 'snafufubar'
         ThenError -IsEmpty
     }
 
     It 'should create asset from string' {
         $content = @{ Test = 'Test'; Test2 = 'Test2' } | ConvertTo-Json | Out-String
+        WhenAssetIsPublished -WithArgs @{ Path = $script:assetName; Content = $content }
+        ThenAsset -Exists -WithContent $content
+        ThenError -IsEmpty
+    }
+
+    It 'supports unicode characters' {
+        $content = '¥ · £ · € · $ · ¢ · ₡ · ₢ · ₣ · ₤ · ₥ · ₦ · ₧ · ₨ · ₩ · ₪ · ₫ · ₭ · ₮ · ₯ · ₹ 😀'
         WhenAssetIsPublished -WithArgs @{ Path = $script:assetName ; Content = $content }
         ThenAsset -Exists -WithContent $content
         ThenError -IsEmpty

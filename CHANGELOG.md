@@ -1,6 +1,40 @@
 <!--markdownlint-disable MD024 no-duplicate-header-->
+<!--markdownlint-disable MD012 no-multiple-blanks-->
 
 # ProGetAutomation Changelog
+
+## 3.0.0
+
+> Released 31 Jan 2024
+
+### Upgrade Instructions
+
+* The return value from `Get-ProGetAssetContent` is no longer an HTTP response object. Instead, the response content is
+returned. Updated usages to handle the new return value. What gets returned depends on the content type of the uploaded
+asset. Any *file* uploaded by a previous version of ProGetAutomation will come back as an array of bytes. Strings will
+be returned as strings.
+* The `Set-ProGetAsset` function no longer sets the content type of assets to `application/x-www-form-urlencoded`.
+Instead, when uploading files using the `FilePath` parameter, the content type is set to `application/octet-stream`.
+When uploading from a string using the `Content` parameter, the content type is set to `text/plain; charset=utf-8`. If
+you want to customize the content type, use the new `ContentType` parameter.
+* Remove usages of `-ContentType Form` on calls to `Invoke-ProGetRestMethod`. This is now the default behavior.
+* Replaces usages of `-ContentType Json` on calls to `Invoke-ProGetRestMethod` with `-AsJson`.
+
+### Breaking Changes
+
+* `Get-ProGetAssetContent` now returns the actual content instead of an HTTP response object.
+
+### Changes
+
+* `Set-ProGetAsset` no longer sets the content type of assets to `application/x-www-form-urlencoded`.
+* `Set-ProGetAsset` sets the content type of uploaded files to `application/octet-stream`.
+* `Set-ProGetAsset` sets the content type of uploaded strings to `text/plain; charset=utf-8`.
+
+### Removed
+
+* The `ContentType` parameter on `Invoke-ProGetRestMethod`. Use the new `AsJson` switch instead for usages of
+`-ContentType Json` and remove usages of `-ContentType Form` entirely.
+
 
 ## 2.0.0
 
@@ -80,6 +114,7 @@ directive.
 Pass the feed name to the `Name` parameter instead.
 * `Type` on function `Test-ProGetFeed`. All feeds, regardless of type, must now have a unique name.
 
+
 ## 1.1.0
 
 > Released 31 Mar 2023
@@ -103,17 +138,20 @@ request content length).
 * The `New-ProGetSession` function's `Uri` parameter is deprecated. Use the new `Url` parameter instead.
 * The `Uri` property on the ProGet session object. Use the new `Url` property instead.
 
+
 ## 1.0.0
 
 > Released 26 Jun 2021
 
 Added support for ProGet 5.3.32
 
+
 ## 0.10.2
 
 > Released 3 Sep 2021
 
 Update vendored Zip module dependency to version 0.3.2 (from 0.3.1).
+
 
 ## 0.10.1
 
@@ -123,11 +161,13 @@ Update vendored Zip module dependency to version 0.3.2 (from 0.3.1).
 * Fixed: ProGet universal packages created by ProGetAutomation are not extractable on non-Windows platforms due to using
   "" as the directory separator character.
 
+
 ## 0.10.0
 
 > Released 12 Feb 2020
 
 Improved import speed by merging functions into the module's .psm1 file.
+
 
 ## 0.9.0
 
@@ -136,6 +176,7 @@ Improved import speed by merging functions into the module's .psm1 file.
 * Added `-Quiet` switch to `Add-ProGetUniversalPackageFile` to suppress progress messages while adding files to the
   package.
 * Fixed: `Add-ProGetUniversalPackageFile` fails when passed multiple paths directly, in a non-pipeline manner.
+
 
 ## 0.8.0
 
@@ -150,6 +191,7 @@ Improved import speed by merging functions into the module's .psm1 file.
   with a given name, regardless of its type.
 * Renamed the `New-ProGetFeed` and `Test-ProGetFeed` function's `FeedName` and `FeedType` parameters to `Name` and
   `Type`.
+
 
 ## 0.7.0
 
