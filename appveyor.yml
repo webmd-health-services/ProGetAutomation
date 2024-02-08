@@ -24,19 +24,18 @@ environment:
     job_group: ps
     appveyor_build_worker_image: Visual Studio 2019
 
-  # ProGetAutomation doesn't handle the way PowerShell's Invoke-RestMethod/Invoke-WebRequest throws web exceptions.
-  # - job_name: PowerShell 6.2 on Windows
-  #   job_group: pwsh
-  #   appveyor_build_worker_image: Visual Studio 2015
+  - job_name: PowerShell on Windows
+    job_group: pwsh
+    appveyor_build_worker_image: Visual Studio 2022
 
-  # - job_name: PowerShell 7.1 on Windows
+  # Don't know how to get ProGet running automatically on these platforms.
+  # - job_name: macOS
   #   job_group: pwsh
-  #   appveyor_build_worker_image: Visual Studio 2019
+  #   appveyor_build_worker_image: macOS
 
-  # - job_name: PowerShell 7.2 on Windows
+  # - job_name: Ubuntu
   #   job_group: pwsh
-  #   appveyor_build_worker_image: Visual Studio 2022
-
+  #   appveyor_build_worker_image: Ubuntu
 
 artifacts:
 - path: .output\*

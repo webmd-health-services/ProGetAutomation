@@ -32,13 +32,11 @@ function Invoke-ProGetRestMethod
         [Parameter(ParameterSetName='ByParameter')]
         [hashtable] $Parameter,
 
-        # Controls how the parameters are sent to the API. The default is `Form`, which sends them as URL-encoded
-        # name/value pairs (i.e. like a HTML form submission). The other options is `Json`, which converts the
-        # parameters to JSON and sends that JSON text as the content/body of the request. This parameter is ignored if
-        # there are no parmaeters to send or if the `InFile` parameter is used.
+        # Sends parameters to the API as JSON. By default, parameters are sent in the request body as URL-encoded
+        # name/value pairs (i.e. like a HTML form submission). This parameter is ignored if there are no parameters to
+        # send or if the `InFile` parameter is used.
         [Parameter(ParameterSetName='ByParameter')]
-        [ValidateSet('Form','Json')]
-        [String] $ContentType,
+        [switch] $AsJson,
 
         # Send the contents of the file at this path as the body of the web request.
         [Parameter(ParameterSetName='ByFile')]
@@ -48,9 +46,15 @@ function Invoke-ProGetRestMethod
         [Parameter(ParameterSetName='ByContent')]
         [String] $Body,
 
-        # Return the raw content from the request instead of attempting to convert the response from JSON into an
-        # object.
-        [switch] $Raw
+        # Return the raw response object from the request instead of attempting to convert the response from JSON into
+        # an object.
+        [switch] $Raw,
+
+        # The value of the `Content-Type` header in the request. Normally, `Invoke-ProGetRestMethod` handles this for
+        # you.
+        [Parameter(ParameterSetName='None')]
+        [Parameter(ParameterSetName='ByContent')]
+        [String] $ContentType
     )
 
     Set-StrictMode -Version 'Latest'
@@ -58,15 +62,15 @@ function Invoke-ProGetRestMethod
 
     $uri = New-Object 'Uri' -ArgumentList $Session.Url,$Path
 
-    $requestContentType = 'application/json'
     $debugBody = $null
 
-    if( $PSCmdlet.ParameterSetName -eq 'ByParameter' )
+    if ($PSCmdlet.ParameterSetName -eq 'ByParameter')
     {
-        if( $ContentType -eq 'Json' )
+        if ($AsJson)
         {
             $Body = $Parameter | ConvertTo-Json -Depth 100
             $debugBody = $Body -replace '("API_Key": +")[^"]+','$1********'
+            $ContentType = 'application/json'
         }
         else
         {
@@ -74,7 +78,7 @@ function Invoke-ProGetRestMethod
                 $Parameter.Keys |
                 ForEach-Object { '{0}={1}' -f [Uri]::EscapeDataString($_),[Uri]::EscapeDataString($Parameter[$_]) }
             $Body = $Body -join '&'
-            $requestContentType = 'application/x-www-form-urlencoded; charset=utf-8'
+            $ContentType = 'application/x-www-form-urlencoded; charset=utf-8'
             $debugBody = $Parameter.Keys | ForEach-Object {
                 $value = $Parameter[$_]
                 if( $_ -eq 'API_Key' )
@@ -89,7 +93,6 @@ function Invoke-ProGetRestMethod
 
     #$DebugPreference = 'Continue'
     Write-Debug -Message ('{0} {1}' -f $Method.ToString().ToUpperInvariant(),($uri -replace '\b(API_Key=)([^&]+)','$1********'))
-    Write-Debug -Message ('    Content-Type: {0}' -f $requestContentType)
     foreach( $headerName in $headers.Keys )
     {
         $value = $headers[$headerName]
@@ -109,29 +112,30 @@ function Invoke-ProGetRestMethod
     $numErrorsAtStart = $Global:Error.Count
     try
     {
-        $optionalParams = @{
-                                'ContentType' = $requestContentType;
-                           }
-        if( $PSCmdlet.ParameterSetName -in ('ByParameter', 'ByContent') )
+        $optionalArgs = @{}
+        if ($PSCmdlet.ParameterSetName -in ('ByParameter', 'ByContent'))
         {
             if( $Body )
             {
-                $optionalParams['Body'] = $Body
-            }
-            else
-            {
-                $optionalParams.Remove('ContentType')
+                $optionalArgs['Body'] = $Body
             }
         }
-        elseif( $PSCmdlet.ParameterSetName -eq ('ByFile') )
+        elseif ($PSCmdlet.ParameterSetName -eq ('ByFile'))
         {
-            $optionalParams['Infile'] = $Infile
-            $requestContentType = 'multipart/form-data'
+            $optionalArgs['Infile'] = $Infile
+            $ContentType = 'multipart/form-data'
         }
+
+        if (-not $ContentType)
+        {
+            $ContentType = 'application/json'
+        }
+
+        Write-Debug -Message ('    Content-Type: {0}' -f $ContentType)
 
         if( $Session.Credential )
         {
-            $optionalParams['Credential'] = $Session.Credential
+            $optionalArgs['Credential'] = $Session.Credential
         }
 
         $cmdName = 'Invoke-RestMethod'
@@ -142,17 +146,17 @@ function Invoke-ProGetRestMethod
 
         if( (Get-Command -Name $cmdName -ParameterName 'UseBasicParsing' -ErrorAction Ignore) )
         {
-            $optionalParams['UseBasicParsing'] = $true
+            $optionalArgs['UseBasicParsing'] = $true
         }
 
         if (Get-Command -Name $cmdName -ParameterName 'AllowUnencryptedAuthentication' -ErrorAction Ignore)
         {
-            $optionalParams['AllowUnencryptedAuthentication'] = $true
+            $optionalArgs['AllowUnencryptedAuthentication'] = $true
         }
 
-        if( $Method -eq [Microsoft.PowerShell.Commands.WebRequestMethod]::Get -or $PSCmdlet.ShouldProcess($uri,$Method) )
+        if ($Method -eq [Microsoft.PowerShell.Commands.WebRequestMethod]::Get -or $PSCmdlet.ShouldProcess($uri,$Method))
         {
-            & $cmdName -Method $Method -Uri $uri @optionalParams -Headers $headers |
+            & $cmdName -Method $Method -Uri $uri -ContentType $ContentType @optionalArgs -Headers $headers |
                 ForEach-Object { $_ }
         }
     }

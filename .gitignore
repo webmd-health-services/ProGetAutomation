@@ -1,9 +1,11 @@
-/PSModules
-/.output
+.psgallerykey
 *.log
 *.orig
-.psgallerykey
-/.whiskey/**/*_HelpInfo.xml
-/.whiskey/**/en-US
-/ProGetAutomation/Modules
+/.output
 /.vscode
+/ProGetAutomation/CHANGELOG.md
+/ProGetAutomation/LICENSE.txt
+/ProGetAutomation/Modules
+/ProGetAutomation/NOTICE.txt
+/ProGetAutomation/README.md
+/PSModules

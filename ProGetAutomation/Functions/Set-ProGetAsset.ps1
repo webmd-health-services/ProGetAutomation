@@ -53,7 +53,12 @@ function Set-ProGetAsset
 
         # The content to be published as an asset.
         [Parameter(Mandatory, ParameterSetName='ByContent')]
-        [String] $Content
+        [String] $Content,
+
+        # The asset's content type. By default, the asset's content type will be "application/octet-stream" when
+        # uploading a file with the `FilePath` parameter, or "text/plain; charset=utf-8" when uploading a string with
+        # the `Content` parameter.
+        [String] $ContentType
     )
 
     Set-StrictMode -Version 'Latest'
@@ -71,9 +76,22 @@ function Set-ProGetAsset
 
         # Create a zero-byte file, otherwise ProGet responds with a 404 not found when uploading the file.
         $Content = ''
+        if (-not $ContentType)
+        {
+            $ContentType = 'application/octet-stream'
+        }
+    }
+    else
+    {
+        if (-not $ContentType)
+        {
+            $ContentType = 'text/plain; charset=utf-8'
+        }
     }
 
-    $assetPath = "/endpoints/$([Uri]::EscapeDataString($DirectoryName))/content/$($Path.TrimStart('/'))"
+    $Path = $Path.TrimStart('/')
+    $assetDirPath = "/endpoints/$([Uri]::EscapeDataString($DirectoryName))/"
+    $assetPath = "${assetDirPath}content/${Path}"
 
     if (-not (Test-ProGetFeed -Session $Session -Name $DirectoryName))
     {
@@ -83,7 +101,7 @@ function Set-ProGetAsset
         return
     }
 
-    Invoke-ProGetRestMethod -Session $Session -Path $assetPath -Method Post -Body $Content
+    Invoke-ProGetRestMethod -Session $Session -Path $assetPath -Method Post -Body $Content -ContentType $ContentType
 
     if ($FilePath)
     {
