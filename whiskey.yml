@@ -67,7 +67,6 @@ Build:
             ExcludePath:
             - "*\\Add-ProGetUniversalPackageFile.Tests.ps1"
             - "*\\Get-ProGetAsset.Tests.ps1"
-            - "*\\Get-ProGetUniversalPackage.Tests.ps1"
             - "*\\Invoke-ProGetNativeApiMethod.Tests.ps1"
             - "*\\Invoke-ProGetRestMethod.Tests.ps1"
             - "*\\New-ProGetSession.Tests.ps1"
@@ -78,7 +77,6 @@ Build:
     Script:
     - Tests\Add-ProGetUniversalPackageFile.Tests.ps1
     - Tests\Get-ProGetAsset.Tests.ps1
-    - Tests\Get-ProGetUniversalPackage.Tests.ps1
     - Tests\Invoke-ProGetNativeApiMethod.Tests.ps1
     - Tests\Invoke-ProGetRestMethod.Tests.ps1
     - Tests\New-ProGetSession.Tests.ps1
