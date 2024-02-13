@@ -204,6 +204,10 @@ Describe 'Get-ProGetUniversalPackage grab packages by group' {
         ThenNoErrors
     }
 
+    # Test is failing in Proget v2023. Not fixed in 2023.28 still.
+    # When group is not passed in query string it grabs the first package with a matching name, no matter what group it is.
+    # Should only grab the package with the name that is not in a group.
+    # This is also failing a test in Remove-ProGetUniversalPackage.Tests ("should delete the package with no group").
     It 'should return same named package that is not in group when group passed is an empty string' {
         GivenPackage 'Snafu'
         GivenPackage 'Snafu' -InGroup 'One'

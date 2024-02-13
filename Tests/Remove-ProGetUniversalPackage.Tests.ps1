@@ -144,6 +144,8 @@ Describe 'Remove-ProGetUniversalPackage with shared names' {
         GivenPackage 'Fubar' '0.0.0' -InGroup 'group'
     }
 
+    # Test is failing in Proget v2023.
+    # See Get-ProGetUniversalPackage.Tests for details on Proget issue.
     It 'should delete the package with no group'{
         WhenDeletingPackage -Named 'Fubar' -AtVersion '0.0.0'
         ThenPackageDeleted 'Fubar'
