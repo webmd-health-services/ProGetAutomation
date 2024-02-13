@@ -21,12 +21,6 @@ BeforeAll {
         Publish-ProGetUniversalPackage -Session $session -FeedName $feedName -PackagePath $packagePath
     }
 
-    function Init
-    {
-        Get-ProGetFeed -Session $session -Name $feedName -ErrorAction Ignore | Remove-ProGetFeed -Session $session -Force
-        New-ProGetFeed -Session $session -Name $feedName -Type 'Universal'
-    }
-
     function ThenError
     {
         param(
@@ -101,7 +95,8 @@ BeforeAll {
 
 Describe 'Remove-ProGetUniversalPackage' {
     BeforeEach {
-        Init
+        Get-ProGetFeed -Session $session -Name $feedName -ErrorAction Ignore | Remove-ProGetFeed -Session $session -Force
+        New-ProGetFeed -Session $session -Name $feedName -Type 'Universal'
     }
 
     It 'should delete the package' {
@@ -135,23 +130,19 @@ Describe 'Remove-ProGetUniversalPackage' {
         WhenDeletingPackage -Named 'Fubar' -AtVersion '0.0.0' -WhatIf
         ThenPackageNotDeleted 'Fubar'
     }
-}
-
-Describe 'Remove-ProGetUniversalPackage with shared names' {
-    BeforeEach {
-        Init
-        GivenPackage 'Fubar' '0.0.0'
-        GivenPackage 'Fubar' '0.0.0' -InGroup 'group'
-    }
 
     # Test is failing in Proget v2023.
     # See Get-ProGetUniversalPackage.Tests for details on Proget issue.
-    It 'should delete the package with no group'{
+    It 'should delete the same named package that is not in a group'{
+        GivenPackage 'Fubar' '0.0.0'
+        GivenPackage 'Fubar' '0.0.0' -InGroup 'group'
         WhenDeletingPackage -Named 'Fubar' -AtVersion '0.0.0'
         ThenPackageDeleted 'Fubar'
     }
 
-    It 'should not delete the package with a group'{
+    It 'should not delete the same named package that is in a group'{
+        GivenPackage 'Fubar' '0.0.0'
+        GivenPackage 'Fubar' '0.0.0' -InGroup 'group'
         WhenDeletingPackage -Named 'Fubar' -AtVersion '0.0.0'
         ThenPackageNotDeleted 'Fubar' -InGroup 'group'
     }

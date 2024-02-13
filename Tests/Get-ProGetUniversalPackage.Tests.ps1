@@ -42,13 +42,6 @@ BeforeAll {
         Publish-ProGetUniversalPackage -Session $session -FeedName $feedName -PackagePath $upackFile
     }
 
-    function Init
-    {
-        $script:result = $null
-        $script:upackFile = $null
-        GivenFeed $feedName
-    }
-
     function ThenError
     {
         param(
@@ -110,27 +103,23 @@ BeforeAll {
     }
 }
 
-Describe 'Get-ProGetUniversalPackage when package doesn''t exist' {
+Describe 'Get-ProGetUniversalPackage' {
     BeforeEach {
-        Init
+        $script:result = $null
+        $script:upackFile = $null
+        GivenFeed $feedName
     }
 
-    It 'should return nothing and provide an error' {
+    It 'should return nothing and provide an error when package doesn''t exist' {
         WhenGettingPackage 'Fubar' -ErrorAction SilentlyContinue
         ThenNothingReturned
         ThenError -Matches 'package\ was\ not\ found'
     }
 
-    It 'should return nothing and provide no error' {
+    It 'should return nothing and provide no error when package doesn''t exist' {
         WhenGettingPackage 'Fubar' -ErrorAction Ignore
         ThenNothingReturned
         ThenNoErrors
-    }
-}
-
-Describe 'Get-ProGetUniversalPackage' {
-    BeforeEach {
-        Init
     }
 
     It 'should return package' {
@@ -164,12 +153,6 @@ Describe 'Get-ProGetUniversalPackage' {
         WhenGettingPackage '*zz'
         ThenPackageReturned 'Fizz','Buzz'
         ThenNoErrors
-    }
-}
-
-Describe 'Get-ProGetUniversalPackage grab packages by group' {
-    BeforeEach {
-        Init
     }
 
     It 'should only return package within provided group when duplicate named packages are in other groups' {
@@ -208,7 +191,7 @@ Describe 'Get-ProGetUniversalPackage grab packages by group' {
     # When group is not passed in query string it grabs the first package with a matching name, no matter what group it is.
     # Should only grab the package with the name that is not in a group.
     # This is also failing a test in Remove-ProGetUniversalPackage.Tests ("should delete the package with no group").
-    It 'should return same named package that is not in group when group passed is an empty string' {
+    It 'should return same named package that is not in group when group passed an empty string' {
         GivenPackage 'Snafu'
         GivenPackage 'Snafu' -InGroup 'One'
         GivenPackage 'Snafu' -InGroup 'Two'
