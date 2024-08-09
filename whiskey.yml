@@ -65,23 +65,19 @@ Build:
             Throw: true
             Path: Tests\*.Tests.ps1
             ExcludePath:
-            - "*\\Get-ProGetUniversalPackage.Tests.ps1"
             - "*\\Invoke-ProGetNativeApiMethod.Tests.ps1"
             - "*\\Invoke-ProGetRestMethod.Tests.ps1"
             - "*\\New-ProGetSession.Tests.ps1"
             - "*\\Read-ProGetUniversalPackageFile.Tests.ps1"
             - "*\\Remove-ProGetAsset.Tests.ps1"
-            - "*\\Remove-ProGetUniversalPackage.Tests.ps1"
 
 - Pester4:
     Script:
-    - Tests\Get-ProGetUniversalPackage.Tests.ps1
     - Tests\Invoke-ProGetNativeApiMethod.Tests.ps1
     - Tests\Invoke-ProGetRestMethod.Tests.ps1
     - Tests\New-ProGetSession.Tests.ps1
     - Tests\Read-ProGetUniversalPackageFile.Tests.ps1
     - Tests\Remove-ProGetAsset.Tests.ps1
-    - Tests\Remove-ProGetUniversalPackage.Tests.ps1
     Verbose: false
 
 - Delete:

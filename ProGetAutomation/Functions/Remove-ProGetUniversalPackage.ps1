@@ -13,12 +13,12 @@ function Remove-ProGetUniversalPackage
     This function uses ProGet's [universal feed API](https://inedo.com/support/documentation/upack/feed-api/endpoints).
 
     .EXAMPLE
-    Remove-ProGetUniversalPackage -Session $session -FeeName 'PowerShell' -Name 'ProGetAutomation' -Version '0.7.0'
+    Remove-ProGetUniversalPackage -Session $session -FeedName 'PowerShell' -Name 'ProGetAutomation' -Version '0.7.0'
 
     Demonstrates how to delete a specific package version. In this case, package `ProGetAutomation` version `0.7.0` is deleted from the `PowerShell` feed.
 
     .EXAMPLE
-    Remove-ProGetUniversalPackage -Session $session -FeeName 'PowerShell' -Name 'ProGetAutomation' -Version '0.7.0' -GroupName 'Modules'
+    Remove-ProGetUniversalPackage -Session $session -FeedName 'PowerShell' -Name 'ProGetAutomation' -Version '0.7.0' -GroupName 'Modules'
 
     Demonstrates how to delete a specific package version when a package is in a group. In this case, package `ProGetAutomation` version `0.7.0` in the `Modules` group is deleted from the `PowerShell` feed.    
     #>
