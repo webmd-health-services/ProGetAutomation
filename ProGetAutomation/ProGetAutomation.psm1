@@ -13,6 +13,10 @@ Add-Type -AssemblyName 'System.Net.Http'
 Add-Type -AssemblyName 'System.Web'
 Add-Type -AssemblyName 'System.IO.Compression.FileSystem'
 
+$privateModules = Join-Path -Path $PSScriptRoot -ChildPath 'Modules'
+Import-Module -Name (Join-Path -Path $privateModules -ChildPath 'Zip') `
+              -Function @('Add-ZipArchiveEntry', 'New-ZipArchive')
+
 $functionsDirPath = Join-Path -Path $PSScriptRoot -ChildPath 'Functions'
 if( (Test-Path -Path $functionsDirPath -PathType Container) )
 {

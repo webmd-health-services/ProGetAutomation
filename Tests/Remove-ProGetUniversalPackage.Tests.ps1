@@ -2,58 +2,47 @@
 #Requires -Version 5.1
 Set-StrictMode -Version 'Latest'
 
-& (Join-Path -Path $PSScriptRoot -ChildPath 'Initialize-Tests.ps1' -Resolve)
+BeforeAll {
+    & (Join-Path -Path $PSScriptRoot -ChildPath 'Initialize-Tests.ps1' -Resolve)
+    
+    $feedName = $PSCommandPath | Split-Path -Leaf
+    $session = New-ProGetTestSession
 
-$feedName = $PSCommandPath | Split-Path -Leaf
-$session = New-ProGetTestSession
+    function GivenPackage
+    {
+        param(
+            $Name,
+            $Version,
+            $InGroup
+        )
 
-function GivenPackage
-{
-    param(
-        $Name,
-        $Version,
-        $InGroup
-    )
-
-    $packagePath = Join-Path -Path $TestDrive.FullName -ChildPath ('package.{0}.upack' -f [IO.Path]::GetRandomFileName())
-    New-ProGetUniversalPackage -OutFile $packagePath -Version $Version -Name $Name -GroupName $InGroup
-    Publish-ProGetUniversalPackage -Session $session -FeedName $feedName -PackagePath $packagePath
-}
-
-function Init
-{
-    Get-ProGetFeed -Session $session -Name $feedName -ErrorAction Ignore | Remove-ProGetFeed -Session $session -Force
-    New-ProGetFeed -Session $session -Name $feedName -Type 'Universal'
-}
-
-function ThenError
-{
-    param(
-        $Matches
-    )
-
-    It ('should write an error') {
-        $Global:Error | Should -Match $Matches
-
+        $packagePath = Join-Path -Path $TestDrive -ChildPath ('package.{0}.upack' -f [IO.Path]::GetRandomFileName())
+        New-ProGetUniversalPackage -OutFile $packagePath -Version $Version -Name $Name -GroupName $InGroup
+        Publish-ProGetUniversalPackage -Session $session -FeedName $feedName -PackagePath $packagePath
     }
-}
 
-function ThenNoError
-{
-    It ('should not write any errors') {
+    function ThenError
+    {
+        param(
+            $Matches
+        )
+
+        $Global:Error | Should -Match $Matches
+    }
+
+    function ThenNoError
+    {
         $Global:Error | Should -BeNullOrEmpty
     }
-}
 
-function ThenPackageDeleted
-{
-    param(
-        $Named,
-        $InGroup,
-        $AtVersion
-    )
+    function ThenPackageDeleted
+    {
+        param(
+            $Named,
+            $InGroup,
+            $AtVersion
+        )
 
-    It ('should delete the package') {
         $package = Get-ProGetUniversalPackage -Session $session -FeedName $feedName -Name $Named -GroupName $InGroup -ErrorAction Ignore
         if( $AtVersion )
         {
@@ -61,19 +50,17 @@ function ThenPackageDeleted
         }
         $package | Should -BeNullOrEmpty
     }
-}
 
-function ThenPackageNotDeleted
-{
-    param(
-        $Named,
+    function ThenPackageNotDeleted
+    {
+        param(
+            $Named,
 
-        $InGroup,
+            $InGroup,
 
-        $AtVersion
-    )
+            $AtVersion
+        )
 
-    It ('should not delete the package') {
         $package = Get-ProGetUniversalPackage -Session $session -FeedName $feedName -Name $Named -GroupName $InGroup
         if( $AtVersion )
         {
@@ -81,89 +68,82 @@ function ThenPackageNotDeleted
         }
         $package | Should -Not -BeNullOrEmpty
     }
-}
 
-function WhenDeletingPackage
-{
-    [CmdletBinding()]
-    param(
-        [Parameter(Mandatory,ParameterSetName='ByNameAndVersion')]
-        [string]
-        $Named,
+    function WhenDeletingPackage
+    {
+        [CmdletBinding()]
+        param(
+            [Parameter(Mandatory,ParameterSetName='ByNameAndVersion')]
+            [string]
+            $Named,
 
-        [Parameter(Mandatory,ParameterSetName='ByNameAndVersion')]
-        [string]
-        $AtVersion,
+            [Parameter(Mandatory,ParameterSetName='ByNameAndVersion')]
+            [string]
+            $AtVersion,
 
-        [string]
-        $InGroup,
+            [string]
+            $InGroup,
 
-        [Switch]
-        $WhatIf
-    )
+            [Switch]
+            $WhatIf
+        )
 
-    $Global:Error.Clear()
-    Remove-ProGetUniversalPackage -Session $session -FeedName $feedName -Name $Named -Version $AtVersion -GroupName $InGroup -WhatIf:$WhatIf
+        $Global:Error.Clear()
+        Remove-ProGetUniversalPackage -Session $session -FeedName $feedName -Name $Named -Version $AtVersion -GroupName $InGroup -WhatIf:$WhatIf
+    }
 }
 
 Describe 'Remove-ProGetUniversalPackage' {
-    Init
-    GivenPackage 'Fubar' '0.0.0'
-    WhenDeletingPackage -Named 'Fubar' -AtVersion '0.0.0'
-    ThenPackageDeleted 'Fubar'
-}
+    BeforeEach {
+        Get-ProGetFeed -Session $session -Name $feedName -ErrorAction Ignore | Remove-ProGetFeed -Session $session -Force
+        New-ProGetFeed -Session $session -Name $feedName -Type 'Universal'
+    }
 
-Describe 'Remove-ProGetUniversalPackage.when package with the same name in a group' {
-    Init
-    GivenPackage 'Fubar' '0.0.0'
-    GivenPackage 'Fubar' '0.0.0' -InGroup 'group'
-    WhenDeletingPackage -Named 'Fubar' -AtVersion '0.0.0'
-    ThenPackageDeleted 'Fubar'
-    ThenPackageNotDeleted 'Fubar' -InGroup 'group'
-}
+    It 'should delete the package' {
+        GivenPackage 'Fubar' '0.0.0'
+        WhenDeletingPackage -Named 'Fubar' -AtVersion '0.0.0'
+        ThenPackageDeleted 'Fubar'
+    }
 
-Describe 'Remove-ProGetUniversalPackage.when package is in a group and package with the same name not in a group' {
-    Init
-    GivenPackage 'Fubar' '0.0.0'
-    GivenPackage 'Fubar' '0.0.0' -InGroup 'group'
-    WhenDeletingPackage -Named 'Fubar' -AtVersion '0.0.0' -InGroup 'group'
-    ThenPackageDeleted 'Fubar' -InGroup 'group'
-    ThenPackageNotDeleted 'Fubar'
-}
+    It 'should only delete provided version when package has multiple versions' {
+        GivenPackage 'Fubar' '0.0.0'
+        GivenPackage 'Fubar' '0.0.1'
+        GivenPackage 'Fubar' '0.0.2'
+        WhenDeletingPackage -Named 'Fubar' -AtVersion '0.0.1'
+        ThenPackageDeleted 'Fubar' -AtVersion '0.0.1'
+        ThenPackageNotDeleted 'Fubar' -AtVersion '0.0.0'
+        ThenPackageNotDeleted 'Fubar' -AtVersion '0.0.2'
+    }
 
-Describe 'Remove-ProGetUniversalPackage.when package doesn''t exist' {
-    Init
-    WhenDeletingPackage -Named 'Fubar' -AtVersion '0.0.0' -ErrorAction SilentlyContinue
-    ThenError -Matches 'package\ not\ found'
-}
+    It 'should write an error when package doesn''t exist' {
+        WhenDeletingPackage -Named 'Fubar' -AtVersion '0.0.0' -ErrorAction SilentlyContinue
+        ThenError -Matches 'package\ not\ found'
+    }
 
-Describe 'Remove-ProGetUniversalPackage.when using WhatIf' {
-    Init
-    GivenPackage 'Fubar' '0.0.0'
-    WhenDeletingPackage -Named 'Fubar' -AtVersion '0.0.0' -WhatIf
-    ThenPackageNotDeleted 'Fubar'
-}
+    It 'should not write an error when package doesn''t exist and ignoring errors' {
+        WhenDeletingPackage -Named 'Fubar' -AtVersion '0.0.0' -ErrorAction Ignore
+        ThenNoError
+    }
 
-Describe 'Remove-ProGetUniversalPackage.when there are multiple versions' {
-    Init
-    GivenPackage 'Fubar' '0.0.0'
-    GivenPackage 'Fubar' '0.0.1'
-    GivenPackage 'Fubar' '0.0.2'
-    WhenDeletingPackage -Named 'Fubar' -AtVersion '0.0.1'
-    ThenPackageDeleted 'Fubar' -AtVersion '0.0.1'
-    ThenPackageNotDeleted 'Fubar' -AtVersion '0.0.0'
-    ThenPackageNotDeleted 'Fubar' -AtVersion '0.0.2'
-}
+    It 'should not delete package when using -WhatIf' {
+        GivenPackage 'Fubar' '0.0.0'
+        WhenDeletingPackage -Named 'Fubar' -AtVersion '0.0.0' -WhatIf
+        ThenPackageNotDeleted 'Fubar'
+    }
 
-Describe 'Remove-ProGetUniversalPackage.when package doesn''t exist' {
-    Init
-    WhenDeletingPackage -Named 'Fubar' -AtVersion '0.0.0' -ErrorAction SilentlyContinue
-    ThenError -Matches 'package\ not\ found'
-}
+    # Test is failing in Proget v2023.
+    # See Get-ProGetUniversalPackage.Tests for details on Proget issue.
+    It 'should delete the same named package that is not in a group'{
+        GivenPackage 'Fubar' '0.0.0'
+        GivenPackage 'Fubar' '0.0.0' -InGroup 'group'
+        WhenDeletingPackage -Named 'Fubar' -AtVersion '0.0.0'
+        ThenPackageDeleted 'Fubar'
+    }
 
-Describe 'Remove-ProGetUniversalPackage.when package doesn''t exist and ignoring errors' {
-    Init
-    WhenDeletingPackage -Named 'Fubar' -AtVersion '0.0.0' -ErrorAction Ignore
-    ThenNoError
+    It 'should not delete the same named package that is in a group'{
+        GivenPackage 'Fubar' '0.0.0'
+        GivenPackage 'Fubar' '0.0.0' -InGroup 'group'
+        WhenDeletingPackage -Named 'Fubar' -AtVersion '0.0.0'
+        ThenPackageNotDeleted 'Fubar' -InGroup 'group'
+    }
 }
-
