@@ -12,16 +12,21 @@ function Get-ProGetRequestHeader
 
     $headers = @{}
 
-    if( $Session.ApiKey )
+    if ($Session.ApiKey)
     {
         $headers['X-ApiKey'] = $Session.ApiKey;
     }
 
-    if( $Session.Credential )
+    if ($Session.Credential)
     {
-        $bytes = [Text.Encoding]::UTF8.GetBytes(('{0}:{1}' -f $Session.Credential.UserName,$Session.Credential.GetNetworkCredential().Password))
-        $creds = 'Basic ' + [Convert]::ToBase64String($bytes)
-        $headers['Authorization'] = $creds
+        $credential = "$($Session.Credential.UserName):$($Session.Credential.GetNetworkCredential().Password)"
+        $bytes = [Text.Encoding]::UTF8.GetBytes($credential)
+        $headers['Authorization'] = "Basic $([Convert]::ToBase64String($bytes))"
+
+        if (-not $Session.ApiKey)
+        {
+            $headers['X-ApiKey'] = $credential
+        }
     }
 
     return $headers

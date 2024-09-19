@@ -3,6 +3,11 @@
 
 # ProGetAutomation Changelog
 
+## 3.0.1
+
+* Fixed: some of ProGet's API endpoints don't recognize the HTTP `Authorization` header.
+
+
 ## 3.0.0
 
 > Released 31 Jan 2024
