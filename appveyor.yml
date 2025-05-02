@@ -56,6 +56,7 @@ for:
 
         $ProgressPreference = 'SilentlyContinue'
         iwr https://raw.githubusercontent.com/webmd-health-services/Prism/main/Scripts/init.ps1 | iex | Format-Table
+        .\init.ps1 -SqlServerName '.\SQL2017'
         .\build.ps1
 
 # Build in PowerShell
@@ -72,4 +73,5 @@ for:
 
         $ProgressPreference = 'SilentlyContinue'
         iwr https://raw.githubusercontent.com/webmd-health-services/Prism/main/Scripts/init.ps1 | iex | Format-Table
+        ./init.ps1 -SqlServerName './SQL2017'
         ./build.ps1

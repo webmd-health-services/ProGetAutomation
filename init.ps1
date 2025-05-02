@@ -12,6 +12,9 @@ $InformationPreference = 'Continue'
 $ProgressPreference = 'SilentlyContinue'
 Set-StrictMode -Version 'Latest'
 
+prism install -Path $PSScriptRoot | Format-Table
+prism install -Path (Join-Path -Path $PSScriptRoot -ChildPath 'ProGetAutomation') | Format-Table
+
 Import-Module -Name (Join-Path -Path $PSScriptRoot -ChildPath 'PSModules\Carbon') -Force -Verbose:$false
 
 $version = '24.0.16'
@@ -25,8 +28,10 @@ if( $runningUnderAppVeyor )
 }
 
 $outputDir = Join-Path -Path $PSScriptRoot -ChildPath '.output'
-$hubPath = Join-Path -Path $outputDir -ChildPath "InedoHub\hub.exe"
-if( -not (Test-Path -Path $hubPath) )
+New-Item -Path $outputDir -ItemType Directory -Force | Write-Verbose
+
+$hubPath = Join-Path -Path $outputDir -ChildPath 'InedoHub\hub.exe'
+if (-not (Test-Path -Path $hubPath))
 {
     Write-Information 'Downloading InedoHub.'
     $hubZipPath = Join-Path -Path $outputDir -ChildPath 'InedoHub.zip'

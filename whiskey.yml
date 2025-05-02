@@ -1,12 +1,5 @@
 
 Build:
-- PowerShell:
-    ExceptDuring: Clean
-    ScriptBlock: |
-        prism install | Format-Table
-        prism install -Path .\ProGetAutomation | Format-Table
-        .\init.ps1 -SqlServerName '.\SQL2017'
-
 - Version:
     Path: ProGetAutomation\ProGetAutomation.psd1
     Prerelease:
