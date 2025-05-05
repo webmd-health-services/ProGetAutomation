@@ -17,6 +17,8 @@ prism install -Path (Join-Path -Path $PSScriptRoot -ChildPath 'ProGetAutomation'
 
 Import-Module -Name (Join-Path -Path $PSScriptRoot -ChildPath 'PSModules\Carbon') -Force -Verbose:$false
 
+# TODO: When updating to 2024.35 or later, remove the "-Skip" parameter from the Set-ProGetAsset.Tests.ps1 test named:
+# 'should not overwrite assets imported from zip archive by default'
 $version = '24.0.16'
 
 $runningUnderAppVeyor = (Test-Path -Path 'env:APPVEYOR')
