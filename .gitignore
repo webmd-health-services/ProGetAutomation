@@ -9,3 +9,5 @@
 /ProGetAutomation/NOTICE.txt
 /ProGetAutomation/README.md
 /PSModules
+/.vagrant/
+test_api_key.txt

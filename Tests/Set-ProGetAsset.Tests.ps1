@@ -27,7 +27,13 @@ BeforeAll {
             [String] $WithContent
         )
 
-        $script:filePath = Join-Path -Path $script:testDir -ChildPath $Path
+        $script:filePath = $Path
+        if (-not [IO.Path]::IsPathRooted($script:filePath))
+        {
+            $script:filePath = Join-Path -Path $script:testDir -ChildPath $Path
+        }
+
+        New-Item -Path ($script:filePath | Split-Path -Parent) -ItemType Directory -Force | Write-Debug
         New-Item -Path $script:filePath -ItemType 'File' -Force
 
         if ($WithContent)
@@ -68,18 +74,27 @@ BeforeAll {
 
             [String] $InFolder = '',
 
-            [Object] $WithContent = $null
+            [Object] $WithContent = $null,
+
+            [String] $Name
         )
+
+        if (-not $Name)
+        {
+            $Name = $script:assetName
+        }
 
         $asset = $null
         try
         {
-            $asset =
+            $allAssets =
                 Get-ProGetAsset -Session $script:session `
                                 -DirectoryName $script:feedName `
                                 -Path $InFolder `
-                                -ErrorAction Ignore |
-                Where-Object 'name' -eq $script:assetName
+                                -ErrorAction Ignore
+
+            Write-Debug "All assets in ${script:feedName}/${InFolder}:$([Environment]::NewLine)$(($allAssets | Select-Object -ExpandProperty 'name') -join [Environment]::NewLine)"
+            $asset = $allAssets | Where-Object 'name' -eq $Name
         }
         catch
         {
@@ -92,13 +107,13 @@ BeforeAll {
         }
         else
         {
-            $path = $script:assetName
+            $path = $Name
             if ($InFolder)
             {
                 $path = Join-Path -Path $InFolder -ChildPath $path
             }
 
-            $asset | Should -Not -BeNullOrEmpty
+            $asset | Should -Not -BeNullOrEmpty -Because "asset ""${script:feedName}/${InFolder}/$Name"" should exist"
             $assetContents =
                 Get-ProGetAssetContent -Session $session -DirectoryName $script:feedName -Path $path
             $assetContents | Should -Be $WithContent
@@ -245,4 +260,86 @@ Describe 'Set-ProGetAsset' {
         ThenAsset -Exists -WithContent $content
         ThenError -IsEmpty
     }
+
+    It 'should import assets from zip archive' {
+        $archiveName = 'import-archive-zip'
+        $archiveRoot = Join-Path -Path $script:testDir -ChildPath $archiveName
+        $zipPath = Join-Path -Path $script:testDir -ChildPath "${archiveName}.zip"
+
+        GivenFile (Join-Path -Path $archiveRoot -ChildPath 'one/1.txt') -WithContent ''
+        GivenFile (Join-Path -Path $archiveRoot -ChildPath 'two/two/2.txt') -WithContent ''
+
+        $compressionLevel = 'Optimal'
+        $includeBaseDirectory = $false
+        [System.IO.Compression.ZipFile]::CreateFromDirectory($archiveRoot, $zipPath, $compressionLevel, $includeBaseDirectory)
+
+        WhenAssetIsPublished -WithArgs @{ Path = $archiveName; ArchivePath = $zipPath; }
+        ThenAsset -Name '1.txt' -Exists -InFolder "${archiveName}/one" -WithContent ''
+        ThenAsset -Name '2.txt' -Exists -InFolder "${archiveName}/two/two" -WithContent ''
+        ThenError -IsEmpty
+    }
+
+    # TODO: The import archive API doesn't currently respect the overwrite=false query parameter (EDO-11819)
+    # Will be fixed in ProGet 2024.35
+    It 'should not overwrite assets imported from zip archive by default' -Skip {
+        $existingFile = 'do-not-overwrite.txt'
+        $originalContent = 'original content'
+        GivenFile $existingFile -WithContent $originalContent
+
+        $assetPathRoot = 'import-archive-zip'
+        $assetPath = "${assetPathRoot}/${existingFile}"
+        WhenAssetIsPublished -WithArgs @{
+                FilePath = $existingFile;
+                Path = $assetPath;
+                ContentType = 'text/plain';
+            }
+        ThenAsset -Name $existingFile -Exists -InFolder $assetPathRoot -WithContent $originalContent
+
+        $archiveRoot = Join-Path -Path $script:testDir -ChildPath $assetPathRoot
+        $zipPath = Join-Path -Path $script:testDir -ChildPath "${assetPathRoot}.zip"
+        GivenFile (Join-Path -Path $archiveRoot -ChildPath $existingFile) -WithContent 'overwritten content'
+        GivenFile (Join-Path -Path $archiveRoot -ChildPath 'new-file.txt') -WithContent 'new file'
+
+        $compressionLevel = 'Optimal'
+        $includeBaseDirectory = $false
+        [System.IO.Compression.ZipFile]::CreateFromDirectory($archiveRoot, $zipPath, $compressionLevel, $includeBaseDirectory)
+
+        WhenAssetIsPublished -WithArgs @{ Path = $assetPathRoot; ArchivePath = $zipPath; Overwrite = $false }
+        ThenAsset -Name $existingFile -Exists -InFolder $assetPathRoot -WithContent $originalContent
+        ThenAsset -Name 'new-file.txt' -Exists -InFolder $assetPathRoot -WithContent 'new file'
+        ThenError -IsEmpty
+    }
+
+    It 'should overwrite assets imported from zip archive when specified' {
+        $existingFile = 'do-not-overwrite.txt'
+        $originalContent = 'original content'
+        GivenFile $existingFile -WithContent $originalContent
+
+        $assetPathRoot = 'import-archive-zip'
+        $assetPath = "${assetPathRoot}/${existingFile}"
+        WhenAssetIsPublished -WithArgs @{
+                FilePath = $existingFile;
+                Path = $assetPath;
+                ContentType = 'text/plain';
+            }
+        ThenAsset -Name $existingFile -Exists -InFolder $assetPathRoot -WithContent $originalContent
+
+        $archiveRoot = Join-Path -Path $script:testDir -ChildPath $assetPathRoot
+        $zipPath = Join-Path -Path $script:testDir -ChildPath "${assetPathRoot}.zip"
+        GivenFile (Join-Path -Path $archiveRoot -ChildPath $existingFile) -WithContent 'overwritten content'
+        GivenFile (Join-Path -Path $archiveRoot -ChildPath 'new-file.txt') -WithContent 'new file'
+
+        $compressionLevel = 'Optimal'
+        $includeBaseDirectory = $false
+        [System.IO.Compression.ZipFile]::CreateFromDirectory($archiveRoot, $zipPath, $compressionLevel, $includeBaseDirectory)
+
+        WhenAssetIsPublished -WithArgs @{ Path = $assetPathRoot; ArchivePath = $zipPath; Overwrite = $true }
+        ThenAsset -Name $existingFile -Exists -InFolder $assetPathRoot -WithContent 'overwritten content'
+        ThenAsset -Name 'new-file.txt' -Exists -InFolder $assetPathRoot -WithContent 'new file'
+        ThenError -IsEmpty
+    }
+
+    # TODO: Add test for importing tgz archive once building on Linux
+    # It 'should import assets from tgz archive' {
+    # }
 }

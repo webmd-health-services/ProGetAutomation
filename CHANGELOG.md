@@ -3,6 +3,14 @@
 
 # ProGetAutomation Changelog
 
+## 3.1.0
+
+> Released 6 May 2025
+
+* Add support for importing archives via the [Import
+  Archive](https://docs.inedo.com/docs/proget/api/assets/folders/import) API to `Set-ProGetAsset`. See the new
+  `ArchiveFile` and `Overwrite` parameters.
+
 ## 3.0.1
 
 * Fixed: some of ProGet's API endpoints don't recognize the HTTP `Authorization` header.

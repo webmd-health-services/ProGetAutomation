@@ -1,149 +1,19 @@
 
-$apiKey = 'HKgaAKWjjgB9YRrTbTpHzw=='
+$repoRoot = Join-Path -Path $PSScriptRoot -ChildPath '../..' -Resolve
+$apiKeyFilePath = Join-Path -Path $repoRoot -ChildPath 'test_api_key.txt' -Resolve
+$apiKey = Get-Content -Path $apiKeyFilePath -Raw
 $credential = New-Object 'pscredential' ('Admin',(ConvertTo-SecureString 'Admin' -AsPlainText -Force))
-
-$pgNotInstalledMsg = 'It looks like ProGet isn''t installed. Please run init.ps1 to install and configure a local ProGet instance so we can run automated tests against it.'
-$svcRoot =
-    Get-ItemProperty -Path 'hklm:\SOFTWARE\Inedo\ProGet' -Name 'ServicePath' -ErrorAction Ignore |
-    Select-Object -ExpandProperty 'ServicePath'
-if( -not $svcRoot )
-{
-    # If ProGet is installed with the Inedo Hub, there won't be any registry key.
-    $svc = Get-CimInstance -ClassName 'Win32_Service' -Filter 'Name="INEDOPROGETSVC"'
-    if( -not $svc )
-    {
-        throw $pgNotInstalledMsg
-    }
-
-    $svcRoot = $svc.PathName
-    if( $svcRoot -match '"([^"]+)"' )
-    {
-        $svcRoot = $Matches[1]
-        do
-        {
-            $svcRoot = $svcRoot | Split-Path -Parent
-        }
-        while( $svcRoot -and -not (Test-Path -Path $svcRoot -PathType Container) )
-    }
-}
-
-if( -not $svcRoot )
-{
-    throw $pgNotInstalledMsg
-}
-
-[uri]$uri = ('http://{0}:8624/' -f [Environment]::MachineName)
-
-$configFiles = & {
-                    Join-Path -Path $svcRoot -ChildPath 'ProGet.Service.exe.config'
-                    Join-Path -Path $svcRoot -ChildPath 'App_appsettings.config'
-                    Join-Path -Path $env:ProgramData -ChildPath 'Inedo\SharedConfig\ProGet.config'
-                } |
-                Where-Object { Test-Path -Path $_ -PathType Leaf }
-
-foreach( $configPath in $configFiles )
-{
-    $configContent = Get-Content -Raw -Path $configPath
-    $configContent | Write-Debug
-    $svcConfig = [xml]$configContent
-    if( -not $svcConfig )
-    {
-        throw $pgNotInstalledMsg
-    }
-
-    $connString = $svcConfig.SelectSingleNode("//add[@key = 'InedoLib.DbConnectionString']").Value
-    if( $connString )
-    {
-        break
-    }
-
-
-    $connString = $svcConfig.SelectSingleNode("//ConnectionString").InnerText
-    if( $connString )
-    {
-        break
-    }
-}
-
-if( -not $connString )
-{
-    Write-Error -Message ('It looks like ProGet isn''t installed. We can''t find its connection string.') -ErrorAction Stop
-}
-
-Write-Debug -Message $connString
-
-$conn = New-Object 'Data.SqlClient.SqlConnection'
-$conn.ConnectionString = $connString
-$conn.Open()
+[uri] $uri = 'http://localhost:8624/'
 
 try
 {
-    $cmd = New-Object 'Data.SqlClient.SqlCommand'
-    $cmd.Connection = $conn
-    $cmd.CommandText = '[dbo].[ApiKeys_GetApiKeys]'
-    $cmd.CommandType = [Data.CommandType]::StoredProcedure
-
-    $allApiKeys = [Collections.ArrayList]::new()
-    $apiKeyColumnIdx = $null
-
-    $reader = $cmd.ExecuteReader()
-
-    while ($reader.Read())
-    {
-        if (-not $apiKeyColumnIdx)
-        {
-            foreach ($i in (0..($reader.FieldCount - 1)))
-            {
-                if ($reader.GetName($i) -eq 'ApiKey_Text')
-                {
-                    $apiKeyColumnIdx = $i
-                    break
-                }
-            }
-        }
-
-        $allApiKeys.Add($reader.GetValue($apiKeyColumnIdx)) | Out-Null
-    }
-
-    $reader.Close()
-
-    if( $allApiKeys -notcontains $apiKey )
-    {
-        $apiKeyDescription = 'ProGetAutomation API Key'
-        $apiKeyConfig = @'
-<Inedo.ProGet.ApiKeys.ApiKey Assembly="ProGetCoreEx">
-  <Properties AllowPackagePromotionApi="False" AllowRepackagingApi="False" AllowFeedManagementApi="False" AllowWebhooksApi="True" AllowConnectorHealthApi="True" AllowFeedsApi="True" AllowDockerBlobReaderApi="False" UseApiKeyTasks="False" AllowNativeApi="True" DoNotLogRequest="False" DoNotLogResponse="False" />
-</Inedo.ProGet.ApiKeys.ApiKey>
-'@
-        $cmd.Dispose()
-
-        $cmd = New-Object 'Data.SqlClient.SqlCommand'
-        $cmd.CommandText = '[dbo].[ApiKeys_CreateOrUpdateApiKey]'
-        $cmd.Connection = $conn
-        $cmd.CommandType = [Data.CommandType]::StoredProcedure
-
-        $parameters = @{
-            '@ApiKey_Text' = $apiKey
-            '@ApiKey_Description' = $apiKeyDescription
-            '@ApiKey_Configuration' = $apiKeyConfig
-            '@ApiKey_Name' = $apiKeyDescription
-        }
-        foreach( $name in $parameters.Keys )
-        {
-            $value = $parameters[$name]
-            if( -not $name.StartsWith( '@' ) )
-            {
-                $name = '@{0}' -f $name
-            }
-            Write-Verbose ('{0} = {1}' -f $name,$value)
-            [void] $cmd.Parameters.AddWithValue( $name, $value )
-        }
-        [Void]$cmd.ExecuteNonQuery();
-    }
+    Invoke-WebRequest -Uri $uri | Write-Debug
 }
-finally
+catch
 {
-    $conn.Close()
+    $msg = 'It looks like ProGet isn''t installed. Please run init.ps1 to install and configure a local ProGet ' +
+           'instance so we can run automated tests against it.'
+    Write-Error -Message $msg -ErrorAction 'Stop'
 }
 
 function New-ProGetTestSession
