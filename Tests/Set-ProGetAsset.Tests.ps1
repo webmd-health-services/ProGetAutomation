@@ -279,9 +279,7 @@ Describe 'Set-ProGetAsset' {
         ThenError -IsEmpty
     }
 
-    # TODO: The import archive API doesn't currently respect the overwrite=false query parameter (EDO-11819)
-    # Will be fixed in ProGet 2024.35
-    It 'should not overwrite assets imported from zip archive by default' -Skip {
+    It 'should not overwrite assets imported from zip archive by default' {
         $existingFile = 'do-not-overwrite.txt'
         $originalContent = 'original content'
         GivenFile $existingFile -WithContent $originalContent
