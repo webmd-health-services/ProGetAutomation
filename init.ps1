@@ -17,7 +17,7 @@ prism install -Path (Join-Path -Path $PSScriptRoot -ChildPath 'ProGetAutomation'
 
 Import-Module -Name (Join-Path -Path $PSScriptRoot -ChildPath 'PSModules\Carbon') -Force -Verbose:$false
 
-$version = '24.0.36'
+$version = '24.0.39'
 
 $runningUnderAppVeyor = (Test-Path -Path 'env:APPVEYOR')
 
