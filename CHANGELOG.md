@@ -3,18 +3,21 @@
 
 # ProGetAutomation Changelog
 
+## 3.2.0
+
+Added WhatIf/ShouldProcess support to New-ProGetUniversalPackage and Add-ProGetUniversalPackageFile functions.
+
 ## 3.1.0
 
 > Released 6 May 2025
 
-* Add support for importing archives via the [Import
-  Archive](https://docs.inedo.com/docs/proget/api/assets/folders/import) API to `Set-ProGetAsset`. See the new
-  `ArchiveFile` and `Overwrite` parameters.
+Add support for importing archives via the [Import
+Archive](https://docs.inedo.com/docs/proget/api/assets/folders/import) API to `Set-ProGetAsset`. See the new
+`ArchiveFile` and `Overwrite` parameters.
 
 ## 3.0.1
 
-* Fixed: some of ProGet's API endpoints don't recognize the HTTP `Authorization` header.
-
+Fixed: some of ProGet's API endpoints don't recognize the HTTP `Authorization` header.
 
 ## 3.0.0
 

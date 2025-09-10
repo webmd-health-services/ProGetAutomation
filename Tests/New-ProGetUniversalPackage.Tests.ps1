@@ -243,4 +243,11 @@ Describe 'New-ProGetUniversalPackage' {
         ThenError -Matches 'does\ not\ match'
         ThenPackageNotCreated
     }
+
+    It 'supports WhatIf' {
+        $newArgs = @{ name = 'test' ; version = '0.0.0'; WhatIf = $true; }
+        WhenPackaging -WithParameters $newArgs
+        ThenPackageNotCreated
+        $Global:Error | Should -BeNullOrEmpty
+   }
 }

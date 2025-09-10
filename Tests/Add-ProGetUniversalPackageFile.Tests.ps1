@@ -5,7 +5,7 @@ Set-StrictMode -Version 'Latest'
 BeforeAll {
     Set-StrictMode -Version 'Latest'
 
-    & (Join-Path -Path $PSScriptRoot -ChildPath 'Initialize-Tests.ps1' -Resolve)
+    Import-Module -Name (Join-Path -Path $PSScriptRoot -ChildPath '..\ProGetAutomation' -Resolve)
 
     $script:testDirPath = $null
     $script:testNum = 0
@@ -130,11 +130,9 @@ BeforeAll {
     {
         [CmdletBinding()]
         param(
-            [string[]]
-            $Path,
+            [String[]] $Path,
 
-            [Switch]
-            $Force,
+            [switch] $Force,
 
             $AtPackageRoot,
 
@@ -142,14 +140,13 @@ BeforeAll {
 
             $WithName,
 
-            [Switch]
-            $AsString,
+            [switch] $AsString,
 
-            [switch]
-            $Quiet,
+            [switch] $Quiet,
 
-            [switch]
-            $NonPipeline
+            [switch] $NonPipeline,
+
+            [hashtable] $WithArgs
         )
 
         $packagePath = Join-Path -Path $script:testDirPath -ChildPath 'package.upack.zip'
@@ -158,29 +155,32 @@ BeforeAll {
             $script:package = New-ProGetUniversalPackage -OutFile $packagePath -Version '0.0.0' -Name 'ProGetAutomation'
         }
 
-        $params = @{
-            PackagePath = $script:package.FullName
-            Quiet = $Quiet
+        if (-not $WithArgs)
+        {
+            $WithArgs = @{}
         }
+
+        $WithArgs['PackagePath'] = $script:package.FullName
+        $WithArgs['Quiet'] = $Quiet
 
         if( $AtPackageRoot )
         {
-            $params['PackageParentPath'] = $AtPackageRoot
+            $WithArgs['PackageParentPath'] = $AtPackageRoot
         }
 
         if( $Force )
         {
-            $params['Force'] = $true
+            $WithArgs['Force'] = $true
         }
 
         if( $WithBasePath )
         {
-            $params['BasePath'] = $WithBasePath
+            $WithArgs['BasePath'] = $WithBasePath
         }
 
         if( $WithName )
         {
-            $params['PackageItemName'] = $WithName
+            $WithArgs['PackageItemName'] = $WithName
         }
 
         $Global:Error.Clear()
@@ -201,11 +201,11 @@ BeforeAll {
 
         if( $NonPipeline )
         {
-            Add-ProGetUniversalPackageFile -InputObject $pathsToPackage @params
+            Add-ProGetUniversalPackageFile -InputObject $pathsToPackage @WithArgs
         }
         else
         {
-            $pathsToPackage | Add-ProGetUniversalPackageFile @params
+            $pathsToPackage | Add-ProGetUniversalPackageFile @WithArgs
         }
     }
 }
@@ -312,5 +312,12 @@ Describe 'Add-ProGetUniversalPackageFile' {
         GivenFile 'one.cs', 'two.cs'
         WhenAddingFiles 'one.cs', 'two.cs' -NonPipeline
         ThenPackageContains 'one.cs', 'two.cs'
+    }
+
+    It 'supports WhatIf' {
+        GivenFile '16a.cs', '16b.cs'
+        WhenAddingFiles '16a.cs','16b.cs' -WithArgs @{ WhatIf = $true; }
+        ThenPackageNotContains '16a.cs','16b.cs'
+        $Global:Error | Should -BeNullOrEmpty
     }
 }
