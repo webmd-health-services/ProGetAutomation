@@ -1,9 +1,9 @@
 {
-  "PSModules": [
-    {
-      "name": "Zip",
-      "version": "0.3.2",
-      "repositorySourceLocation": "https://www.powershellgallery.com/api/v2"
-    }
-  ]
+    "PSModules":  [
+                      {
+                          "name":  "Zip",
+                          "version":  "1.0.0",
+                          "repositorySourceLocation":  "https://www.powershellgallery.com/api/v2"
+                      }
+                  ]
 }
