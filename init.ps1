@@ -53,10 +53,10 @@ if( -not (Test-Path -Path $hubPath) )
 
 Get-Service -Name 'InedoProget*' | Start-Service
 
-Write-Information 'Downloading pgutil.'
 $latestPgutilRelease = Invoke-RestMethod -Uri 'https://api.github.com/repos/Inedo/pgutil/releases/latest'
 $asset = $latestPgutilRelease.assets | Where-Object Name -EQ 'pgutil-win-x64.zip'
 $pgutilZipPath = Join-Path -Path $outputDir -ChildPath 'pgutil.zip'
+Write-Information "Downloading pgutil $($latestPgutilRelease.tag_name)"
 Invoke-WebRequest -Uri $asset.browser_download_url -OutFile $pgutilZipPath
 Expand-Archive -Path $pgutilZipPath -DestinationPath (Join-Path -Path $outputDir -ChildPath 'pgutil') -Force
 $pgutilExe = Join-Path -Path $outputDir -ChildPath 'pgutil\pgutil.exe' -Resolve
