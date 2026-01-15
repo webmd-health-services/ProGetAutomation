@@ -48,8 +48,7 @@ if( -not (Test-Path -Path $hubPath) )
 # Free edition license
 & $hubPath 'install' `
            "ProGet:$($version)" `
-           --ConnectionString="Server=$($SqlServerName); $($dbCredentials)" `
-           --LicenseKey=MCTT2MUA-2Y72-F16311-S89JKR-KJWRU50W
+           --ConnectionString="Server=$($SqlServerName); $($dbCredentials)"
 
 Get-Service -Name 'InedoProget*' | Start-Service
 
@@ -59,10 +58,14 @@ $pgutilZipPath = Join-Path -Path $outputDir -ChildPath 'pgutil.zip'
 Write-Information "Downloading pgutil $($latestPgutilRelease.tag_name)"
 Invoke-WebRequest -Uri $asset.browser_download_url -OutFile $pgutilZipPath
 Expand-Archive -Path $pgutilZipPath -DestinationPath (Join-Path -Path $outputDir -ChildPath 'pgutil') -Force
-$pgutilExe = Join-Path -Path $outputDir -ChildPath 'pgutil\pgutil.exe' -Resolve
 
-Write-Information 'Creating API key.'
+$pgutilExe = Join-Path -Path $outputDir -ChildPath 'pgutil/pgutil.exe' -Resolve
 & $pgutilExe sources add --name=Default --url=http://localhost:8624/
+
+Write-Information 'Adding ProGet license key.'
+& $pgutilExe settings set --name=Licensing.Key --value=MCTT2MUA-2Y72-F16311-S89JKR-KJWRU50W
+
+Write-Information 'Creating API key to use for tests.'
 $apiKey = & $pgutilExe apikeys create system
 $apiKey = $apiKey.Trim()
 Write-Verbose "API key: ${apiKey}"
