@@ -56,7 +56,7 @@ $latestPgutilRelease = Invoke-RestMethod -Uri 'https://api.github.com/repos/Ined
 $asset = $latestPgutilRelease.assets | Where-Object Name -EQ 'pgutil-win-x64.zip'
 $pgutilZipPath = Join-Path -Path $outputDir -ChildPath 'pgutil.zip'
 Write-Information "Downloading pgutil $($latestPgutilRelease.tag_name)"
-Invoke-WebRequest -Uri $asset.browser_download_url -OutFile $pgutilZipPath
+Invoke-WebRequest -Uri $asset.browser_download_url -OutFile $pgutilZipPath -UseBasicParsing
 Expand-Archive -Path $pgutilZipPath -DestinationPath (Join-Path -Path $outputDir -ChildPath 'pgutil') -Force
 
 $pgutilExe = Join-Path -Path $outputDir -ChildPath 'pgutil/pgutil.exe' -Resolve

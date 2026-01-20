@@ -7,7 +7,7 @@ $credential = New-Object 'pscredential' ('Admin',(ConvertTo-SecureString 'Admin'
 
 try
 {
-    Invoke-WebRequest -Uri $uri | Write-Debug
+    Invoke-WebRequest -Uri $uri -UseBasicParsing | Write-Debug
 }
 catch
 {
@@ -80,14 +80,14 @@ function Assert-ProGetActivated
 
     Write-Debug $body.ToSTring()
 
-    Invoke-WebRequest -Method Post -Uri $loginUri -Body $body.ToString() -WebSession $activationWebSession
+    Invoke-WebRequest -Method Post -Uri $loginUri -Body $body.ToString() -WebSession $activationWebSession -UseBasicParsing
     try
     {
         $activateUri = New-Object 'Uri' $uri,'/administration/licensing/activate'
-        Invoke-WebRequest -Uri $activateUri -WebSession $activationWebSession
+        Invoke-WebRequest -Uri $activateUri -WebSession $activationWebSession -UseBasicParsing
 
         $tasksUri = [Uri]::New($uri, '/administration/security/tasks')
-        $result = Invoke-WebRequest -Uri $tasksUri -WebSession $activationWebSession
+        $result = Invoke-WebRequest -Uri $tasksUri -WebSession $activationWebSession -UseBasicParsing
 
         # Now, disable Anonymous admin access, if it's enabled (i.e. the "Remove Anonymous Access" button is on the page).
         if( $result.RawContent -match 'onclick="[^"]+privilegeId&quot;:(\d+)[^"]+" data-url="([^"]+/RemovePrivilege)"[^>]*>*\bRemove Anonymous Access\b.*<' )
@@ -96,12 +96,12 @@ function Assert-ProGetActivated
             $headers = @{ $antiCsrfInput.name = $antiCsrfInput.value }
             $disableUri = [Uri]::New($uri, $Matches[2])
             $body = "privilegeId=$($Matches[1])"
-            Invoke-WebRequest -Uri $disableUri -Method 'Post' -Body $body -Headers $headers -WebSession $activationWebSession
+            Invoke-WebRequest -Uri $disableUri -Method 'Post' -Body $body -Headers $headers -WebSession $activationWebSession -UseBasicParsing
         }
     }
     finally
     {
-        Invoke-WebRequest -Uri ([Uri]::New($uri, '/log-out')) -WebSession $activationWebSession
+        Invoke-WebRequest -Uri ([Uri]::New($uri, '/log-out')) -WebSession $activationWebSession -UseBasicParsing
     }
 
     # ProGet does not respond correctly to Native API calls upon installation. Initial calls are instead returned the
