@@ -15,27 +15,22 @@ services:
 environment:
   WHISKEY_DISABLE_ERROR_FORMAT: True
   matrix:
-  # Uses SQL Server 2014. Uncomment when has time to deal with that.
-  # - job_name: Windows PowerShell 5.1/.NET 4.6.2
-  #   job_group: ps
-  #   appveyor_build_worker_image: Visual Studio 2013
-
   - job_name: Windows PowerShell 5.1/.NET 4.8
     job_group: ps
     appveyor_build_worker_image: Visual Studio 2019
 
   - job_name: PowerShell on Windows
-    job_group: pwsh
+    job_group: windows
     appveyor_build_worker_image: Visual Studio 2022
+
+  - job_name: Ubuntu
+    job_group: linux
+    appveyor_build_worker_image: Ubuntu2204
 
   # Don't know how to get ProGet running automatically on these platforms.
   # - job_name: macOS
   #   job_group: pwsh
   #   appveyor_build_worker_image: macOS
-
-  # - job_name: Ubuntu
-  #   job_group: pwsh
-  #   appveyor_build_worker_image: Ubuntu
 
 artifacts:
 - path: .output\*
@@ -47,7 +42,7 @@ for:
     only:
     - job_group: ps
   build_script:
-  - ps: |
+  - ps: &build_script_sqlsrv |
         if( (Test-Path -Path 'env:ENABLE_RDP') -and $env:ENABLE_RDP -eq 'True' )
         {
           $blockRdp = $true
@@ -59,27 +54,34 @@ for:
         Write-Information 'Waiting for SQL Server to warm up...'
         Start-Sleep -Seconds 15
 
-        iwr https://raw.githubusercontent.com/webmd-health-services/Prism/main/Scripts/init.ps1 | iex | Format-Table
+        iwr https://raw.githubusercontent.com/webmd-health-services/Prism/main/Scripts/init.ps1 -UseBasicParsing | iex | Format-Table
         .\init.ps1 -SqlServerName '.\SQL2017'
         .\build.ps1
 
-# Build in PowerShell
+# Build in PowerShell on Windows
 - matrix:
     only:
-    - job_group: pwsh
+    - job_group: windows
   build_script:
-  - pwsh: |
-        if( (Test-Path -Path 'env:ENABLE_RDP') -and $env:ENABLE_RDP -eq 'True' )
-        {
-          $blockRdp = $true
-          iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
-        }
+  - pwsh: *build_script_sqlsrv
 
+# Build in PowerShell on Linux
+- matrix:
+    only:
+    - job_group: linux
+  build_script:
+  - sh: |
+        cat /etc/os-release
+
+        if [[ "${ENABLE_SSH,,}" == "true" ]]; then
+          export APPVEYOR_SSH_BLOCK="true"
+          curl -sflL 'https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-ssh.sh' | bash -e -
+        fi
+
+  - pwsh: |
         $ProgressPreference = 'SilentlyContinue'
         $InformationPreference = 'Continue'
-        Write-Information 'Waiting for SQL Server to warm up...'
-        Start-Sleep -Seconds 15
 
-        iwr https://raw.githubusercontent.com/webmd-health-services/Prism/main/Scripts/init.ps1 | iex | Format-Table
-        .\init.ps1 -SqlServerName '.\SQL2017'
-        .\build.ps1
+        iwr https://raw.githubusercontent.com/webmd-health-services/Prism/main/Scripts/init.ps1 -UseBasicParsing | iex | Format-Table
+        ./init.ps1 -Container
+        ./build.ps1
