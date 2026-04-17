@@ -5,17 +5,16 @@ Build:
     Prerelease:
     - main: ""
     - "*": rc1
+    IncrementPrereleaseVersion: true
 
 # Update the AppVeyor build/version number.
-- Exec:
-      OnlyBy: BuildServer
-      Path: appveyor
-      Argument: [ UpdateBuild, -Version, "$(WHISKEY_SEMVER2)+$(WHISKEY_BUILD_NUMBER)" ]
+- Exec: appveyor UpdateBuild -Version "$(WHISKEY_SEMVER2)+$(WHISKEY_BUILD_NUMBER)"
+  .OnlyBy: BuildServer
 
 # Dot-sourcing files is expensive. Move all functions into .psm1 file to improve import speed. Do this before testing
 # to ensure the module still works.
 - MergeFile:
-    OnlyBy: BuildServer
+    .OnlyBy: BuildServer
     Path: ProGetAutomation\Functions\*.ps1
     DestinationPath: ProGetAutomation\ProGetAutomation.psm1
     DeleteSourceFiles: true
@@ -39,13 +38,10 @@ Build:
     - prism.json
     - prism.*.json
 
-- Exec:
-    OnlyBy: BuildServer
-    Path: appveyor
-    Argument: [ 'PushArtifact', '.output/ProGetAutomation-$(WHISKEY_SEMVER2).zip', '-DeploymentName', 'GitHub' ]
+- Exec: appveyor PushArtifact '$(WHISKEY_OUTPUT_DIRECTORY)/ProGetAutomation-$(WHISKEY_SEMVER2).zip' -DeploymentName 'GitHub'
+  .OnlyBy: BuildServer
 
 - Pester:
-    AsJob: true
     Configuration:
         TestResult:
             Enabled: true
@@ -74,19 +70,12 @@ Build:
     Verbose: false
 
 - Delete:
-    OnlyBy: BuildServer
+    .OnlyBy: BuildServer
     Path:
     - ProGetAutomation\prism*.json
 
 - PublishPowerShellModule:
     Path: ProGetAutomation
 
-- Exec:
-    OnlyBy: BuildServer
-    Path: appveyor
-    Argument: [
-        'PushArtifact',
-        '.output/ProGetAutomation.$(WHISKEY_SEMVER2_NO_BUILD_METADATA).nupkg',
-        '-DeploymentName',
-        'PowerShellGallery'
-    ]
+- Exec: appveyor PushArtifact '$(WHISKEY_OUTPUT_DIRECTORY)/ProGetAutomation.$(WHISKEY_SEMVER2_NO_BUILD_METADATA).nupkg' -DeploymentName 'PowerShellGallery'
+  .OnlyBy: BuildServer
