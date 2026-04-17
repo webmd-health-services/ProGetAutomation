@@ -3,6 +3,15 @@
 
 # ProGetAutomation Changelog
 
+## 3.3.0
+
+`Publish-ProGetUniversalPackage`:
+
+* Improve error handling.
+* Adde ability to retry failed uploads.
+* Added support for passing a TimeSpan as a timeout.
+
+
 ## 3.2.0
 
 Added WhatIf/ShouldProcess support to New-ProGetUniversalPackage and Add-ProGetUniversalPackageFile functions.

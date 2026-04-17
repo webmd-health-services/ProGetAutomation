@@ -30,15 +30,30 @@ function Publish-ProGetUniversalPackage
         [Parameter(Mandatory)]
         [String] $PackagePath,
 
-        # The timeout (in seconds) for the upload. The default is 100 seconds.
-        [int] $Timeout = 100,
+        # The timeout (in seconds or TimeSpan) for the upload. The default is 100 seconds.
+        [Object] $Timeout,
 
         # Replace the package if it already exists in ProGet.
-        [switch] $Force
+        [switch] $Force,
+
+        # The number of times to retry the upload. Default is one time.
+        [int] $RetryCount = 0,
+
+        # The amount of time to wait between retries of the upload. The default value is 5 seconds.
+        [TimeSpan] $RetryInterval = (New-TimeSpan -Seconds 5)
     )
 
     Set-StrictMode -Version 'Latest'
     Use-CallerPreference -Cmdlet $PSCmdlet -SessionState $ExecutionContext.SessionState
+
+    if (-not $Timeout)
+    {
+        $Timeout = New-TimeSpan -Seconds 100
+    }
+    elseif ($Timeout -isnot [TimeSpan])
+    {
+        $Timeout = New-TimeSpan -Seconds $Timeout
+    }
 
     $pgPackageUploadUrl = [Uri]::New($Session.Url,('/upack/{0}' -f $FeedName))
     $pgCredential = $Session.Credential
@@ -178,92 +193,165 @@ See http://inedo.com/support/documentation/various/universal-packages/universal-
         $networkCred = $pgCredential.GetNetworkCredential()
     }
 
-    $maxDuration = [TimeSpan]::New(0, 0, $Timeout)
-
-    [HttpClientHandler]$httpClientHandler = $null
-    [HttpClient]$httpClient = $null
-    [FileStream]$packageStream = $null
-    [StreamContent]$streamContent = $null
-    [Task[HttpResponseMessage]]$httpResponseMessage = $null
-    [HttpResponseMessage]$response = $null
-    [Threading.CancellationTokenSource]$canceller = $null
-    try
+    function Format-Timeout
     {
-        $httpClientHandler = [HttpClientHandler]::New()
-        if( $pgCredential )
-        {
-            $httpClientHandler.UseDefaultCredentials = $false
-            $httpClientHandler.Credentials = $networkCred
-        }
-        $httpClientHandler.PreAuthenticate = $true;
-
-        $httpClient = [HttpClient]::New([HttpMessageHandler]$httpClientHandler)
-        $httpClient.Timeout = $maxDuration
-        if ($pgApiKey)
-        {
-            $httpClient.DefaultRequestHeaders.Add('X-ApiKey', $pgApiKey)
-        }
-
-        $packageStream = [FileStream]::New($PackagePath, 'Open', 'Read')
-        $streamContent = [StreamContent]::New([Stream]$packageStream)
-        $streamContent.Headers.ContentType = [MediaTypeHeaderValue]::New('application/octet-stream')
-        $canceller = [CancellationTokenSource]::New()
-        $httpResponseMessage =
-            $httpClient.PutAsync($pgPackageUploadUrl, [HttpContent]$streamContent, $canceller.Token)
-        if( -not $httpResponseMessage.Wait($maxDuration) )
-        {
-            $canceller.Cancel()
-            $maxTries = 1000
-            $tryNum = 0
-            while( $tryNum -lt $maxTries -and -not $httpResponseMessage.IsCanceled )
-            {
-                $tryNum += 1
-                Start-Sleep -Milliseconds 100
-            }
-            Write-Error -Message ('Uploading file ''{0}'' to ''{1}'' timed out after {2} second(s). To increase this timeout, set the Timeout parameter to the number of seconds to wait for the upload to complete.' -f $PackagePath,$pgPackageUploadUrl,$Timeout)
-            return
-        }
-
-        $response = $httpResponseMessage.Result
-        if( -not $response.IsSuccessStatusCode )
-        {
-            Write-Error -Message ('Failed to upload ''{0}'' to ''{1}''. We received the following ''{2} {3}'' response:{4} {4}{5}{4} {4}' -f $PackagePath,$pgPackageUploadUrl,[int]$response.StatusCode,$response.StatusCode,[Environment]::NewLine,$response.Content.ReadAsStringAsync().Result)
-            return
-        }
-    }
-    catch
-    {
-        $ex = $_.Exception
-        while( $ex.InnerException )
-        {
-            $ex = $ex.InnerException
-        }
-
-        if( $ex -is [TaskCanceledException] )
-        {
-            Write-Error -Message ('Uploading file ''{0}'' to ''{1}'' was cancelled. This is usually because the upload took longer than the timeout, which was {2} second(s). Use the Timeout parameter to increase the upload timeout.' -f $PackagePath,$pgPackageUploadUrl,$Timeout)
-            return
-        }
-
-        Write-Error -Message ('An unknown error occurred uploading ''{0}'' to ''{1}'': {2}' -f $PackagePath,$pgPackageUploadUrl,$_)
-        return
-    }
-    finally
-    {
-        $disposables = @(
-            'httpClientHandler',
-            'httpClient',
-            'canceller',
-            'packageStream',
-            'streamContent',
-            'httpResponseMessage',
-            'response'
+        [CmdletBinding()]
+        param(
+            [Parameter(Mandatory, ValueFromPipeline)]
+            [TimeSpan] $Timeout
         )
 
-        $disposables |
-            ForEach-Object { Get-Variable -Name $_ -ValueOnly -ErrorAction Ignore } |
-            Where-Object { $_ -ne $null } |
-            ForEach-Object { $_.Dispose() }
-        $disposables | ForEach-Object { Remove-Variable -Name $_ -Force -ErrorAction Ignore }
+        process
+        {
+            if ($Timeout.TotalSeconds -le 1)
+            {
+                return "$($Timeout.TotalMilliseconds.ToString('##0'))ms"
+            }
+
+            return "$($Timeout.TotalSeconds.ToString('0.###'))s"
+        }
+    }
+
+    $durationMsg = $RetryInterval | Format-Timeout
+    $timeoutMsg = $Timeout | Format-Timeout
+
+    $tryNum = 0
+    while ($tryNum++ -le $RetryCount)
+    {
+        $lastTry = $tryNum -ge $RetryCount
+        $retryMsg = ''
+        if (-not $lastTry)
+        {
+            $retryMsg = " Retrying again in ${durationMsg} (attempt $($tryNum + 1) of ${RetryCount})."
+        }
+
+        [HttpClientHandler]$httpClientHandler = $null
+        [HttpClient]$httpClient = $null
+        [FileStream]$packageStream = $null
+        [StreamContent]$streamContent = $null
+        [Task[HttpResponseMessage]]$httpResponseTask = $null
+        [HttpResponseMessage]$response = $null
+        [Threading.CancellationTokenSource]$canceller = $null
+        try
+        {
+            $httpClientHandler = [HttpClientHandler]::New()
+            if( $pgCredential )
+            {
+                $httpClientHandler.UseDefaultCredentials = $false
+                $httpClientHandler.Credentials = $networkCred
+            }
+            $httpClientHandler.PreAuthenticate = $true;
+
+            $httpClient = [HttpClient]::New([HttpMessageHandler]$httpClientHandler)
+            $httpClient.Timeout = $Timeout
+            if ($pgApiKey)
+            {
+                $httpClient.DefaultRequestHeaders.Add('X-ApiKey', $pgApiKey)
+            }
+
+            $packageStream = [FileStream]::New($PackagePath, 'Open', 'Read')
+            $streamContent = [StreamContent]::New([Stream]$packageStream)
+            $streamContent.Headers.ContentType = [MediaTypeHeaderValue]::New('application/octet-stream')
+            $canceller = [CancellationTokenSource]::New()
+
+            $httpVersion = '1.1'
+            if ($httpClient | Get-Member -Name 'DefaultRequestVersion')
+            {
+                $httpVersion = $httpClient.DefaultRequestVersion
+            }
+            Write-Verbose "PUT ${pgPackageUploadUrl} HTTP ${httpVersion}"
+            foreach ($header in $httpClient.DefaultRequestHeaders)
+            {
+                $value = $header.Value
+                if ($header.Key -eq 'X-ApiKey')
+                {
+                    $value = '*' * ($value | Select-Object -First 1).Length
+                }
+                Write-Verbose "$($header.Key): ${value}"
+            }
+            Write-Verbose ""
+            Write-Verbose $PackagePath
+            Write-Verbose ""
+
+            $httpResponseTask =
+                $httpClient.PutAsync($pgPackageUploadUrl, [HttpContent]$streamContent, $canceller.Token)
+            $requestCompleted = $false
+            $numErrors = $Global:Error.Count
+            try
+            {
+                $requestCompleted = $httpResponseTask.Wait($Timeout)
+            }
+            catch
+            {
+                if ($lastTry)
+                {
+                    Write-Error -ErrorRecord $_ -ErrorAction $ErrorActionPreference
+                }
+                else
+                {
+                    # Only show exceptions/errors from the last request.
+                    $numNewErrors = $Global:Error.Count - $numErrors
+                    for ($idx = 0 ; $idx -lt $numNewErrors ; ++$idx)
+                    {
+                        $Global:Error.RemoveAt(0)
+                    }
+                }
+            }
+
+            if (-not $requestCompleted -or $httpResponseTask.IsCanceled)
+            {
+                $msg = "Failed to upload ""${PackagePath}"" to ""${pgPackageUploadUrl}"", either because the request " +
+                       "timed out after ${timeoutMsg} or because of an unknown networking problem.${retryMsg}"
+                if ($lastTry)
+                {
+                    Write-Error -Message $msg -ErrorAction $ErrorActionPreference
+                    return
+                }
+
+                Write-Verbose -Message $msg
+            }
+            else
+            {
+                $response = $httpResponseTask.Result
+                if (-not $response.IsSuccessStatusCode)
+                {
+                    $readContentTask = $response.Content.ReadAsStringAsync()
+                    $readContentTask.Wait()
+                    $msg = "Failed to upload ""${PackagePath}"" to ""${pgPackageUploadUrl}"": " +
+                           "$([int]$response.StatusCode) $($response.StatusCode) $($readContentTask.Result)" +
+                           "${retryMsg}"
+                    if ($lastTry)
+                    {
+                        Write-Error -Message $msg -ErrorAction $ErrorActionPreference
+                        return
+                    }
+                    Write-Verbose -Message $msg
+                }
+            }
+
+            if ($lastTry)
+            {
+                break
+            }
+
+            Start-Sleep -Milliseconds $RetryInterval.TotalMilliseconds
+        }
+        finally
+        {
+            $disposables = @(
+                'httpClientHandler',
+                'httpClient',
+                'canceller',
+                'packageStream',
+                'streamContent',
+                'httpResponseTask',
+                'response'
+            )
+
+            $disposables |
+                ForEach-Object { Get-Variable -Name $_ -ValueOnly -ErrorAction Ignore } |
+                Where-Object { $_ -ne $null } |
+                ForEach-Object { $_.Dispose() }
+        }
     }
 }

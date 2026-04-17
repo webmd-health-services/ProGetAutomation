@@ -82,7 +82,6 @@ BeforeAll {
 
 Describe 'Publish-ProGetUniversalPackage.publish a new Universal package' {
     BeforeEach {
-        $Global:Error.Clear()
         # Remove all packages from target ProGet feed
         Get-ProGetUniversalPackage -Session $script:session -Feedname $script:feedName |
             ForEach-Object {
@@ -94,6 +93,7 @@ Describe 'Publish-ProGetUniversalPackage.publish a new Universal package' {
                                                   -Version $version
                 }
             }
+        $Global:Error.Clear()
     }
 
     It 'publishes universal packages' {
@@ -133,6 +133,48 @@ Describe 'Publish-ProGetUniversalPackage.publish a new Universal package' {
         WhenPublishing -WithArgs @{ FeedName = 'invalidFeedName' } -ErrorAction SilentlyContinue
         ThenPackage -Not -Published
         ThenError -AtIndex 0 -Matches 'Failed to upload'
+    }
+
+    It 'retries failed requests' {
+        $publishArgs = @{
+            FeedName = 'invalidFeedName'
+            RetryCount = 5
+            RetryInterval = ([TimeSpan]::New(0, 0, 0, 0, 100))
+            ErrorAction = 'SilentlyContinue'
+        }
+        # We want to still see the messages
+        Mock -CommandName 'Write-Verbose' `
+             -ModuleName 'ProGetAutomation' `
+             -MockWith { Microsoft.PowerShell.Utility\Write-Verbose -Message $Message }
+        WhenPublishing -WithArgs $publishArgs
+        ThenPackage -Not -Published
+        $Global:Error | Should -HaveCount 1
+        ThenError -Matches '404 NotFound'
+        Should -Invoke 'Write-Verbose' `
+               -ModuleName 'ProGetAutomation' `
+               -ParameterFilter { $Message -like '*Retrying*' } `
+               -Times 4
+    }
+
+    It 'retries timeouts' {
+        $publishArgs = @{
+            Timeout = ([TimeSpan]::New(0, 0, 0, 0, 1))
+            RetryCount = 5
+            RetryInterval = ([TimeSpan]::New(0, 0, 0, 0, 100))
+            ErrorAction = 'SilentlyContinue'
+        }
+        # We want to still see the messages
+        Mock -CommandName 'Write-Verbose' `
+             -ModuleName 'ProGetAutomation' `
+             -MockWith { Microsoft.PowerShell.Utility\Write-Verbose -Message $Message }
+        WhenPublishing -WithArgs $publishArgs -WarningVariable 'warnings'
+        # Sometimes waiting for the request to timeout throws an exception, sometimes it doesn't.
+        ($Global:Error | Measure-Object).Count | Should -BeGreaterOrEqual 1
+        ThenError -AtIndex 0 -Matches 'the request timed out'
+        Should -Invoke 'Write-Verbose' `
+               -ModuleName 'ProGetAutomation' `
+               -ParameterFilter { $Message -like '*Retrying*' } `
+               -Times 4
     }
 
     It 'validates package file exists' {
