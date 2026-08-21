@@ -55,7 +55,7 @@ for:
         Start-Sleep -Seconds 15
 
         iwr https://raw.githubusercontent.com/webmd-health-services/Prism/main/Scripts/init.ps1 -UseBasicParsing | iex | Format-Table
-        .\init.ps1 -SqlServerName '.\SQL2017'
+        .\init.ps1
         .\build.ps1
 
 # Build in PowerShell on Windows

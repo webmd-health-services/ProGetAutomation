@@ -1,11 +1,6 @@
 
 [CmdletBinding()]
 param(
-    # You must install your own SQL Server instance.
-    [Parameter(Mandatory, ParameterSetName='Windows')]
-    [String] $SqlServerName,
-
-    [Parameter(Mandatory, ParameterSetName='Container')]
     [switch] $Container
 )
 
@@ -20,20 +15,32 @@ prism install -Path (Join-Path -Path $PSScriptRoot -ChildPath 'ProGetAutomation'
 
 Import-Module -Name (Join-Path -Path $PSScriptRoot -ChildPath 'PSModules\Carbon') -Force -Verbose:$false
 
-$version = '25.0.26'
+$version = '26.0.8'
 
 $outputDir = Join-Path -Path $PSScriptRoot -ChildPath '.output'
 New-Item -Path $outputDir -ItemType Directory -Force | Write-Verbose
 
-if ($PSCmdlet.ParameterSetName -eq 'Windows')
+if ($Container)
 {
-    $runningUnderAppVeyor = (Test-Path -Path 'env:APPVEYOR')
+    $containerImage = "proget.inedo.com/productimages/inedo/proget:${version}"
+    Write-Information "Starting ProGet from container image: ${containerImage}"
+    docker run --name proget --rm --detach --publish 8624:80 $containerImage
 
-    $dbCredentials = 'Integrated Security=true;'
-    if( $runningUnderAppVeyor )
-    {
-        $dbCredentials = 'User ID=sa;Password=Password12!'
-    }
+    Write-Information 'Container started.'
+    Write-Information 'Waiting 30 seconds for ProGet to start up...'
+    Start-Sleep -Seconds 30
+
+    Invoke-WebRequest -Uri 'http://localhost:8624' -UseBasicParsing
+}
+else
+{
+    # $runningUnderAppVeyor = (Test-Path -Path 'env:APPVEYOR')
+
+    # $dbCredentials = 'Integrated Security=true;'
+    # if( $runningUnderAppVeyor )
+    # {
+    #     $dbCredentials = 'User ID=sa;Password=Password12!'
+    # }
 
     $hubPath = Join-Path -Path $outputDir -ChildPath 'InedoHub\hub.exe'
     if (-not (Test-Path -Path $hubPath))
@@ -50,23 +57,9 @@ if ($PSCmdlet.ParameterSetName -eq 'Windows')
         Write-Error -Message 'Failed to download and extract Inedo Hub.'
     }
 
-    & $hubPath 'install' `
-            "ProGet:$($version)" `
-            --ConnectionString="Server=$($SqlServerName); $($dbCredentials)"
+    & $hubPath 'install' "ProGet:$($version)"
 
     Get-Service -Name 'InedoProget*' | Start-Service
-}
-else
-{
-    $containerImage = "proget.inedo.com/productimages/inedo/proget:${version}"
-    Write-Information "Starting ProGet from container image: ${containerImage}"
-    docker run --name proget --rm --detach --publish 8624:80 $containerImage
-
-    Write-Information 'Container started.'
-    Write-Information 'Waiting 30 seconds for ProGet to start up...'
-    Start-Sleep -Seconds 30
-
-    Invoke-WebRequest -Uri 'http://localhost:8624' -UseBasicParsing
 }
 
 $pgutilAssetName = 'pgutil-win-x64.zip'

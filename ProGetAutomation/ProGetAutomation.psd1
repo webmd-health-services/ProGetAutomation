@@ -129,7 +129,7 @@
             # IconUri = ''
 
             # Any prerelease information.
-            Prerelease = ''
+            Prerelease = 'rc1'
 
             # ReleaseNotes of this module
             ReleaseNotes = 'https://github.com/webmd-health-services/ProGetAutomation/blob/main/CHANGELOG.md'
