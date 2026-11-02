@@ -20,7 +20,7 @@ prism install -Path (Join-Path -Path $PSScriptRoot -ChildPath 'ProGetAutomation'
 
 Import-Module -Name (Join-Path -Path $PSScriptRoot -ChildPath 'PSModules\Carbon') -Force -Verbose:$false
 
-$version = '25.0.26'
+$version = '26.0.13'
 
 $outputDir = Join-Path -Path $PSScriptRoot -ChildPath '.output'
 New-Item -Path $outputDir -ItemType Directory -Force | Write-Verbose
